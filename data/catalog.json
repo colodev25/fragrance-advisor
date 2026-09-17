@@ -1,0 +1,72 @@
+[
+  {
+    "id": "wc_2489",
+    "woocommerce_product_id": 2489,
+    "name": "Megamare",
+    "brand": "Orto Parisi",
+    "format_ml": 50,
+    "price": 155.00,
+    "currency": "EUR",
+    "in_stock": true,
+    "categories": ["NUOVI EVENTI", "Orto Parisi", "PROFUMI"],
+    "tags": ["LEGNOSO", "MARINO", "OZONICO"],
+    "olfactory_pyramid": {
+      "top": ["Accenni acquatici"],
+      "heart": ["Note ozonate"],
+      "base": ["Note verdi"]
+    },
+    "description": "La luxury fragrance Megamare Orto Parisi è legata al Sud Italia , BAGNATO DAL MARE…. Terroni richiama evidentemente le origini meridionali del suo creatore, Alessandro Gualtieri, con tanto di lava incandescente del Vesuvio, il monte tanto amato e tanto temuto in Campania.  Megamare si rifà invece all’anima mediterranea di Napoli e dintorni, quella dove la linea dell’orizzonte rapisce lo sguardo verso Capri, Ischia e Procida spingendosi fino alla Costiera Amalfitana. Megamare della collezione Orto Parisi è una fragranza sperimentale, frutto di ricerche tese a rievocare la sensazione del mare e il suo effetto rasserenante. Il risultato è un profumo che dona un’intensa sensazione di benessere. Non è un caso, dunque, se il profumo Megamare, bestseller del 2019, è quotato tra le fragranze migliori del 2020.. La freschezza del mare, l’abbraccio dell’estate",
+    "urls": {
+      "product_page": "https://www.trasparenzeprofumeria.it/product/megamare-50ml/",
+      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=2489",
+      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2019/10/megamare.jpg"
+    },
+    "semantic_text": "Megamare di Orto Parisi, fragranza legnosa, marina e ozonica ispirata al mare del Mediterraneo e alle coste del Sud Italia. Note acquatiche, ozonate e verdi. Profumo fresco, salmastro, acquatico e intenso, con sensazione di brezza marina, acqua di mare, estate, spiaggia e aria pulita. Ideale per chi cerca un profumo che sappia di mare e freschezza."
+  },
+  {
+    "id": "wc_7182",
+    "woocommerce_product_id": 7182,
+    "name": "God of Fire EDP",
+    "brand": "Stephane Humbert Lucas",
+    "format_ml": 50,
+    "price": 205.00,
+    "currency": "EUR",
+    "in_stock": true,
+    "categories": ["! OUTLET !"," PROFUMI","Stephane Humbert Lucas"],
+    "tags": ["FRUTTATO", "LEGNOSO", "VANIGLIATO"],
+    "olfactory_pyramid": {
+      "top": [ "Mango", "Limone", "Bacche Rosa", "Zenzero" ],
+      "heart": [ "Cumarina Blu", "Gelsomino", "Legni Secchi"],
+      "base": [ "Oud", "Nagarmotha", "Muschio", "Ambra"]
+    },
+    "description": "God of Fire di Stephane Humbert Lucas è un profumo ispirato alla leggenda di Xiuhtecuhtli, Dio del fuoco, del giorno e della luce nella mitologia azteca. Creatore di tutta la vita, è madre e padre di tutti gli dei. È la personificazione della luce nelle tenebre, del calore nella freddezza e della vita nella morte. Come patrono di re e guerrieri, viene mostrato mentre porta un serpente turchese intorno a sé e indossa una corona e ornamenti fatti di pietre blu turchese. Simbolo di potere e saggezza, God of Fire di Stephane Humbert Lucas, è una squisita fragranza in cui note fresche ed esotiche nascondono un eccezionale carattere caldo. La sua incredibile forza, lo porta a governare i vulcani, il suo cuore di Oud brucia intensamente come un’esperienza sciamanica, lasciandoti rigenerato e pieno di fiducia.",
+    "urls": {
+      "product_page": "https://www.trasparenzeprofumeria.it/product/god-of-fire/",
+      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=7182",
+      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2023/10/god-of-fire-edp-50ml.webp"
+    },
+    "semantic_text": "God of Fire di Stéphane Humbert Lucas, profumo fruttato, legnoso e vanigliato dal carattere caldo e intenso. Note di mango, limone, bacche rosa, zenzero, gelsomino, cumarina, legni secchi, oud, nagarmotha, muschio e ambra. Fragranza esotica, fresca ma calda, potente e avvolgente, con oud intenso e atmosfera speziata, luminosa e seducente."  },
+  {
+    "id": "wc_13194",
+    "woocommerce_product_id": 13194,
+    "name": "COMANDANTE ",
+    "brand": "Xerjoff",
+    "format_ml": 50,
+    "price": 170.00,
+    "currency": "EUR",
+    "in_stock": true,
+    "categories": ["PROFUMI", "Xerjoff"],
+    "tags": ["FRUTTATO", "LEGNOSO"],
+    "olfactory_pyramid": {
+      "top": ["Note fruttate"],
+      "heart": ["Tabacco", "Miele", "Note fiorite"],
+      "base": ["Labdano", "Cuoio", "Vaniglia", "Legno di cedro", "Note speziate", "Patchouli"]
+    },
+    "description": "Comandante! si ispira ai classici club per fumatori di un tempo, dove i gentiluomini si riunivano per rilassarsi, socializzare e concedersi il piacere di un sigaro di qualità o due. Comandante! cerca di ricreare l’atmosfera di questi ambienti piuttosto che il profumo: le stanze in penombra, le poltrone in pelle consumata e il flusso costante di conversazioni piacevoli in buona compagnia. La filosofia di Join the Club è che gli ingredienti sono tenuti sotto stretto scrutinio, invitando invece chi li indossa a immergersi nel mondo immaginario.",
+    "urls": {
+      "product_page": "https://www.trasparenzeprofumeria.it/product/comandante-50ml/",
+      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=13194",
+      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2026/09/comandante-50-xerjoff.webp"
+    },
+    "semantic_text": "Comandante! di Xerjoff, fragranza calda, speziata, tabaccosa e cuoiata ispirata ai classici club per fumatori. Note fruttate, tabacco, miele, fiori, labdano, cuoio, vaniglia, cedro, spezie e patchouli. Atmosfera elegante, intensa, avvolgente e sofisticata, da club privato, poltrone in pelle, sigari e serate in buona compagnia."  }
+]
