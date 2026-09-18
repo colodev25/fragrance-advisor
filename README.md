@@ -7,7 +7,7 @@ The assistant interacts with the customer through a natural-language conversatio
 ## Features
 
 * 💬 Conversational AI assistant
-* 🌸 Personalized perfume recommendations
+* 🌸 Personalized perfume recommendations based on customer's preferences
 * 🧠 Analysis of fragrance preferences and olfactory notes
 * 🎯 Recommendations based on the customer's needs and tastes
 * 🛍️ Designed for integration into an e-commerce website
