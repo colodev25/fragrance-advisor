@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Negozio Demo Profumeria</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; margin: 0; padding: 40px; }
+    h1 { color: #222; }
+    p { color: #666; max-width: 600px; }
+
+    /* Bottone Galleggiante */
+    .chat-toggle { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: #111; color: white; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; justify-content: center; align-items: center; transition: transform 0.2s; z-index: 999; }
+    .chat-toggle:hover { transform: scale(1.05); }
+
+    /* Finestra Chat */
+    .chat-widget { position: fixed; bottom: 90px; right: 24px; width: 380px; height: 520px; background: white; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; border: 1px solid #e0e0e0; z-index: 999; }
+    .chat-header { background: #111; color: white; padding: 14px 18px; font-size: 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .chat-close { background: transparent; border: none; color: #aaa; font-size: 18px; cursor: pointer; }
+    
+    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; word-wrap: break-word; }
+    .user { background: #111; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .bot { background: #f1f1f3; color: #222; align-self: flex-start; border-bottom-left-radius: 2px; white-space: pre-wrap; }
+    .bot a { color: #0066cc; font-weight: 600; text-decoration: underline; }
+
+    .chat-input-bar { display: flex; border-top: 1px solid #eee; padding: 8px 12px; background: #fff; }
+    .chat-input-bar input { flex: 1; border: none; padding: 8px; outline: none; font-size: 14px; }
+    .chat-input-bar button { background: #111; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <h1>Profumeria Demo</h1>
+  <p>Questa è una pagina simulata del negozio. Guarda in basso a destra per aprire il Sommelier AI delle Fragranze.</p>
+
+  <!-- Elementi Chat Widget -->
+  <button class="chat-toggle" id="chatBtn" onclick="toggleChat()">✨</button>
+
+  <div class="chat-widget" id="chatWindow">
+    <div class="chat-header">
+      <span>Consulente Fragranze</span>
+      <button class="chat-close" onclick="toggleChat()">✕</button>
+    </div>
+    <div class="chat-messages" id="messages">
+      <div class="msg bot">Benvenuto! Cerchi una fragranza fresca, orientale, dolce o un'idea per un'occasione speciale?</div>
+    </div>
+    <div class="chat-input-bar">
+      <input type="text" id="userInput" placeholder="Scrivi qui la tua richiesta..." onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button onclick="sendMessage()">Invia</button>
+    </div>
+  </div>
+
+  <script>
+    // Genera un session ID casuale per questa sessione di navigazione
+    const sessionId = "sess_" + Math.random().toString(36).substring(2, 9);
+
+    function toggleChat() {
+      const win = document.getElementById('chatWindow');
+      win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+      if (win.style.display === 'flex') {
+        document.getElementById('userInput').focus();
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      appendMessage(msg, 'user');
+      input.value = '';
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, session_id: sessionId })
+        });
+        const data = await res.json();
+        appendMessage(data.reply, 'bot');
+      } catch (e) {
+        appendMessage('Errore di connessione al server.', 'bot');
+      }
+    }
+
+    function appendMessage(text, sender) {
+      const box = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = `msg ${sender}`;
+      el.innerHTML = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+      box.appendChild(el);
+      box.scrollTop = box.scrollHeight;
+    }
+  </script>
+
+</body>
+</html>

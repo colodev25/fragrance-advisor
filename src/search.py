@@ -17,7 +17,7 @@ class FragranceSearchEngine:
 
         self.collection = self.chroma_client.get_or_create_collection(
             name="fragrances",
-            embedding_function=self.embed_fn,
+            embedding_function=self.embed_fn, # type: ignore
             metadata={"hnsw:space": "cosine"}
         )
         self._load_catalog()
@@ -48,7 +48,7 @@ class FragranceSearchEngine:
         )
         print(f"Indicizzati {len(products)} profumi con modello multilingue locale gratuito.")
 
-    def search(self, query: str, max_price: float = None, n_results: int = 2):
+    def search(self, query: str, max_price: float = None, n_results: int = 2): # type: ignore
         where_filter = {}
         if max_price is not None:
             where_filter = {"price": {"$lte": max_price}}
@@ -56,7 +56,7 @@ class FragranceSearchEngine:
         results = self.collection.query(
             query_texts=[query],
             n_results=n_results,
-            where=where_filter if where_filter else None,
+            where=where_filter if where_filter else None, # pyright: ignore[reportArgumentType]
             include=["metadatas", "documents", "distances"]
         )
         return results
@@ -74,6 +74,6 @@ if __name__ == "__main__":
         print(f"\nDomanda: '{q}'")
         res = engine.search(query=q, n_results=2)
         for i in range(len(res["ids"][0])):
-            name = res["metadatas"][0][i]["name"]
-            dist = res["distances"][0][i]
+            name = res["metadatas"][0][i]["name"] # pyright: ignore[reportOptionalSubscript]
+            dist = res["distances"][0][i] # pyright: ignore[reportOptionalSubscript]
             print(f"  [{i+1}] {name} - Distanza: {dist:.3f}")
