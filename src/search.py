@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 import chromadb
 from chromadb.utils import embedding_functions
@@ -48,19 +49,54 @@ class FragranceSearchEngine:
         )
         print(f"Indicizzati {len(products)} profumi con modello multilingue locale gratuito.")
 
-    def search(self, query: str, max_price: float = None, n_results: int = 2): # type: ignore
-        where_filter = {}
-        if max_price is not None:
-            where_filter = {"price": {"$lte": max_price}}
 
-        results = self.collection.query(
+    def search(self, query: str, max_price: float = None, n_results: int = 3):
+        # 1. Ricerca semantica standard (recuperiamo un pool più ampio, es. 8 candidati)
+        raw_results = self.collection.query(
             query_texts=[query],
-            n_results=n_results,
-            where=where_filter if where_filter else None, # pyright: ignore[reportArgumentType]
-            include=["metadatas", "documents", "distances"]
+            n_results=min(8, self.collection.count())
         )
-        return results
 
+        if not raw_results["ids"] or len(raw_results["ids"][0]) == 0:
+            return {"ids": [[]], "metadatas": [[]], "documents": [[]]}
+
+        # 2. Identificazione parole chiave rilevanti (note/termini specifici)
+        # Escludiamo stop words comuni
+        stop_words = {"vorrei", "cerco", "profumo", "fragranza", "con", "nota", "note", "di", "al", "alla", "un", "una", "del"}
+        keywords = [w.lower() for w in re.findall(r"\b[a-zA-Zàèéìòù]+\b", query) if w.lower() not in stop_words and len(w) > 2]
+
+        filtered_ids = []
+        filtered_metas = []
+        filtered_docs = []
+
+        # 3. Se ci sono parole chiave specifiche (es. "fico", "caramello", "rosa"),
+        # privilegiamo i prodotti che contengono ESPLICITAMENTE quel termine nel documento
+        if keywords:
+            for i, doc in enumerate(raw_results["documents"][0]):
+                doc_lower = doc.lower()
+                # Match lessicale: almeno una delle note richieste è presente nel testo?
+                if any(kw in doc_lower for kw in keywords):
+                    filtered_ids.append(raw_results["ids"][0][i])
+                    filtered_metas.append(raw_results["metadatas"][0][i])
+                    filtered_docs.append(doc)
+
+        # Se nessun prodotto contiene la parola esatta o non c'erano keyword strette,
+        # usiamo i migliori risultati semantici di fallback
+        if not filtered_ids:
+            return {
+                "ids": [raw_results["ids"][0][:n_results]],
+                "metadatas": [raw_results["metadatas"][0][:n_results]],
+                "documents": [raw_results["documents"][0][:n_results]],
+                "exact_match_found": False
+            }
+
+        return {
+            "ids": [filtered_ids[:n_results]],
+            "metadatas": [filtered_metas[:n_results]],
+            "documents": [filtered_docs[:n_results]],
+            "exact_match_found": True
+        }
+   
 if __name__ == "__main__":
     engine = FragranceSearchEngine()
 

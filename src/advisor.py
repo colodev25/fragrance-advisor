@@ -1,4 +1,5 @@
 import os
+import re
 from collections import defaultdict
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -22,89 +23,120 @@ class FragranceAdvisor:
             api_key=groq_key
         )
         
-        # session_id -> list di messaggi
         self.sessions = defaultdict(list)
+        self.active_perfumes = {}
         
         self.system_prompt = (
             "Sei un assistente esperto e raffinato di una profumeria di nicchia.\n"
-            "Il tuo compito è guidare il cliente nella scelta della fragranza ideale in base ai suoi gusti, "
-            "occasioni d'uso o chiarire dubbi sui prodotti discussi.\n\n"
-            "REGOLE TASSATIVE:\n"
-            "1. Consiglia o fornisci dettagli ESCLUSIVAMENTE sui prodotti presenti nel contesto fornito. Non inventare dati.\n"
-            "2. Se l'utente chiede chiarimenti, prezzi o dettagli su un profumo appena discusso, rispondi con precisione sul prodotto corretto.\n"
-            "3. Sii conciso, elegante e chiaro (massimo 1-2 brevi paragrafi).\n"
-            "4. Quando menzioni un prodotto specifico, fornisci sempre alla fine il link per metterlo nel carrello formattato come:\n"
-            "   [Aggiungi al Carrello](URL_FORNITO)"
+            "Il tuo compito è guidare il cliente nella scelta della fragranza ideale o chiarire dubbi sui prodotti a catalogo.\n\n"
+            "REGOLE TASSATIVE SULLA VERIDICITÀ DELLE NOTE:\n"
+            "1. FEDELTÀ OLFATTIVA: Se l'utente richiede esplicitamente una specifica nota (es. 'fico', 'zenzero', 'caramello'), "
+            "e NESSUNO dei prodotti presenti nel contesto la contiene espressamente, NON consigliare un profumo alternativo spacciandolo "
+            "per quello richiesto. Spiega invece con cortesia che al momento non è disponibile a catalogo una fragranza con quella nota specifica, "
+            "e proponi semmai un accordo affine chiarendo che si tratta di una famiglia diversa.\n"
+            "2. Se nel contesto è presente [MODALITÀ APPROFONDIMENTO PRODOTTO CORRENTE], rispondi valutando ESCLUSIVAMENTE "
+            "quel prodotto senza cercare o proporre altre fragranze.\n"
+            "3. Quando consigli un profumo, proponine SOLO UNO ideale e chiudi con il link:\n"
+            "   [Aggiungi al Carrello](URL_FORNITO)\n"
+            "4. Sii elegante, onesto e conciso (1-2 paragrafi)."
         )
 
-    def _rewrite_query(self, user_query: str, history: list) -> str:
-        """Riscrive una domanda ambigua (es. 'quanto costa?') unendola al contesto precedente."""
-        if not history:
-            return user_query
+    def _should_stay_on_current_perfume(self, user_query: str, active_perfume: dict, history: list) -> bool:
+        """Determina in modo deterministico se rimanere sul profumo attivo."""
+        if not active_perfume or not history:
+            return False
 
-        # Usiamo un prompt snello per riformulare la ricerca in base alla cronologia
-        messages = [
-            {
-                "role": "system", 
-                "content": (
-                    "Dato lo storico della conversazione e l'ultimo messaggio dell'utente, formula una singola "
-                    "frase di ricerca autonoma per trovare i prodotti corretti a catalogo. "
-                    "Se l'utente fa una domanda di approfondimento su un profumo precedente (es. 'quanto costa?', 'che note ha?'), "
-                    "includi il nome del profumo a cui si riferisce. "
-                    "Rispondi SOLO con la frase di ricerca riformulata, senza aggiungere commenti."
-                )
-            }
+        q = user_query.lower().strip()
+
+        # Segnali espliciti di volontà di cambio prodotto
+        switch_signals = [
+            "altro", "altra", "altri", "altre",
+            "cambia", "cambiamo", "cambiare",
+            "invece", "differente", "divers",
+            "cerco un altro", "mostrami un altro", "consigliami un altro",
+            "passiamo a", "un profumo diverso", "un profumo differente", "un profumo nuovo",
+            "non mi piace", "non è adatto", "non va bene", "non mi convince", "non fa per me", "non è quello che cerco",
+            "voglio un altro", "vorrei un altro", "mi serve un altro"
         ]
-        # Passa solo gli ultimi 2-3 scambi per velocità
-        messages.extend(history[-3:])
-        messages.append({"role": "user", "content": user_query})
 
-        res = self.client.chat.completions.create(
-            model="openai/gpt-oss-20b", # Usiamo il modello compatto per latenza minima (<200ms)
-            messages=messages,
-            temperature=0.1
-        )
-        rewritten = res.choices[0].message.content.strip()
-        return rewritten
+        # Se l'utente chiede espressamente di cambiare o vedere altro -> Nuova Ricerca
+        if any(sig in q for sig in switch_signals):
+            return False
 
+        # Altrimenti, se abbiamo un profumo attivo in memoria, qualsiasi domanda
+        # (prezzo, note, stagione, persistenza, 'questo', 'e per...', 'va bene')
+        # rimane ancorata sul prodotto corrente
+        return True
+    
     def advise(self, user_query: str, session_id: str = "default", max_price: float = None) -> str:
-        history = self.sessions[session_id]
+        # Se session_id arriva vuoto o None, usa sempre un id coerente
+        if not session_id:
+            session_id = "default"
 
-        # 1. Riscrittura intelligente della query basata sullo storico
-        search_query = self._rewrite_query(user_query, history)
-        
-        # 2. Ricerca sul database vettoriale con la query corretta
-        results = self.search_engine.search(query=search_query, max_price=max_price, n_results=2)
-        
-        context_items = []
-        if results["ids"] and len(results["ids"][0]) > 0:
-            for i in range(len(results["ids"][0])):
-                meta = results["metadatas"][0][i]
-                context_items.append(
+        history = self.sessions[session_id]
+        active = self.active_perfumes.get(session_id)
+
+        # 1. Decisione dell'intento
+        is_follow_up = self._should_stay_on_current_perfume(user_query, active, history)
+
+        print(f"[ADVISOR DEBUG] Profumo attivo in memoria: {active.get('name') if active else 'NESSUNO'}")
+        print(f"[ADVISOR DEBUG] Decisione intento: {'APPROFONDIMENTO (Bypass Chroma)' if is_follow_up else 'NUOVA RICERCA'}")
+
+        context_str = ""
+
+        if is_follow_up:
+            # BLOCCA CHROMA: Passiamo solo ed esclusivamente il profumo attivo
+            context_str = (
+                f"[MODALITÀ APPROFONDIMENTO PRODOTTO CORRENTE]\n"
+                f"- Nome: {active['name']} ({active['brand']})\n"
+                f"  Prezzo: {active['price']} EUR\n"
+                f"  Link Carrello: {active['add_to_cart_url']}\n"
+                f"  Dettagli olfattivi: {active['document']}"
+            )
+        else:
+            # Nuova ricerca sul catalogo vettoriale
+            results = self.search_engine.search(query=user_query, max_price=max_price, n_results=1)
+
+            if results["ids"] and len(results["ids"][0]) > 0:
+                meta = results["metadatas"][0][0]
+                doc = results["documents"][0][0]
+
+                # Salviamo SUBITO il nuovo profumo attivo come riferimento principale
+                self.active_perfumes[session_id] = {
+                    "name": meta.get("name", ""),
+                    "brand": meta.get("brand", "Profumeria Artistica"),
+                    "price": meta.get("price", 0.0),
+                    "add_to_cart_url": meta.get("add_to_cart_url", ""),
+                    "document": doc
+                }
+
+                context_str = (
+                    f"[PRODOTTO CONSIGLIATO DAL CATALOGO]\n"
                     f"- Nome: {meta['name']} ({meta['brand']})\n"
                     f"  Prezzo: {meta['price']} EUR\n"
                     f"  Link Carrello: {meta['add_to_cart_url']}\n"
-                    f"  Profilo olfattivo: {results['documents'][0][i]}"
+                    f"  Dettagli olfattivi: {doc}"
                 )
-        context_str = "\n\n".join(context_items) if context_items else "Nessun prodotto correlato trovato."
+            else:
+                context_str = "Nessun prodotto trovato nel catalogo."
 
-        # 3. Composizione del prompt per la risposta finale
+        # 2. Generazione della risposta finale con il modello 120b
         messages = [{"role": "system", "content": self.system_prompt}]
         messages.extend(history[-4:])
         messages.append({
             "role": "user",
-            "content": f"DOMANDA UTENTE: {user_query}\n\nPRODOTTI CORRELATI DAL CATALOGO:\n{context_str}"
+            "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO PRODOTTO:\n{context_str}"
         })
 
         response = self.client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=messages,
-            temperature=0.5
+            temperature=0.2
         )
 
         bot_reply = response.choices[0].message.content
 
-        # 4. Aggiorna lo storico
+        # 3. Memorizza lo storico della conversazione
         self.sessions[session_id].append({"role": "user", "content": user_query})
         self.sessions[session_id].append({"role": "assistant", "content": bot_reply})
 

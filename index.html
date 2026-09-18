@@ -51,8 +51,12 @@
   </div>
 
   <script>
-    // Genera un session ID casuale per questa sessione di navigazione
-    const sessionId = "sess_" + Math.random().toString(36).substring(2, 9);
+    // 1. Session ID persistente per mantenere il contesto conversazionale
+    let currentSessionId = sessionStorage.getItem("advisor_session_id");
+    if (!currentSessionId) {
+      currentSessionId = "sess_" + Date.now();
+      sessionStorage.setItem("advisor_session_id", currentSessionId);
+    }
 
     function toggleChat() {
       const win = document.getElementById('chatWindow');
@@ -62,34 +66,54 @@
       }
     }
 
-    async function sendMessage() {
-      const input = document.getElementById('userInput');
-      const msg = input.value.trim();
-      if (!msg) return;
-
-      appendMessage(msg, 'user');
-      input.value = '';
-
-      try {
-        const res = await fetch('http://127.0.0.1:8000/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg, session_id: sessionId })
-        });
-        const data = await res.json();
-        appendMessage(data.reply, 'bot');
-      } catch (e) {
-        appendMessage('Errore di connessione al server.', 'bot');
-      }
-    }
-
     function appendMessage(text, sender) {
       const box = document.getElementById('messages');
       const el = document.createElement('div');
       el.className = `msg ${sender}`;
-      el.innerHTML = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+      // Converte i link markdown [Testo](url) in collegamenti HTML cliccabili
+      el.innerHTML = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
       box.appendChild(el);
       box.scrollTop = box.scrollHeight;
+      return el;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Mostra subito il messaggio dell'utente nella chat
+      appendMessage(text, "user");
+      input.value = "";
+
+      // Mostra un indicatore di attesa
+      const loadingMsg = appendMessage("Sto consultando il catalogo...", "bot");
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            session_id: currentSessionId
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Errore HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Rimuove l'indicatore di attesa e inserisce la risposta definitiva
+        loadingMsg.remove();
+        appendMessage(data.reply, "bot");
+
+      } catch (err) {
+        console.error("Errore chiamata API:", err);
+        loadingMsg.remove();
+        appendMessage("Si è verificato un errore di connessione con il consulente. Riprova tra poco.", "bot");
+      }
     }
   </script>
 

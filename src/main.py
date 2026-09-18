@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +8,7 @@ try:
 except ModuleNotFoundError:
     from advisor import FragranceAdvisor
 
-app = FastAPI(title="Fragrance Advisor API", version="1.0.0")
+app = FastAPI(title="Perfume Advisor API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,24 +18,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ISTANZA GLOBALE: fondamentale affinché la memoria persista tra le chiamate
 advisor = FragranceAdvisor()
 
 class ChatRequest(BaseModel):
     message: str
-    session_id: Optional[str] = "default_session"
+    session_id: Optional[str] = "default"
     max_price: Optional[float] = None
 
-class ChatResponse(BaseModel):
-    reply: str
-
-@app.post("/api/chat", response_model=ChatResponse)
-def chat_endpoint(request: ChatRequest):
-    if not request.message.strip():
-        raise HTTPException(status_code=400, detail="Il messaggio non può essere vuoto.")
+@app.post("/api/chat")
+async def chat_endpoint(req: ChatRequest):
+    sid = req.session_id if req.session_id else "default"
+    # Log di debug nel terminale per verificare la sessione
+    print(f"\n[DEBUG] Messaggio: '{req.message}' | Session ID: '{sid}'")
     
-    reply_text = advisor.advise(
-        user_query=request.message,
-        session_id=request.session_id,
-        max_price=request.max_price
+    reply = advisor.advise(
+        user_query=req.message,
+        session_id=sid,
+        max_price=req.max_price
     )
-    return ChatResponse(reply=reply_text)
+    return {"reply": reply, "session_id": sid}
+
+@app.post("/api/reset")
+async def reset_endpoint(req: ChatRequest):
+    sid = req.session_id if req.session_id else "default"
+    if sid in advisor.sessions:
+        del advisor.sessions[sid]
+    if sid in advisor.active_perfumes:
+        del advisor.active_perfumes[sid]
+    return {"status": "reset", "session_id": sid}
