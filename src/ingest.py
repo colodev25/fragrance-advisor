@@ -35,7 +35,7 @@ EXCLUDED_KEYWORDS = [
     "peeling", "tonico", "lozione", "bagnodoccia", "doccia schiuma", 
     "bagnoschiuma", "sapone", "shampoo", "balsamo", "olio corpo", 
     "deodorante", "emulsione", "contour", "detergente", "struccante",
-    "latte corpo", "gel doccia", "candela", "diffusore"
+    "latte corpo", "gel doccia", "candela", "diffusore", "ambiente"
 ]
 
 # Cartella dello script = root del progetto
