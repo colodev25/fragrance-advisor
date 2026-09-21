@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ISTANZA GLOBALE: fondamentale affinché la memoria persista tra le chiamate
+# Istanza singleton in RAM per conservare sessioni e stati tra le chiamate HTTP
 advisor = FragranceAdvisor()
 
 class ChatRequest(BaseModel):
@@ -29,15 +29,17 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
     sid = req.session_id if req.session_id else "default"
-    # Log di debug nel terminale per verificare la sessione
-    print(f"\n[DEBUG] Messaggio: '{req.message}' | Session ID: '{sid}'")
-    
-    reply = advisor.advise(
+    result = advisor.advise(
         user_query=req.message,
         session_id=sid,
         max_price=req.max_price
     )
-    return {"reply": reply, "session_id": sid}
+    return {
+        "reply": result["reply"],
+        "options": result.get("options", []),
+        "mode": result.get("mode", "free"),
+        "session_id": sid
+    }
 
 @app.post("/api/reset")
 async def reset_endpoint(req: ChatRequest):
@@ -46,4 +48,6 @@ async def reset_endpoint(req: ChatRequest):
         del advisor.sessions[sid]
     if sid in advisor.active_perfumes:
         del advisor.active_perfumes[sid]
+    if sid in advisor.guided_states:
+        del advisor.guided_states[sid]
     return {"status": "reset", "session_id": sid}

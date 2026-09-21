@@ -2,56 +2,67 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Negozio Demo Profumeria</title>
+  <title>Profumeria Artistica - Consulente AI</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; margin: 0; padding: 40px; }
-    h1 { color: #222; }
-    p { color: #666; max-width: 600px; }
+    h1 { color: #111; font-weight: 600; }
+    p { color: #555; max-width: 600px; line-height: 1.5; }
 
     /* Bottone Galleggiante */
-    .chat-toggle { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: #111; color: white; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; justify-content: center; align-items: center; transition: transform 0.2s; z-index: 999; }
+    .chat-toggle { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: #111; color: white; border: none; font-size: 22px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 999; transition: transform 0.2s; }
     .chat-toggle:hover { transform: scale(1.05); }
 
     /* Finestra Chat */
-    .chat-widget { position: fixed; bottom: 90px; right: 24px; width: 380px; height: 520px; background: white; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; border: 1px solid #e0e0e0; z-index: 999; }
+    .chat-widget { position: fixed; bottom: 90px; right: 24px; width: 390px; height: 540px; background: white; border-radius: 16px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; border: 1px solid #eaeaea; z-index: 999; }
     .chat-header { background: #111; color: white; padding: 14px 18px; font-size: 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
     .chat-close { background: transparent; border: none; color: #aaa; font-size: 18px; cursor: pointer; }
-    
-    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-    .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; word-wrap: break-word; }
-    .user { background: #111; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-    .bot { background: #f1f1f3; color: #222; align-self: flex-start; border-bottom-left-radius: 2px; white-space: pre-wrap; }
-    .bot a { color: #0066cc; font-weight: 600; text-decoration: underline; }
 
+    /* Messaggi */
+    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .msg { max-width: 84%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; word-wrap: break-word; }
+    .user { background: #111; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .bot { background: #f3f3f5; color: #222; align-self: flex-start; border-bottom-left-radius: 2px; white-space: pre-wrap; }
+    .bot a { color: #0969da; font-weight: 600; text-decoration: underline; }
+
+    /* Opzioni e Bottoni Rapidi */
+    .options-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .option-chip { background: white; border: 1px solid #111; color: #111; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }
+    .option-chip:hover { background: #111; color: white; }
+
+    /* Input Bar */
     .chat-input-bar { display: flex; border-top: 1px solid #eee; padding: 8px 12px; background: #fff; }
-    .chat-input-bar input { flex: 1; border: none; padding: 8px; outline: none; font-size: 14px; }
-    .chat-input-bar button { background: #111; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .chat-input-bar input { flex: 1; border: none; padding: 8px; outline: none; font-size: 13.5px; }
+    .chat-input-bar button { background: #111; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; }
   </style>
 </head>
 <body>
 
   <h1>Profumeria Demo</h1>
-  <p>Questa è una pagina simulata del negozio. Guarda in basso a destra per aprire il Sommelier AI delle Fragranze.</p>
+  <p>Clicca sul pulsante in basso a destra per aprire il consulente olfattivo.</p>
 
-  <!-- Elementi Chat Widget -->
-  <button class="chat-toggle" id="chatBtn" onclick="toggleChat()">✨</button>
+  <button class="chat-toggle" onclick="toggleChat()">✨</button>
 
   <div class="chat-widget" id="chatWindow">
     <div class="chat-header">
-      <span>Consulente Fragranze</span>
+      <span>Consulente Olfattivo</span>
       <button class="chat-close" onclick="toggleChat()">✕</button>
     </div>
     <div class="chat-messages" id="messages">
-      <div class="msg bot">Benvenuto! Cerchi una fragranza fresca, orientale, dolce o un'idea per un'occasione speciale?</div>
+      <div class="msg bot">
+        Benvenuto! Sono il tuo consulente olfattivo. Come preferisci procedere?
+        <div class="options-container">
+          <button class="option-chip" onclick="selectOption('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
+          <button class="option-chip" onclick="selectOption('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
+        </div>
+      </div>
     </div>
     <div class="chat-input-bar">
-      <input type="text" id="userInput" placeholder="Scrivi qui la tua richiesta..." onkeydown="if(event.key==='Enter') sendMessage()" />
+      <input type="text" id="userInput" placeholder="Scrivi qui..." onkeydown="if(event.key==='Enter') sendMessage()" />
       <button onclick="sendMessage()">Invia</button>
     </div>
   </div>
 
   <script>
-    // 1. Session ID persistente per mantenere il contesto conversazionale
     let currentSessionId = sessionStorage.getItem("advisor_session_id");
     if (!currentSessionId) {
       currentSessionId = "sess_" + Date.now();
@@ -66,31 +77,47 @@
       }
     }
 
-    function appendMessage(text, sender) {
+    function appendMessage(text, sender, options = []) {
       const box = document.getElementById('messages');
       const el = document.createElement('div');
       el.className = `msg ${sender}`;
-      // Converte i link markdown [Testo](url) in collegamenti HTML cliccabili
       el.innerHTML = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+      if (options && options.length > 0) {
+        const optContainer = document.createElement('div');
+        optContainer.className = 'options-container';
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'option-chip';
+          btn.innerText = opt;
+          btn.onclick = () => selectOption(opt);
+          optContainer.appendChild(btn);
+        });
+        el.appendChild(optContainer);
+      }
+
       box.appendChild(el);
       box.scrollTop = box.scrollHeight;
       return el;
     }
 
+    function selectOption(text) {
+      document.getElementById('userInput').value = text;
+      sendMessage();
+    }
+
     async function sendMessage() {
-      const input = document.getElementById("userInput");
+      const input = document.getElementById('userInput');
       const text = input.value.trim();
       if (!text) return;
 
-      // Mostra subito il messaggio dell'utente nella chat
-      appendMessage(text, "user");
-      input.value = "";
+      appendMessage(text, 'user');
+      input.value = '';
 
-      // Mostra un indicatore di attesa
-      const loadingMsg = appendMessage("Sto consultando il catalogo...", "bot");
+      const loading = appendMessage("Sto consultando il catalogo...", "bot");
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/chat", {
+        const res = await fetch("http://127.0.0.1:8000/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -99,23 +126,15 @@
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`Errore HTTP ${response.status}`);
-        }
+        const data = await res.json();
+        loading.remove();
+        appendMessage(data.reply, "bot", data.options);
 
-        const data = await response.json();
-        
-        // Rimuove l'indicatore di attesa e inserisce la risposta definitiva
-        loadingMsg.remove();
-        appendMessage(data.reply, "bot");
-
-      } catch (err) {
-        console.error("Errore chiamata API:", err);
-        loadingMsg.remove();
-        appendMessage("Si è verificato un errore di connessione con il consulente. Riprova tra poco.", "bot");
+      } catch (e) {
+        loading.remove();
+        appendMessage("Errore di connessione con il server. Verifica che Uvicorn sia attivo.", "bot");
       }
     }
   </script>
-
 </body>
 </html>
