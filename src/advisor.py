@@ -49,12 +49,17 @@ class FragranceAdvisor:
         self.guided_states = defaultdict(lambda: {"step": None, "answers": []})
 
     def _determine_intent(self, query: str, active_perfume: dict) -> str:
+        """
+        Determina se l'utente vuole continuare a valutare il profumo attivo (VALUTA)
+        oppure cercare un nuovo profumo (CAMBIA).
+        """
         if not active_perfume:
             return "CAMBIA"
 
-        q = query.lower().strip()
+        # Rimuove punteggiatura per facilitare il match deterministico
+        q = re.sub(r"[?!.,;:]", " ", query.lower()).strip()
 
-        # 1. CAMBIO ESPLICITO
+        # 1. CAMBIO ESPLICITO (Priorità assoluta: se l'utente chiede chiaramente un'alternativa)
         switch_patterns = [
             r"\bun altro\b", r"\bun'altra\b", r"\baltri profumi\b", r"\baltre fragranze\b",
             r"\bmostrami altro\b", r"\bconsigliami un altro\b", r"\btrovami un altro\b",
@@ -66,26 +71,39 @@ class FragranceAdvisor:
         if any(re.search(p, q) for p in switch_patterns):
             return "CAMBIA"
 
-        # 2. VALUTAZIONE DETERMINISTICA (Prezzo, durata, occasioni, idoneità)
+        # 2. VALUTAZIONE DETERMINISTICA (Prezzo, note, piramide, durata, occasioni, pronomi)
         stay_patterns = [
+            # Note e composizione olfattiva
+            r"\bnote\b", r"\bnota\b", r"\bpiramide\b", r"\bingredienti\b", 
+            r"\bcomposizione\b", r"\baccordi\b", r"\baccordo\b",
+            
+            # Pronomi riferiti al profumo attivo
+            r"\bsu[oaei]\b",          # suo, sua, suoi, sue
+            r"\bquest[oaei]\b",       # questo, questa, questi, queste
+            r"\blo posso\b", r"\bla posso\b", r"\bsi puo\b", r"\bsi può\b",
+            
+            # Prezzo e costo
             r"\bcosta\b", r"\bcosto\b", r"\bprezzo\b", r"\beuro\b", r"\b€\b",
+            
+            # Performance e scia
             r"\bquanto dura\b", r"\bdura\b", r"\bdurata\b", r"\bpersistenza\b", r"\bproiezione\b", r"\bsillage\b",
+            
+            # Valutazione contestuale
             r"\bva bene\b", r"\bè adatto\b", r"\bè adatta\b", r"\bposso usarlo\b", r"\bposso usarla\b",
             r"\bper l'ufficio\b", r"\bin ufficio\b", r"\bal lavoro\b", r"\bdi giorno\b", r"\bdi sera\b",
             r"\bin spiaggia\b", r"\bal mare\b", r"\ba cena\b", r"\ba pranzo\b", r"\bin palestra\b",
-            r"\bestiv[oae]\b", r"\binvernal[ei]\b", r"\bprimaveril[ei]\b", r"\bautunnal[ei]\b",
-            r"\bquesto\b", r"\bquesta\b", r"\blo posso\b", r"\bla posso\b", r"\bsi puo\b", r"\bsi può\b"
+            r"\bestiv[oae]\b", r"\binvernal[ei]\b", r"\bprimaveril[ei]\b", r"\bautunnal[ei]\b"
         ]
         if any(re.search(p, q) for p in stay_patterns):
             return "VALUTA"
 
-        # 3. FALLBACK LLM
+        # 3. FALLBACK LLM: Se la frase è ambigua, interroga il modello rapido
         prompt = (
             f"Stiamo parlando del profumo: '{active_perfume['name']}' ({active_perfume.get('brand', '')}).\n"
             f"Messaggio del cliente: \"{query}\"\n\n"
             "Regola:\n"
-            "- Rispondi 'VALUTA' se chiede opinioni, chiarimenti o dettagli riferiti a questo profumo.\n"
-            "- Rispondi 'CAMBIA' solo se chiede di vedere una nuova o diversa fragranza.\n"
+            "- Rispondi 'CAMBIA' SOLO se il cliente chiede esplicitamente di cercare, mostrare o consigliare un profumo DIVERSO o un'alternativa.\n"
+            "- In tutti gli altri casi (domande su note, pareri, chiarimenti, orari, contesti, o frasi dubbie), rispondi 'VALUTA'.\n"
             "Rispondi SOLO con la parola 'VALUTA' o 'CAMBIA'."
         )
 
@@ -97,7 +115,8 @@ class FragranceAdvisor:
                 max_tokens=4
             )
             decision = res.choices[0].message.content.strip().upper()
-            return "VALUTA" if "VALUTA" in decision else "CAMBIA"
+            # FIX FONDAMENTALE: Se non c'è un'esplicita volontà di cambio, mantieni il profumo attivo
+            return "CAMBIA" if "CAMBIA" in decision else "VALUTA"
         except Exception:
             return "VALUTA"
 
