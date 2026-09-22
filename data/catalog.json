@@ -73,6 +73,7 @@
     "categories": [
       "promozioni-a-tempo-determinato-relative-ad-ultimi-pezzi-in-stock-e-in-face-out",
       "promozioni-esclusive",
+      "nuovi-eventi",
       "profumi",
       "stephane-humbert-lucas"
     ],
@@ -669,6 +670,7 @@
     "in_stock": true,
     "categories": [
       "gritti-fragrances",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -702,6 +704,7 @@
     "in_stock": true,
     "categories": [
       "gritti-fragrances",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -768,6 +771,7 @@
     "in_stock": true,
     "categories": [
       "gritti-fragrances",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -1424,6 +1428,7 @@
     "in_stock": true,
     "categories": [
       "marrakech-imperial",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -1692,6 +1697,7 @@
     "in_stock": true,
     "categories": [
       "nasomatto",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -2019,6 +2025,7 @@
     "in_stock": true,
     "categories": [
       "jusbox",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -2424,10 +2431,9 @@
     "sku": "",
     "price": 130.0,
     "currency": "EUR",
-    "in_stock": true,
+    "in_stock": false,
     "categories": [
       "montale",
-      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -3608,7 +3614,7 @@
     "sku": "",
     "price": 180.0,
     "currency": "EUR",
-    "in_stock": false,
+    "in_stock": true,
     "categories": [
       "profumi",
       "simone-andreoli"
@@ -4787,7 +4793,6 @@
     "categories": [
       "promozioni-a-tempo-determinato-relative-ad-ultimi-pezzi-in-stock-e-in-face-out",
       "promozioni-esclusive",
-      "nuovi-eventi",
       "profumi",
       "salum"
     ],
@@ -4859,7 +4864,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "st-barth-profumi"
     ],
@@ -5303,7 +5307,7 @@
     "sku": "",
     "price": 100.0,
     "currency": "EUR",
-    "in_stock": true,
+    "in_stock": false,
     "categories": [
       "mancera",
       "profumi"
@@ -5591,6 +5595,7 @@
     "in_stock": true,
     "categories": [
       "milano-fragranze",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -5908,6 +5913,7 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
+      "nuovi-eventi",
       "profumi",
       "regalien-istanbul"
     ],
@@ -6430,7 +6436,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "xerjoff-larte-della-profumeria"
     ],
@@ -6831,7 +6836,6 @@
     "in_stock": false,
     "categories": [
       "promozioni-a-tempo-determinato-relative-ad-ultimi-pezzi-in-stock-e-in-face-out",
-      "nuovi-eventi",
       "profumi",
       "xerjoff-larte-della-profumeria"
     ],
@@ -6936,7 +6940,6 @@
     "currency": "EUR",
     "in_stock": false,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "xerjoff-larte-della-profumeria"
     ],
@@ -6972,7 +6975,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "xerjoff-larte-della-profumeria"
     ],
@@ -7202,7 +7204,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "xerjoff-larte-della-profumeria"
     ],
@@ -7339,7 +7340,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "simone-andreoli"
     ],
@@ -8442,7 +8442,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "the-spirit-of-dubai"
     ],
@@ -8574,41 +8573,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/10/VANI-NOIRE.jpg"
     },
     "semantic_text": "Profumo THELYCHEEUS  100ML di Epico Profumi. Famiglie olfattive e sfumature: AGRUMATO, FRUTTATO. Note di testa: Limone melograno arancio bergamotto mandarino lithce pepe rosa note di cuore: rizomi di iris gelsomino rosa cipresso foglie di thè verde note di fondo: ambra grigia patchouli legno di cedro muschio. Note di cuore: Rizomi di iris gelsomino rosa cipresso foglie di thè verde note di fondo: ambra grigia patchouli legno di cedro muschio. Note di fondo: Ambra grigia patchouli legno di cedro muschio. Dettagli ed evoluzione: In un angolo nascosto tra le colline, dove il vento danzava tra le piantagioni di thè verde e gli alberi di Lychee, c’era un villaggio chiamato Thelycheeus. Un luogo dove il tempo sembrava fermarsi, dove il mondo scorreva in un lento abbraccio di quiete. Ma per Sofia, quel villaggio, un tempo rifugio, era diventato troppo piccolo, troppo stretto. O"
-  },
-  {
-    "id": "wc_10580",
-    "woocommerce_product_id": 10580,
-    "name": "APRICOT JAM  1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 110.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FRUTTATO",
-      "GOURMAND"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FRUTTATO",
-        "GOURMAND"
-      ],
-      "base": []
-    },
-    "description": "Apricot Jam: Un raggio di sole dentro ad un flacone. C’è un momento, nelle calde giornate estive, in cui il sole sembra fermarsi e accarezzare la terra con la sua luce dorata. È il momento in cui le albicocche, mature e succose, raggiungono il culmine della loro dolcezza. Epicò Parfum cattura questa magia in Apricot Jam , una fragranza per ambienti che trasforma ogni spazio in un caldo abbraccio di pura gioia. Apricot Jam non è solo un profumo, ma un viaggio sensoriale: un barattolo di marmellata appena aperto, l’eco di un’estate eterna. Al primo spruzzo, la stanza si riempie del sentore avvolgente e zuccherino dell’albicocca, così autentico da evocare la visione di frutti dorati immersi in uno di luce. Questa fragranza per ambienti è pensata per chi desidera portare un tocco di dolcezza genuina nella propria casa, per trasformare il quotidiano in un’esperienza raffinata e unica. Apricot Jam è come un raggio di sole intrappolato in un flacone: vivace, confortante e irresistibilmente gourmand. Sentori olfattivi principali: • Albicocca matura: succosa, dolce, con un accenno di acidità che ne esalta l’autenticità. • Accordo di zucchero caramellato: una carezza golosa che avvolge e amplifica la dolcezza. • Tocco vellutato di assoluta di vaniglia: una base cremosa che aggiunge profondità e calore. Con ogni spruzzo, trasforma la tua casa in un’oasi di dolcezza. Una fragranza che non invade, ma invita; che non sovrasta, ma abbraccia.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/apricot-jam-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=10580",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2025/04/APRICOT-JAM.webp"
-    },
-    "semantic_text": "Profumo APRICOT JAM  1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FRUTTATO, GOURMAND. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FRUTTATO, GOURMAND. Note di fondo: FRUTTATO, GOURMAND. Dettagli ed evoluzione: Apricot Jam: Un raggio di sole dentro ad un flacone. C’è un momento, nelle calde giornate estive, in cui il sole sembra fermarsi e accarezzare la terra con la sua luce dorata. È il momento in cui le albicocche, mature e succose, raggiungono il culmine della loro dolcezza. Epicò Parfum cattura questa magia in Apricot Jam , una fragranza per ambienti"
   },
   {
     "id": "wc_10558",
@@ -8990,6 +8954,7 @@
     "in_stock": true,
     "categories": [
       "montale",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -9987,7 +9952,6 @@
     "in_stock": false,
     "categories": [
       "kajal-perfumes",
-      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -10022,7 +9986,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "pantheon-roma",
       "profumi"
     ],
@@ -10265,82 +10228,6 @@
     "semantic_text": "Profumo CRISTIAN CAVAGNA DISCOVERY KIT 6 X 2,5ML di CAMPIONCINI UFFICIALI - DISCOVERY KIT PROFUMI. Famiglie olfattive e sfumature: CAMPIONCINI KIT DISCOVERY, CAMPIONCINI PROFUMI. Note di testa: Note di testa fresche/aromatiche. Note di cuore: CAMPIONCINI KIT DISCOVERY, CAMPIONCINI PROFUMI. Note di fondo: CAMPIONCINI KIT DISCOVERY, CAMPIONCINI PROFUMI. Dettagli ed evoluzione: Contiene 5 fragranze da 2,5 ml ognuna : MUSA PARADISIACA, BOA MADRE, MURICE IMPERIALE, VITTORIA ALATA, BIANCA FORTE, REGINA MADRE Un piccolo kit elegante per provare le fragranze di Cristian Cavagna in versione ufficiale, o per portarle sempre con sé, anche in viaggio, nel comodo formato da 2,5ml. La piccola confezione nera racchiude, come uno scri"
   },
   {
-    "id": "wc_9975",
-    "woocommerce_product_id": 9975,
-    "name": "EPICO KIT GLAMOUR 3X100ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 69.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "promozioni-a-tempo-determinato-relative-ad-ultimi-pezzi-in-stock-e-in-face-out",
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FLOREALE",
-      "LEGNOSO",
-      "SPEZIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FLOREALE",
-        "LEGNOSO",
-        "SPEZIATO"
-      ],
-      "base": []
-    },
-    "description": "KIT GLAMOUR: dedicato a chi desidera un’atmosfera sofisticata e raffinata. Con le sue note eleganti e avvolgenti, il KIT GLAMOUR dona alla casa un tocco di classe senza tempo. • Bakhoor 100 ml • Cherry & cashmere wood 100 ml • Sensual Tiarè 100 ml",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/epico-kit-glamour-3x100ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=9975",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2025/01/epico-box-2.jpeg"
-    },
-    "semantic_text": "Profumo EPICO KIT GLAMOUR 3X100ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FLOREALE, LEGNOSO, SPEZIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FLOREALE, LEGNOSO, SPEZIATO. Note di fondo: FLOREALE, LEGNOSO, SPEZIATO. Dettagli ed evoluzione: KIT GLAMOUR: dedicato a chi desidera un’atmosfera sofisticata e raffinata. Con le sue note eleganti e avvolgenti, il KIT GLAMOUR dona alla casa un tocco di classe senza tempo. • Bakhoor 100 ml • Cherry & cashmere wood 100 ml • Sensual Tiarè 100 ml"
-  },
-  {
-    "id": "wc_9971",
-    "woocommerce_product_id": 9971,
-    "name": "EPICO KIT POP 3X100ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 69.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "promozioni-a-tempo-determinato-relative-ad-ultimi-pezzi-in-stock-e-in-face-out",
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO",
-      "FRUTTATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AGRUMATO",
-        "FRUTTATO",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "KIT POP: una collezione vivace e moderna, ideale per chi ama la propria casa con uno stile giovane, fresco e colorato. Le fragranze del KIT POP portano energia e carattere in ogni ambiente. • English club 100 ml • Red basil & mandarin 100 ml • Pantelleria fycus 100 ml",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/epico-kit-pop-3x100ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=9971",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2025/01/epico-box-1.jpeg"
-    },
-    "semantic_text": "Profumo EPICO KIT POP 3X100ML di Epico Home Fragrances. Famiglie olfattive e sfumature: AGRUMATO, FRUTTATO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO, FRUTTATO, VANIGLIATO. Note di fondo: AGRUMATO, FRUTTATO, VANIGLIATO. Dettagli ed evoluzione: KIT POP: una collezione vivace e moderna, ideale per chi ama la propria casa con uno stile giovane, fresco e colorato. Le fragranze del KIT POP portano energia e carattere in ogni ambiente. • English club 100 ml • Red basil & mandarin 100 ml • Pantelleria fycus 100 ml"
-  },
-  {
     "id": "wc_9898",
     "woocommerce_product_id": 9898,
     "name": "LATTE MIMOSA EXTRAIT 50ML",
@@ -10469,6 +10356,7 @@
     "in_stock": true,
     "categories": [
       "kajal-perfumes",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -10492,78 +10380,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/09/lamar-noir100ML.jpg"
     },
     "semantic_text": "Profumo LAMAR NOIR 100ML di Kajal Perfumes. Famiglie olfattive e sfumature: CARAMELLATO, CUOIATO, FRUTTATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: CARAMELLATO, CUOIATO, FRUTTATO. Note di fondo: CARAMELLATO, CUOIATO, FRUTTATO. Dettagli ed evoluzione: Le anime intraprendenti osano viaggi ardui, che rivelano esperienze dalle nascoste gratificazioni Intraprendere un’odissea di alchimia interiore è uno dei viaggi più straordinariamente impegnativi della vita. Navigando tra le ombre interiori, possiamo guarire, trasformando le ferite in saggezza e il caos in calma. Ci vuole un enorme coraggio per ab"
-  },
-  {
-    "id": "wc_9716",
-    "woocommerce_product_id": 9716,
-    "name": "MACARON 250ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FRUTTATO",
-      "GOURMAND",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FRUTTATO",
-        "GOURMAND",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "PERFUME TO DREAM, MACARON….. SPRAY AMBIENTE , TESSUTI E PERSONA Quel momento, in cui fuori è freddo, infili le tue ciabatte e ti siedi in una vecchia poltrona di legno e pelle, rovinata dall’usura del tempo. Si gela e la poltrona è davanti ad un camino acceso che scoppietta e che illumina la stanza. Davanti a te un orologio appeso al muro fatto di mattoni, indica con le lancette ferme alcune foto poggiate sulla mensola sopra il camino. Le guardi. Pensi, e ti rilassi con una coperta calda che poggi sulle gambe per scaldare i piedi. Sul tavolino di legno davanti alla poltrona, una calda tazza di the e frollini, ti abbraccia col suo profumo di dolcezza e calore dei biscotti appena fatti in casa. Quel profumo che non sentivi da tempo, ti ricorda che, è in quei momenti che si fonda la nostra felicità e che la semplicità… non è affatto una cosa semplice TESTA: Fiori d’Arancio, Bacche di Goji, Mandarino CUORE: Albicocca, Cioccolato, Tuberosa, Secret raw material FONDO: Vaniglia Assoluta, Fava Tonka, Praline, Formato 250ml",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/macaron-250ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=9716",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/11/MACARON-250ML.webp"
-    },
-    "semantic_text": "Profumo MACARON 250ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FRUTTATO, GOURMAND, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FRUTTATO, GOURMAND, VANIGLIATO. Note di fondo: FRUTTATO, GOURMAND, VANIGLIATO. Dettagli ed evoluzione: PERFUME TO DREAM, MACARON….. SPRAY AMBIENTE , TESSUTI E PERSONA Quel momento, in cui fuori è freddo, infili le tue ciabatte e ti siedi in una vecchia poltrona di legno e pelle, rovinata dall’usura del tempo. Si gela e la poltrona è davanti ad un camino acceso che scoppietta e che illumina la stanza. Davanti a te un orologio appeso al muro fatto di"
-  },
-  {
-    "id": "wc_9713",
-    "woocommerce_product_id": 9713,
-    "name": "TOBACCO &amp; SPIECES 1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 110.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "SPEZIATO",
-      "TABACCATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "SPEZIATO",
-        "TABACCATO"
-      ],
-      "base": []
-    },
-    "description": "Fragranza ottenuta dall’incontro di accordi contrastanti: frizzante e speziata la testa con accenti agrumati di pompelmo e pepe rosa; deciso e avvolgente il cuore con foglie di tabacco addolcite dall’ambra e dal balsamo del Perù; legnoso e deciso il fondo, con vetiver e un elegante accordo suade. TESTA: Pompelmo Rosa, Elemi, Pepe Rosa CUORE: Tabacco, Ambra, Balsamo del Perù FONDO: Cannella, Vetiver, Accordo Suede 1000 ml – fragranza in spray per tessuti e ambienti. Conservare il prodotto in temperatura ambiente, non esporre a fonti di calore.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/tobacco-spieces-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=9713",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/11/tobacco-spice.jpg"
-    },
-    "semantic_text": "Profumo TOBACCO &amp; SPIECES 1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: SPEZIATO, TABACCATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: SPEZIATO, TABACCATO. Note di fondo: SPEZIATO, TABACCATO. Dettagli ed evoluzione: Fragranza ottenuta dall’incontro di accordi contrastanti: frizzante e speziata la testa con accenti agrumati di pompelmo e pepe rosa; deciso e avvolgente il cuore con foglie di tabacco addolcite dall’ambra e dal balsamo del Perù; legnoso e deciso il fondo, con vetiver e un elegante accordo suade. TESTA: Pompelmo Rosa, Elemi, Pepe Rosa CUORE: Tabacc"
   },
   {
     "id": "wc_9702",
@@ -10717,7 +10533,7 @@
     "sku": "",
     "price": 140.0,
     "currency": "EUR",
-    "in_stock": false,
+    "in_stock": true,
     "categories": [
       "montale",
       "profumi"
@@ -10840,6 +10656,7 @@
     "in_stock": true,
     "categories": [
       "al-jazeera-perfumes",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -11137,69 +10954,6 @@
     "semantic_text": "Profumo VANESIA EDP 100ML di Epico Profumi. Famiglie olfattive e sfumature: LEGNOSO, MUSCHIATO, TALCATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: LEGNOSO, MUSCHIATO, TALCATO. Note di fondo: LEGNOSO, MUSCHIATO, TALCATO. Dettagli ed evoluzione: …La bellezza è gradita agli occhi, ma il profumo affascina l’anima… E’ davvero frivolo e insulso, predendersi cura di se stessi? Mettere in luce, le proprie qualita’ fisiche, intellettuali o morali, talvolta ci fa’ apparire vanitosi e frivoli, e fa’ apparire sbagliato tutto questo, quando non e’ così. Per Epico’ la vanità e’ come fosse un opera di"
   },
   {
-    "id": "wc_9521",
-    "woocommerce_product_id": 9521,
-    "name": "DESERT DREAM 1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 110.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "AMBRATO",
-      "GOURMAND",
-      "ORIENTALE"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Datteri",
-        "Zucchero a velo",
-        "Cannella",
-        "Note di cuore : eliotropo",
-        "Benzoino",
-        "Legno di sandalo",
-        "Elemi note di fondo : ambra grigia",
-        "Patchouli",
-        "Sandalo",
-        "Vaniglia",
-        "Legno di cedro",
-        "Muschio"
-      ],
-      "heart": [
-        "Eliotropo",
-        "Benzoino",
-        "Legno di sandalo",
-        "Elemi note di fondo : ambra grigia",
-        "Patchouli",
-        "Sandalo",
-        "Vaniglia",
-        "Legno di cedro",
-        "Muschio"
-      ],
-      "base": [
-        "Ambra grigia",
-        "Patchouli",
-        "Sandalo",
-        "Vaniglia",
-        "Legno di cedro",
-        "Muschio"
-      ]
-    },
-    "description": "L’ambra in bottiglia come non l’hai mai sentita, in una veste abbinata allo zucchero a velo. Desert Dream nota orientale, calda e zuccherina. L’ambra grigia è proposta in questa fragranza con una veste golosa e raffinata. La sfaccettatura è gourmand data dalla dolcezza dei datteri, dello zucchero a velo e della cannella. L’eliotropo crea armonia e ricorda arie vanigliate, ciliegie e dolci artigianali. Nella coda si mettono in evidenza, l’ambra grigia, la vaniglia, il legno di cedro e il muschio, con un tocco frizzante e inaspettato di elemi. Un inno alla preziosità della sabbia del deserto, “Oro d’Oriente”. NOTE DI TESTA : Datteri, Zucchero a velo, Cannella, NOTE DI CUORE : Eliotropo, Benzoino, Legno di sandalo, Elemi NOTE DI FONDO : Ambra grigia, Patchouli, Sandalo, Vaniglia, Legno di cedro, Muschio",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/desert-dream-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=9521",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/10/desert-dream-epico.jpg"
-    },
-    "semantic_text": "Profumo DESERT DREAM 1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: AMBRATO, GOURMAND, ORIENTALE. Note di testa: Datteri, Zucchero a velo, Cannella, Note di cuore : eliotropo, Benzoino, Legno di sandalo, Elemi note di fondo : ambra grigia, Patchouli, Sandalo, Vaniglia, Legno di cedro, Muschio. Note di cuore: Eliotropo, Benzoino, Legno di sandalo, Elemi note di fondo : ambra grigia, Patchouli, Sandalo, Vaniglia, Legno di cedro, Muschio. Note di fondo: Ambra grigia, Patchouli, Sandalo, Vaniglia, Legno di cedro, Muschio. Dettagli ed evoluzione: L’ambra in bottiglia come non l’hai mai sentita, in una veste abbinata allo zucchero a velo. Desert Dream nota orientale, calda e zuccherina. L’ambra grigia è proposta in questa fragranza con una veste golosa e raffinata. La sfaccettatura è gourmand data dalla dolcezza dei datteri, dello zucchero a velo e della cannella. L’eliotropo crea armonia e"
-  },
-  {
     "id": "wc_9510",
     "woocommerce_product_id": 9510,
     "name": "LUNATIQUE 100ML",
@@ -11347,7 +11101,7 @@
     "sku": "",
     "price": 150.0,
     "currency": "EUR",
-    "in_stock": false,
+    "in_stock": true,
     "categories": [
       "profumi",
       "simone-andreoli"
@@ -12350,66 +12104,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/07/sea-my-love-SHL.png"
     },
     "semantic_text": "Profumo SEA MY LOVE 50ML di Stephane Humbert Lucas. Famiglie olfattive e sfumature: CUOIATO, MARINO, MUSCHIATO. Note di testa: Mandarino, Sale note di cuore: cuoio, Gelsomino, Note marine note di fondo: ambra, Muschio, Patchouli, Benzoino. Note di cuore: Cuoio, Gelsomino, Note marine note di fondo: ambra, Muschio, Patchouli, Benzoino. Note di fondo: Ambra, Muschio, Patchouli, Benzoino. Dettagli ed evoluzione: Sea My Love trae ispirazione dalle misteriose profondità e dagli insondabili segreti dell’oceano, rivelando la leggenda del Serpente Marino, creatura affascinante e custode del grande abisso. Nei fondali marini profondi dove la luce del sole si perde, le sue squame brillano di un bagliore etereo, riflettendo i segreti millenari che neppure le onde"
-  },
-  {
-    "id": "wc_9101",
-    "woocommerce_product_id": 9101,
-    "name": "PEAR &amp; ORCHID  1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FIORITO",
-      "FRUTTATO",
-      "MARINO"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Pera",
-        "Neroli",
-        "Note acquatiche",
-        "Arancia note di cuore : orchidea",
-        "Fiori bianchi",
-        "Palissandro",
-        "Vaniglia note di fondo : note ambrate",
-        "Muschio bianco tutte le fragranze di epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa",
-        "Tende",
-        "Tappeti",
-        "Divano e all’interno degli armadi per profumare tutti i tessuti"
-      ],
-      "heart": [
-        "Orchidea",
-        "Fiori bianchi",
-        "Palissandro",
-        "Vaniglia note di fondo : note ambrate",
-        "Muschio bianco tutte le fragranze di epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa",
-        "Tende",
-        "Tappeti",
-        "Divano e all’interno degli armadi per profumare tutti i tessuti"
-      ],
-      "base": [
-        "Note ambrate",
-        "Muschio bianco tutte le fragranze di epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa",
-        "Tende",
-        "Tappeti",
-        "Divano e all’interno degli armadi per profumare tutti i tessuti"
-      ]
-    },
-    "description": "Una pera squisita, un succo di frutta denso e cremoso. Pera e Orchidea, un connubio semplicemente irresistibile. Un odore che ti stupisce per la sua dolcezza pacata , per la sua cremosità. Note di testa : Pera , Neroli, Note acquatiche , arancia Note di cuore : Orchidea, Fiori bianchi , palissandro , vaniglia Note di fondo : Note ambrate, muschio bianco Tutte le fragranze di Epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, tende, tappeti, divano e all’interno degli armadi per profumare tutti i tessuti. Ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo; il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Grazie all’elevata concentrazione di oli essenziali che caratterizza tutti i profumi della linea, la persistenza è estrema negli ambienti. Le note rimangono a lungo poiché i profumi sono iper concentrati e corposi.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/pear-orchid-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=9101",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/07/epico-pear-orchid-ambience-spray-opt.jpg"
-    },
-    "semantic_text": "Profumo PEAR &amp; ORCHID  1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FIORITO, FRUTTATO, MARINO. Note di testa: Pera, Neroli, Note acquatiche, Arancia note di cuore : orchidea, Fiori bianchi, Palissandro, Vaniglia note di fondo : note ambrate, Muschio bianco tutte le fragranze di epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, Tende, Tappeti, Divano e all’interno degli armadi per profumare tutti i tessuti. Note di cuore: Orchidea, Fiori bianchi, Palissandro, Vaniglia note di fondo : note ambrate, Muschio bianco tutte le fragranze di epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, Tende, Tappeti, Divano e all’interno degli armadi per profumare tutti i tessuti. Note di fondo: Note ambrate, Muschio bianco tutte le fragranze di epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, Tende, Tappeti, Divano e all’interno degli armadi per profumare tutti i tessuti. Dettagli ed evoluzione: Una pera squisita, un succo di frutta denso e cremoso. Pera e Orchidea, un connubio semplicemente irresistibile. Un odore che ti stupisce per la sua dolcezza pacata , per la sua cremosità. Note di testa : Pera , Neroli, Note acquatiche , arancia Note di cuore : Orchidea, Fiori bianchi , palissandro , vaniglia Note di fondo : Note ambrate, muschio b"
   },
   {
     "id": "wc_8951",
@@ -14288,212 +13982,6 @@
     "semantic_text": "Profumo BEAST LOVE  100ML di Montale. Famiglie olfattive e sfumature: AMBRATO, LEGNOSO, PROFUMI MONTALE UNISEX, VANIGLIATO. Note di testa: Succo di pera, Prugna dolce, Bergamotto di sicilia note di cuore: pelle nera, Cedro bianco, Rosa turca, Vetiver di haiti note di fondo: baccelli di vaniglia, Fave di tonka brasiliane, Muschio puro, Ambra secca. Note di cuore: Pelle nera, Cedro bianco, Rosa turca, Vetiver di haiti note di fondo: baccelli di vaniglia, Fave di tonka brasiliane, Muschio puro, Ambra secca. Note di fondo: Baccelli di vaniglia, Fave di tonka brasiliane, Muschio puro, Ambra secca. Dettagli ed evoluzione: In questa fragranza unisex, i petali di rosa sprigionano il loro profumo inebriante, mentre la pelle diventa la nota di cuore, rivelatrice di un’alchimia sensuale unica evocando un’aura di potere e fascino. In questa narrazione profumata, passione e raffinatezza si intrecciano in un abbraccio incantevole. Lasciati inebriare dai sentori deliziosamen"
   },
   {
-    "id": "wc_8322",
-    "woocommerce_product_id": 8322,
-    "name": "PATCHOULY SPRAY AMBIENTE 200ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 85.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "FIORITO",
-      "INCENSATO",
-      "SPEZIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FIORITO",
-        "INCENSATO",
-        "SPEZIATO"
-      ],
-      "base": []
-    },
-    "description": "Patchouly Angoli remoti del mio inconscio scalpitano, faccio fatica a frenare le emozioni che mi assalgono come ricordi di piaceri antichi… I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. Tenere il prodotto lontano dalla portata di animali domestici. Usare il prodotto con cautela se sensibili all’uso di profumo. Vaporizzare lontano da superfici delicate. Areare il locale dopo l’uso. IN CASO DI CONTATTO CON GLI OCCHI : sciacquare abbondantemente",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/8322/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8322",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/profumum-spray-ambiente-patchouly.jpeg"
-    },
-    "semantic_text": "Profumo PATCHOULY SPRAY AMBIENTE 200ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: FIORITO, INCENSATO, SPEZIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FIORITO, INCENSATO, SPEZIATO. Note di fondo: FIORITO, INCENSATO, SPEZIATO. Dettagli ed evoluzione: Patchouly Angoli remoti del mio inconscio scalpitano, faccio fatica a frenare le emozioni che mi assalgono come ricordi di piaceri antichi… I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. T"
-  },
-  {
-    "id": "wc_8320",
-    "woocommerce_product_id": 8320,
-    "name": "ACQUA VIVA SPRAY AMBIENTE 200ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 85.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AGRUMATO"
-      ],
-      "base": []
-    },
-    "description": "Acqua Viva Lo sciabordio di una vela che fa rotta verso le isole Eolie. L’attesa del maestrale sotto un tendalino bevendo un sorbetto al limone, attorno a noi l’odore ed il colore del Mediterraneo. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. Tenere il prodotto lontano dalla portata di animali domestici. Usare il prodotto con cautela se sensibili all’uso di profumo. Vaporizzare lontano da superfici delicate. Areare il locale dopo l’uso. IN CASO DI CONTATTO CON GLI OCCHI : sciacquare abbondantemente",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/acqua-viva-spray-ambiente-200ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8320",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/profumum-spray-ambiente-acqua-viva.jpeg"
-    },
-    "semantic_text": "Profumo ACQUA VIVA SPRAY AMBIENTE 200ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: AGRUMATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO. Note di fondo: AGRUMATO. Dettagli ed evoluzione: Acqua Viva Lo sciabordio di una vela che fa rotta verso le isole Eolie. L’attesa del maestrale sotto un tendalino bevendo un sorbetto al limone, attorno a noi l’odore ed il colore del Mediterraneo. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’"
-  },
-  {
-    "id": "wc_8318",
-    "woocommerce_product_id": 8318,
-    "name": "SOAVISSIMA SPRAY AMBIENTE 200ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 85.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "AMBRATO",
-      "FIORITO",
-      "TALCATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AMBRATO",
-        "FIORITO",
-        "TALCATO"
-      ],
-      "base": []
-    },
-    "description": "Soavissima Che fosse passata di là risultava chiaro. La sua sottana aveva lasciato segnali inconfondibili, scie intense di profumo che accendevano immensi fuochi. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. Tenere il prodotto lontano dalla portata di animali domestici. Usare il prodotto con cautela se sensibili all’uso di profumo. Vaporizzare lontano da superfici delicate. Areare il locale dopo l’uso. IN CASO DI CONTATTO CON GLI OCCHI : sciacquare abbondantemente",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/soavissima-spray-ambiente-200ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8318",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/profumum-spray-ambiente-soavissima.jpeg"
-    },
-    "semantic_text": "Profumo SOAVISSIMA SPRAY AMBIENTE 200ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: AMBRATO, FIORITO, TALCATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AMBRATO, FIORITO, TALCATO. Note di fondo: AMBRATO, FIORITO, TALCATO. Dettagli ed evoluzione: Soavissima Che fosse passata di là risultava chiaro. La sua sottana aveva lasciato segnali inconfondibili, scie intense di profumo che accendevano immensi fuochi. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calo"
-  },
-  {
-    "id": "wc_8316",
-    "woocommerce_product_id": 8316,
-    "name": "VANITAS SPRAY AMBIENTE 200ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 85.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "Vanitas La sua presenza è evidente a tutti ed il suo odore si diffonde mescolandosi con i colori di un acceso tramonto. Tutti sono languidamente attratti da lei. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. Tenere il prodotto lontano dalla portata di animali domestici. Usare il prodotto con cautela se sensibili all’uso di profumo. Vaporizzare lontano da superfici delicate. Areare il locale dopo l’uso. IN CASO DI CONTATTO CON GLI OCCHI : sciacquare abbondantemente",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/vanitas-spray-ambiente-200ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8316",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/profumum-spray-ambiente-vanitas.jpeg"
-    },
-    "semantic_text": "Profumo VANITAS SPRAY AMBIENTE 200ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: VANIGLIATO. Note di fondo: VANIGLIATO. Dettagli ed evoluzione: Vanitas La sua presenza è evidente a tutti ed il suo odore si diffonde mescolandosi con i colori di un acceso tramonto. Tutti sono languidamente attratti da lei. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calor"
-  },
-  {
-    "id": "wc_8314",
-    "woocommerce_product_id": 8314,
-    "name": "ROSAE ANTICA SPRAY AMBIENTE 200ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 85.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "FIORITO",
-      "SPEZIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FIORITO",
-        "SPEZIATO"
-      ],
-      "base": []
-    },
-    "description": "Rosae Antica Sorpreso è il mio cuore la mente colma di stupor. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. Tenere il prodotto lontano dalla portata di animali domestici. Usare il prodotto con cautela se sensibili all’uso di profumo. Vaporizzare lontano da superfici delicate. Areare il locale dopo l’uso. IN CASO DI CONTATTO CON GLI OCCHI : sciacquare abbondantemente",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/rosae-antica-spray-ambiente-200ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8314",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/profumum-spray-ambiente-rosae-antica.jpeg"
-    },
-    "semantic_text": "Profumo ROSAE ANTICA SPRAY AMBIENTE 200ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: FIORITO, SPEZIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FIORITO, SPEZIATO. Note di fondo: FIORITO, SPEZIATO. Dettagli ed evoluzione: Rosae Antica Sorpreso è il mio cuore la mente colma di stupor. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. Tenere il prodotto lontano dalla portata di animali domestici. Usare il prodot"
-  },
-  {
-    "id": "wc_8312",
-    "woocommerce_product_id": 8312,
-    "name": "ACQUA DI SALE SPRAY AMBIENTE 200ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 85.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "LEGNOSO",
-      "MARINO",
-      "MEDITERRANEO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "LEGNOSO",
-        "MARINO",
-        "MEDITERRANEO"
-      ],
-      "base": []
-    },
-    "description": "Acqua Di Sale Le onde del mare che s’infrangono a riva regalano nuove conchiglie dalle mille forme e colori alla sabbia che luccica al sole mattutino d’agosto. Nella spiaggia deserta volteggiano spensieratezza e libertà. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. PRECAUZIONI PER L’USO Tenere lontano da fonti di calore e superfici calde. Tenere il prodotto lontano dalla portata di animali domestici. Usare il prodotto con cautela se sensibili all’uso di profumo. Vaporizzare lontano da superfici delicate. Areare il locale dopo l’uso. IN CASO DI CONTATTO CON GLI OCCHI : sciacquare abbondantemente",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/acqua-di-sale-spray-ambiente-200ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8312",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/profumum-spray-ambiente-acqua-di-sale.jpeg"
-    },
-    "semantic_text": "Profumo ACQUA DI SALE SPRAY AMBIENTE 200ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: LEGNOSO, MARINO, MEDITERRANEO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: LEGNOSO, MARINO, MEDITERRANEO. Note di fondo: LEGNOSO, MARINO, MEDITERRANEO. Dettagli ed evoluzione: Acqua Di Sale Le onde del mare che s’infrangono a riva regalano nuove conchiglie dalle mille forme e colori alla sabbia che luccica al sole mattutino d’agosto. Nella spiaggia deserta volteggiano spensieratezza e libertà. I nostri spray ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il nego"
-  },
-  {
     "id": "wc_8306",
     "woocommerce_product_id": 8306,
     "name": "PROFUMUM ROMA DISCOVERY KIT UFFICIALE 2, COLLEZIONE 5 X 10ML",
@@ -14825,62 +14313,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/Intense-Red-Tobacco-60-ml.png"
     },
     "semantic_text": "Profumo INTENSE RED TOBACCO 60ML di Mancera. Famiglie olfattive e sfumature: FUMOSO, LEGNOSO, SPEZIATO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FUMOSO, LEGNOSO, SPEZIATO, VANIGLIATO. Note di fondo: FUMOSO, LEGNOSO, SPEZIATO, VANIGLIATO. Dettagli ed evoluzione: Estratto dal profumo di tabacco rosso intenso di Mancera Parfums. È stata preparata una fragranza intensa, irresistibile, unendo Vaniglia del Madagascar, Cuoio e l’aroma intenso del Tabacco per un contrasto senza pari. Questa fragranza abbaglia con le sue spezie scintillanti, lo zafferano e il legno di agar, e ti porta a nuove vette nel mondo degli"
-  },
-  {
-    "id": "wc_8234",
-    "woocommerce_product_id": 8234,
-    "name": "TUBEROSA 1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FIORITO",
-      "MUSCHIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Bergamotto",
-        "Zafferano note di cuore : tuberosa",
-        "Gardenia",
-        "Fiori d’acacia",
-        "Rosa",
-        "Ylang ylang note di fondo : incenso",
-        "Suede bianco",
-        "Musk ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "heart": [
-        "Tuberosa",
-        "Gardenia",
-        "Fiori d’acacia",
-        "Rosa",
-        "Ylang ylang note di fondo : incenso",
-        "Suede bianco",
-        "Musk ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "base": [
-        "Incenso",
-        "Suede bianco",
-        "Musk ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ]
-    },
-    "description": "Hai detto Tuberosa ? La Tuberosa è un fiore inebriante e fiorito per eccellenza, elegante, suadente e di grande impatto olfattivo. NOTE DI TESTA : Bergamotto, Zafferano NOTE DI CUORE : Tuberosa, Gardenia, Fiori d’acacia, Rosa, Ylang Ylang NOTE DI FONDO : Incenso, Suede bianco, Musk Ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo; il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Tutte le fragranze di Epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, tende, tappeti, divano e all’interno degli armadi per profumare tutti i tessuti. Grazie all’elevata concentrazione di oli essenziali che caratterizza tutti i profumi della linea, la persistenza è estrema negli ambienti. Le note rimangono a lungo poiché i profumi sono iper concentrati e corposi.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/tuberosa-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8234",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/03/tuberosa-epico.jpg"
-    },
-    "semantic_text": "Profumo TUBEROSA 1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FIORITO, MUSCHIATO. Note di testa: Bergamotto, Zafferano note di cuore : tuberosa, Gardenia, Fiori d’acacia, Rosa, Ylang ylang note di fondo : incenso, Suede bianco, Musk ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di cuore: Tuberosa, Gardenia, Fiori d’acacia, Rosa, Ylang ylang note di fondo : incenso, Suede bianco, Musk ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di fondo: Incenso, Suede bianco, Musk ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Dettagli ed evoluzione: Hai detto Tuberosa ? La Tuberosa è un fiore inebriante e fiorito per eccellenza, elegante, suadente e di grande impatto olfattivo. NOTE DI TESTA : Bergamotto, Zafferano NOTE DI CUORE : Tuberosa, Gardenia, Fiori d’acacia, Rosa, Ylang Ylang NOTE DI FONDO : Incenso, Suede bianco, Musk Ogni bottiglia è un 1000 ml con un vaporizzatore di altissima quali"
   },
   {
     "id": "wc_8231",
@@ -15221,285 +14653,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/02/anfas-salam-edp.webp"
     },
     "semantic_text": "Profumo SALAM  75ML di Anfas. Famiglie olfattive e sfumature: FIORITO, FRUTTATO, MUSCHIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FIORITO, FRUTTATO, MUSCHIATO. Note di fondo: FIORITO, FRUTTATO, MUSCHIATO. Dettagli ed evoluzione: SALAM è una fragranza che descrive il momento in cui due persone si riconoscono istantaneamente a prima vista. L’energia vibrante dei primi momenti è seguita dalla calma, dalla pace profonda e dalla gioia tranquilla di due anime che si sono incontrate. Nel calore di un bel giorno di sole, due persone camminano nella stessa strada, provenendo da dir"
-  },
-  {
-    "id": "wc_8071",
-    "woocommerce_product_id": 8071,
-    "name": "ENGLISH CLUB 1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO",
-      "TABACCATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Bergamotto",
-        "Cannella note di cuore : foglie di tabacco note di fondo : patchouli",
-        "Fava tonka",
-        "Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "heart": [
-        "Foglie di tabacco note di fondo : patchouli",
-        "Fava tonka",
-        "Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "base": [
-        "Patchouli",
-        "Fava tonka",
-        "Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ]
-    },
-    "description": "W L’INGHILTERRA, English Club sorprende per le sue note cremose e soffici abbinate alle foglie di tabacco che invece sono intense e secche. La cremosità della vaniglia e della fava tonka avvolge le note verdi delle foglie di tabacco, accompagnate dalla freschezza del bergamotto. NOTE DI TESTA : Bergamotto, Cannella NOTE DI CUORE : Foglie di tabacco NOTE DI FONDO : Patchouli, Fava tonka, Vaniglia Ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo; il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Tutte le fragranze di Epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, tende, tappeti, divano e all’interno degli armadi per profumare tutti i tessuti. Grazie all’elevata concentrazione di oli essenziali che caratterizza tutti i profumi della linea, la persistenza è estrema negli ambienti. Le note rimangono a lungo poiché i profumi sono iper concentrati e corposi.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/english-club-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8071",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/02/ENGLISH-CLUB.jpg"
-    },
-    "semantic_text": "Profumo ENGLISH CLUB 1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: AGRUMATO, TABACCATO, VANIGLIATO. Note di testa: Bergamotto, Cannella note di cuore : foglie di tabacco note di fondo : patchouli, Fava tonka, Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di cuore: Foglie di tabacco note di fondo : patchouli, Fava tonka, Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di fondo: Patchouli, Fava tonka, Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Dettagli ed evoluzione: W L’INGHILTERRA, English Club sorprende per le sue note cremose e soffici abbinate alle foglie di tabacco che invece sono intense e secche. La cremosità della vaniglia e della fava tonka avvolge le note verdi delle foglie di tabacco, accompagnate dalla freschezza del bergamotto. NOTE DI TESTA : Bergamotto, Cannella NOTE DI CUORE : Foglie di tabacco"
-  },
-  {
-    "id": "wc_8069",
-    "woocommerce_product_id": 8069,
-    "name": "CHERRY &amp; CASHMERE WOOD 1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FRUTTATO",
-      "MUSCHIATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Pera",
-        "Bergamotto",
-        "Ciliegia note di cuore : eliotropio",
-        "Mandorla",
-        "Caramello note di fondo : legno di patchouli",
-        "Cashmere wood",
-        "Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "heart": [
-        "Eliotropio",
-        "Mandorla",
-        "Caramello note di fondo : legno di patchouli",
-        "Cashmere wood",
-        "Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "base": [
-        "Legno di patchouli",
-        "Cashmere wood",
-        "Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ]
-    },
-    "description": "L’incontro tra Cherry & Cashmere Wood genera una nota fruttata zuccherina, dal sentore morbido e dolce. Succosa come la ciliegia sa essere abbinata al cashmere che crea una nota elegante e senza tempo. NOTE DI TESTA : Pera, Bergamotto, Ciliegia NOTE DI CUORE : Eliotropio, Mandorla, Caramello NOTE DI FONDO : Legno di patchouli, Cashmere Wood, Vaniglia Ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo; il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Tutte le fragranze di Epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, tende, tappeti, divano e all’interno degli armadi per profumare tutti i tessuti. Grazie all’elevata concentrazione di oli essenziali che caratterizza tutti",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/cherry-cashmere-wood-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8069",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/02/cherry-cashmere.jpg"
-    },
-    "semantic_text": "Profumo CHERRY &amp; CASHMERE WOOD 1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FRUTTATO, MUSCHIATO, VANIGLIATO. Note di testa: Pera, Bergamotto, Ciliegia note di cuore : eliotropio, Mandorla, Caramello note di fondo : legno di patchouli, Cashmere wood, Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di cuore: Eliotropio, Mandorla, Caramello note di fondo : legno di patchouli, Cashmere wood, Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di fondo: Legno di patchouli, Cashmere wood, Vaniglia ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Dettagli ed evoluzione: L’incontro tra Cherry & Cashmere Wood genera una nota fruttata zuccherina, dal sentore morbido e dolce. Succosa come la ciliegia sa essere abbinata al cashmere che crea una nota elegante e senza tempo. NOTE DI TESTA : Pera, Bergamotto, Ciliegia NOTE DI CUORE : Eliotropio, Mandorla, Caramello NOTE DI FONDO : Legno di patchouli, Cashmere Wood, Vanigl"
-  },
-  {
-    "id": "wc_8067",
-    "woocommerce_product_id": 8067,
-    "name": "PANTELLERIA FYCUS 1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FRUTTATO",
-      "LEGNOSO"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Cassis",
-        "Foglie di fico note di cuore : polpa di fico note di fondo : legni ambrati ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzzo ala fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "heart": [
-        "Polpa di fico note di fondo : legni ambrati ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzzo ala fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "base": [
-        "Legni ambrati ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzzo ala fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ]
-    },
-    "description": "Pantelleria isola indimenticabile, la più chic tra le isole, la più ricercata ed esclusiva come queste note profumate. Pantelleria Fycus è un profumo al fico realmente di nicchia, un profumo non verde ma lattescente. Questa nota lattea è conferita da un accenno di cocco. Non è una nota estiva, è un modo di essere, è un immagine e una sensazione che vogliamo dare alla nostra casa. Premiato nel 2019 al Pitti come miglior fragranza al fico per l’ambiente. Fico polposo e toni fruttati di cassis si vestono della profondità dei legni ambrati. NOTE DI TESTA : Cassis, Foglie di fico NOTE DI CUORE : Polpa di fico NOTE DI FONDO : Legni ambrati Ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, il loro spray di ultima generazione spruzzo ala fragranza con particelle piccolissime che rimangono nell’aria per ore . Tutte le fragranze di Epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, tende, tappeti, divano e all’interno degli armadi per profumare tutti i tessuti. Grazie all’elevata concentrazione di oli essenziali che caratterizza tutti i profumi della linea, la persistenza è estrema negli ambienti. Le note rimangono a lungo poiché i profumi sono iper concentrati e corposi.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/pantelleria-fycus-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8067",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/02/PANTELLERIA.jpg"
-    },
-    "semantic_text": "Profumo PANTELLERIA FYCUS 1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FRUTTATO, LEGNOSO. Note di testa: Cassis, Foglie di fico note di cuore : polpa di fico note di fondo : legni ambrati ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzzo ala fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di cuore: Polpa di fico note di fondo : legni ambrati ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzzo ala fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di fondo: Legni ambrati ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzzo ala fragranza con particelle piccolissime che rimangono nell’aria per ore. Dettagli ed evoluzione: Pantelleria isola indimenticabile, la più chic tra le isole, la più ricercata ed esclusiva come queste note profumate. Pantelleria Fycus è un profumo al fico realmente di nicchia, un profumo non verde ma lattescente. Questa nota lattea è conferita da un accenno di cocco. Non è una nota estiva, è un modo di essere, è un immagine e una sensazione che"
-  },
-  {
-    "id": "wc_8065",
-    "woocommerce_product_id": 8065,
-    "name": "RED BASIL &amp; MANDARIN 1000ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO",
-      "FRUTTATO",
-      "VERDE"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Bergamotto",
-        "Bucchu (accordo menta",
-        "Tè)",
-        "Elemi",
-        "Limone",
-        "Mandarino",
-        "Petitgrain note di cuore : anice",
-        "Basilico",
-        "Galbano",
-        "Garofano",
-        "Geranio note di fondo : ambra",
-        "Muschio",
-        "Sandalo ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "heart": [
-        "Anice",
-        "Basilico",
-        "Galbano",
-        "Garofano",
-        "Geranio note di fondo : ambra",
-        "Muschio",
-        "Sandalo ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ],
-      "base": [
-        "Ambra",
-        "Muschio",
-        "Sandalo ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo",
-        "Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore"
-      ]
-    },
-    "description": "L’energia degli agrumi si fondono nel verde basilico tra note di the e menta. Il mandarino incontra l’accordo aromatico tra il basilico rosso ed il bucchu creando un’aroma inconfondibile e caratteristico. Il tutto unito alle note di thè e menta per un’esplozione fragrante ed energica. Red Basil & Mandarin apre le porte alla freschezza e alla pace estiva, all’ozio sotto un albero annusando gli aromi intorno a noi. NOTE DI TESTA : Bergamotto, Bucchu (accordo menta-tè), Elemi, Limone, Mandarino, Petitgrain NOTE DI CUORE : Anice, Basilico, Galbano, Garofano, Geranio NOTE DI FONDO : Ambra, Muschio, Sandalo Ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo; il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Tutte le fragranze di Epicò possono essere vaporizzate sia nell’ambiente che nei tessuti di casa, tende, tappeti, divano e all’interno degli armadi per profumare tutti i tessuti. Grazie all’elevata concentrazione di oli essenziali che caratterizza tutti i profumi della linea, la persistenza è estrema negli ambienti. Le note rimangono a lungo poiché i profumi sono iper concentrati e corposi.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/red-basil-mandarin-1000ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8065",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/02/red-basil.jpg"
-    },
-    "semantic_text": "Profumo RED BASIL &amp; MANDARIN 1000ML di Epico Home Fragrances. Famiglie olfattive e sfumature: AGRUMATO, FRUTTATO, VERDE. Note di testa: Bergamotto, Bucchu (accordo menta, Tè), Elemi, Limone, Mandarino, Petitgrain note di cuore : anice, Basilico, Galbano, Garofano, Geranio note di fondo : ambra, Muschio, Sandalo ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di cuore: Anice, Basilico, Galbano, Garofano, Geranio note di fondo : ambra, Muschio, Sandalo ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Note di fondo: Ambra, Muschio, Sandalo ogni bottiglia è un 1000 ml con un vaporizzatore di altissima qualità che vaporizza 1 ml ad ogni spruzzo, Il loro spray di ultima generazione spruzza la fragranza con particelle piccolissime che rimangono nell’aria per ore. Dettagli ed evoluzione: L’energia degli agrumi si fondono nel verde basilico tra note di the e menta. Il mandarino incontra l’accordo aromatico tra il basilico rosso ed il bucchu creando un’aroma inconfondibile e caratteristico. Il tutto unito alle note di thè e menta per un’esplozione fragrante ed energica. Red Basil & Mandarin apre le porte alla freschezza e alla pace e"
-  },
-  {
-    "id": "wc_8048",
-    "woocommerce_product_id": 8048,
-    "name": "MIDNIGHT HOME FRAGRANCE 250ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 94.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FIORITO",
-      "FRUTTATO",
-      "GOURMAND"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FIORITO",
-        "FRUTTATO",
-        "GOURMAND"
-      ],
-      "base": []
-    },
-    "description": "Come il profumo di una notte d’Estate al chiaror di luna, per un sogno infinito. Ore 3 e 24, non riesco a dormire. Un idea mi si è infilata in testa, sono fatto cosi. Mi alzo, mi cambio e volo in laboratorio. Mentre guido, visualizzo quello che ho in testa Arrivo in lab, accendo gli strumenti, lavo il beker sporco dalla sera prima, prendo il blocco degli appunti, mi giro verso le mensole sui cui poggio le materie prime, e prendo il musk plus. Ho bisogno di dargli una buona base…0,3 di vanillina, 0,5 Neroli, un goccio di assoluta di rosa, non e può mancare l’odore della matita, cedarwood… e scrivo il profumo della notte. La notte per me è speciale per la sua luce, è una seconda vita. Aspetto la notte per sognare, sento il suo profumo e sono vivo. Testa: Mandarino, Bergamotto, Bacche di pepe rosa, Confetti di zucchero, Gelatina di albicocca, Neroli, Foglie di violetta Cuore: Peonia, Rosa, Latte di Iris, Vaniglia Fondo: Vaniglia, Legno di cedro, Musk Fragranza in spray per tessuti e ambienti.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/midnight-home-fragrance-250ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8048",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/02/MIDNIGHT-SCATOLA.webp"
-    },
-    "semantic_text": "Profumo MIDNIGHT HOME FRAGRANCE 250ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FIORITO, FRUTTATO, GOURMAND. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FIORITO, FRUTTATO, GOURMAND. Note di fondo: FIORITO, FRUTTATO, GOURMAND. Dettagli ed evoluzione: Come il profumo di una notte d’Estate al chiaror di luna, per un sogno infinito. Ore 3 e 24, non riesco a dormire. Un idea mi si è infilata in testa, sono fatto cosi. Mi alzo, mi cambio e volo in laboratorio. Mentre guido, visualizzo quello che ho in testa Arrivo in lab, accendo gli strumenti, lavo il beker sporco dalla sera prima, prendo il blocco"
-  },
-  {
-    "id": "wc_8045",
-    "woocommerce_product_id": 8045,
-    "name": "MON AMOUR FRAGRANCE 250ML",
-    "brand": "Epico Home Fragrances",
-    "sku": "",
-    "price": 109.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "epico-home-fragrances",
-      "epico-profumi-edp",
-      "profumi",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "FRUTTATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FRUTTATO",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "La parola Buongiorno si trasforma in Amore. MON AMOUR è un profumo per la persona, per ambienti e per tessuti! Mon Amour di Epicò è l’espressione più elementare ma più tenera che esista, un saluto, un risveglio colmo di affetto. È quando si manifesta un sentimento così vasto, che ci si rende conto che dietro a momenti e gesti all’apparenza semplici si cela la vera essenza dell’esistenza. È quel momento in cui apri la porta del mobile della tua cucina e all’improvviso percepisci il suo profumo. È imprevedibile, il momento di un atto comune, che si fa così potente da accendere il cuore. Quel profumo ti riporta a quel bigliettino scritto a mano sul tovagliolo che aveva lasciato accanto al vasetto di miele dolce, con il tappo appiccicoso e il legnetto invecchiato, prima di recarsi al lavoro. Il cesto di frutta al centro del tavolo; ciliegie, arance e quella dolce pera bianca che emergeva su tutto! Da vaporizzare come una nuvola infinita nei tuoi ambienti , sui vestiti , nei capelli, sui tessuti della casa. Testa: Miele, Pera bianca , Arancia amara Cuore: Jatamansi, Ciliegia, Tuberosa Fondo: Assoluta di vaniglia, Fava tonta, Amberwood Formato: 250 ml",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/mon-amour-home-fragrance-250ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=8045",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2024/02/epico-mon-amour-250ml-opt.jpg"
-    },
-    "semantic_text": "Profumo MON AMOUR FRAGRANCE 250ML di Epico Home Fragrances. Famiglie olfattive e sfumature: FRUTTATO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FRUTTATO, VANIGLIATO. Note di fondo: FRUTTATO, VANIGLIATO. Dettagli ed evoluzione: La parola Buongiorno si trasforma in Amore. MON AMOUR è un profumo per la persona, per ambienti e per tessuti! Mon Amour di Epicò è l’espressione più elementare ma più tenera che esista, un saluto, un risveglio colmo di affetto. È quando si manifesta un sentimento così vasto, che ci si rende conto che dietro a momenti e gesti all’apparenza semplici"
   },
   {
     "id": "wc_7999",
@@ -16835,7 +15988,6 @@
     "currency": "EUR",
     "in_stock": false,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "profumum-roma"
     ],
@@ -18504,6 +17656,7 @@
     "in_stock": true,
     "categories": [
       "al-jazeera-perfumes",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -19738,7 +18891,6 @@
     "in_stock": true,
     "categories": [
       "kajal-perfumes",
-      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -19971,41 +19123,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2023/05/cannabis-dolce-1.webp"
     },
     "semantic_text": "Profumo CANNABIS DOLCE 50ML di Bois 1920. Famiglie olfattive e sfumature: GOURMAND, SPEZIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: GOURMAND, SPEZIATO. Note di fondo: GOURMAND, SPEZIATO. Dettagli ed evoluzione: BOIS 1920 – Cannabis – Cannabis Dolce 50ml. Per chi ama le emozioni dolci e gourmand senza rinunciare al singolare tocco della Cannabis. Note di Cacao, Pepe Nero e Vaniglia contribuiscono a dare carattere e armonia a questa inconfondibile composizione. Testa Bigarade, Fave di Cacao, Pimento Cuore Cannabis, Iris, Cardamomo, Pepe Nero Fondo Bacche di"
-  },
-  {
-    "id": "wc_6137",
-    "woocommerce_product_id": 6137,
-    "name": "TABACCO 1815 SPRAY 100ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 35.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "promozioni-a-tempo-determinato-relative-ad-ultimi-pezzi-in-stock-e-in-face-out",
-      "promozioni-esclusive",
-      "profumi-ambiente",
-      "teatro-fragranze"
-    ],
-    "tags": [
-      "TABACCATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "TABACCATO",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "TABACCO 1815 SPRAY AMBIENTI E TESSUTI 100ML Nel 1815 una grossa quantità di tabacco, lasciata essiccare al sole estivo della Manifattura di Firenze, venne sorpresa da un violento acquazzone. Non potendo “gettare in Arno” tutta quella quantità di tabacco, si decise di produrre dei sigari da vendere al popolo di Firenze. Fu subito un grande successo: l’acqua, infatti, fece fermentare il tabacco dandogli un gusto del tutto nuovo. Tabacco 1815 è il profumo della tradizione che nasce per puro caso e che oggi festeggia più di 200 anni di storia. NOTE DI TESTA Cannella, Chiodi di Garofano NOTE DI CUORE Tabacco Biondo, Vetiver, Noce di Cocco NOTE DI FONDO Bacche di Vaniglia, Ambra",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/tabacco-1815-spray-100ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=6137",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2023/04/tabacco-100-spray.png"
-    },
-    "semantic_text": "Profumo TABACCO 1815 SPRAY 100ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: TABACCATO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: TABACCATO, VANIGLIATO. Note di fondo: TABACCATO, VANIGLIATO. Dettagli ed evoluzione: TABACCO 1815 SPRAY AMBIENTI E TESSUTI 100ML Nel 1815 una grossa quantità di tabacco, lasciata essiccare al sole estivo della Manifattura di Firenze, venne sorpresa da un violento acquazzone. Non potendo “gettare in Arno” tutta quella quantità di tabacco, si decise di produrre dei sigari da vendere al popolo di Firenze. Fu subito un grande successo:"
   },
   {
     "id": "wc_6112",
@@ -21070,6 +20187,7 @@
     "in_stock": true,
     "categories": [
       "lorenzo-pazzaglia",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -22482,6 +21600,7 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
+      "nuovi-eventi",
       "profumi",
       "profumum-roma"
     ],
@@ -22543,73 +21662,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2022/09/oudedition_6037_7425x7425.jpg"
     },
     "semantic_text": "Profumo OUD EDITION 100ML di Montale. Famiglie olfattive e sfumature: FIORITO, INCENSATO, LEGNOSO, PROFUMI MONTALE UNISEX. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FIORITO, INCENSATO, LEGNOSO, PROFUMI MONTALE UNISEX. Note di fondo: FIORITO, INCENSATO, LEGNOSO, PROFUMI MONTALE UNISEX. Dettagli ed evoluzione: Oud Edition MONTALE 100ML Un focus sul primo amore di Pierre Montale, all’origine di tutto: l’oud. Una fragranza senza tempo, ricca di contrasti e allo stesso tempo così armoniosa. Con la sua limpida semplicità, sottolinea la naturale bellezza e ricchezza degli ingredienti distintivi di Montale: rosa, oud, incenso, cuoio, legno di sandalo e un pote"
-  },
-  {
-    "id": "wc_5130",
-    "woocommerce_product_id": 5130,
-    "name": "SOAVISSIMA 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "FIORITO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "FIORITO"
-      ],
-      "base": []
-    },
-    "description": "SOAVISSIMA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Che fosse passata di là risultava chiaro. La sua sottana aveva lasciato segnali inconfondibili , scie intense di profumo che accendevano immensi fuochi. Note olfattive Ambra, Iris, Fiori bianchi",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/soavissima-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=5130",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2022/08/soavissima-ambiente.jpg"
-    },
-    "semantic_text": "Profumo SOAVISSIMA 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: FIORITO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: FIORITO. Note di fondo: FIORITO. Dettagli ed evoluzione: SOAVISSIMA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Che fosse passata di là risultava chiaro. La sua sottana aveva lasciato segnali inconfondibili , scie intense di profumo che accendevano immensi fuochi. Note olfattive Ambra, Iris, Fiori bianchi"
-  },
-  {
-    "id": "wc_5114",
-    "woocommerce_product_id": 5114,
-    "name": "WOODY WOODY SPRAY TESSUTI 100ML",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 30.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "promozioni-esclusive",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "LEGNOSO",
-      "MUSCHIATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "LEGNOSO",
-        "MUSCHIATO",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "KNOSE WOODY WOODY (VANIGLIA E LEGNO DI CEDRO) UN MOMENTO ENERGICO E PIENO DI GIOIA. IL PROFUMO DEL LEGNO, DELLA NATURA E DELL’ESPRESSIONE LIBERA DEI SENTIMENTI. PIRAMIDE OLFATTIVA testa: bergamotto, coriandolo cuore: cisto, fava tonka fondo: legno di cedro, sandalo, ambra, muschio Il profumo per tessuti è un’ottima soluzione per profumare i tessuti: tende, biancheria, lenzuola, cuscini o per completare il proprio profumo personale vaporizzando sugli indumenti. Indicato anche per chi non può (o non gradisce) l’utilizzo di profumi alcolici direttamente sulla pelle. La speciale formula studiata dai nostri laboratori garantisce la massima delicatezza sui tessuti ed un’ottima tenuta della fragranza. La bassissima percentuale alcolica della fragranza non aggredisce e non disidrata le fibre dei tessuti, che vengono invece ammorbidite e rinfrescate già dal primo utilizzo. Il prodotto si presenta nel caratteristico flacone nero, con una pompa erogatrice spray generosa. Si consiglia di vaporizzare in maniera abbondante e ben distribuita sul tessuto, quindi massaggiare il capo per far penetrare il profumo e rimuovere l’umidità.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/woody-woody-spray-tessuti-100ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=5114",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2022/08/spraypertessuti_GIFT.png"
-    },
-    "semantic_text": "Profumo WOODY WOODY SPRAY TESSUTI 100ML di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: LEGNOSO, MUSCHIATO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: LEGNOSO, MUSCHIATO, VANIGLIATO. Note di fondo: LEGNOSO, MUSCHIATO, VANIGLIATO. Dettagli ed evoluzione: KNOSE WOODY WOODY (VANIGLIA E LEGNO DI CEDRO) UN MOMENTO ENERGICO E PIENO DI GIOIA. IL PROFUMO DEL LEGNO, DELLA NATURA E DELL’ESPRESSIONE LIBERA DEI SENTIMENTI. PIRAMIDE OLFATTIVA testa: bergamotto, coriandolo cuore: cisto, fava tonka fondo: legno di cedro, sandalo, ambra, muschio Il profumo per tessuti è un’ottima soluzione per profumare i tessuti"
   },
   {
     "id": "wc_5056",
@@ -23007,6 +22059,7 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
+      "nuovi-eventi",
       "profumi",
       "the-spirit-of-dubai"
     ],
@@ -24501,41 +23554,6 @@
     "semantic_text": "Profumo NOT A PERFUME HAIR &amp; BODY MIST 75ML di Juliette Has A Gun. Famiglie olfattive e sfumature: AMBRATO, MOLECOLARE, MUSCHIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AMBRATO, MOLECOLARE, MUSCHIATO. Note di fondo: AMBRATO, MOLECOLARE, MUSCHIATO. Dettagli ed evoluzione: Juliette Has a Gun Not a Hair and Body Mist è un’acqua profumata ambrata orientale unisex. Una fragranza composta da un singolo elemento chiamato Cetalox. Di solito usato in profumeria come nota di base, svolge qui il ruolo principale…Un altro vantaggio di questa particolare composizione è che è completamente priva di allergeni. Il risultato è mini"
   },
   {
-    "id": "wc_4562",
-    "woocommerce_product_id": 4562,
-    "name": "NOT A PERFUME ROOM SPRAY 200ML",
-    "brand": "Juliette Has A Gun",
-    "sku": "",
-    "price": 50.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "juliette-has-a-gun",
-      "profumi-ambiente"
-    ],
-    "tags": [
-      "AMBRATO",
-      "MOLECOLARE",
-      "MUSCHIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AMBRATO",
-        "MOLECOLARE",
-        "MUSCHIATO"
-      ],
-      "base": []
-    },
-    "description": "Juliette has a Gun Not a Perfume Room Spray è uno spray per ambienti muschiato e molecolare . Questo profumo per la casa, ispirato alle note di Not a Perfume, rilascerà la sua fragranza in tutto l’ambiente, per un’atmosfera fresca, pura e unica. Una fragranza che crea dipendenza al 100%!",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/not-a-perfume-room-spray-200ml/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=4562",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2022/02/not-a-roomspray_1000x1000_crop_center.webp"
-    },
-    "semantic_text": "Profumo NOT A PERFUME ROOM SPRAY 200ML di Juliette Has A Gun. Famiglie olfattive e sfumature: AMBRATO, MOLECOLARE, MUSCHIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AMBRATO, MOLECOLARE, MUSCHIATO. Note di fondo: AMBRATO, MOLECOLARE, MUSCHIATO. Dettagli ed evoluzione: Juliette has a Gun Not a Perfume Room Spray è uno spray per ambienti muschiato e molecolare . Questo profumo per la casa, ispirato alle note di Not a Perfume, rilascerà la sua fragranza in tutto l’ambiente, per un’atmosfera fresca, pura e unica. Una fragranza che crea dipendenza al 100%!"
-  },
-  {
     "id": "wc_4560",
     "woocommerce_product_id": 4560,
     "name": "NOT A PERFUME SHOWER GEL 250ML",
@@ -24699,40 +23717,6 @@
     "semantic_text": "Profumo INTENSE CEDRAT BOISE 120ML di Mancera. Famiglie olfattive e sfumature: AGRUMATO, LEGNOSO, MEDITERRANEO, MUSCHIATO, SPEZIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO, LEGNOSO, MEDITERRANEO, MUSCHIATO, SPEZIATO. Note di fondo: AGRUMATO, LEGNOSO, MEDITERRANEO, MUSCHIATO, SPEZIATO. Dettagli ed evoluzione: DISPONIBILE DA FEBBRAIO 2022 CEDRAT BOISE INTENSE 120ML Fresco, fruttato e tuttavia assolutamente maschile.. Scopri la sua versione INTENSE. Questo estratto di profumo si apre con un'esplosione pungente e piccante di ribes nero e agrumi, Cedrat Boise depone rapidamente un cuore sexy di gelsomino e patchouli sotto la freschezza fruttata persistente,"
   },
   {
-    "id": "wc_4300",
-    "woocommerce_product_id": 4300,
-    "name": "SPEZIE 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "MEDITERRANEO",
-      "SPEZIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "MEDITERRANEO",
-        "SPEZIATO"
-      ],
-      "base": []
-    },
-    "description": "SPEZIE 350ML PROFUMATORE AMBIENTE Profumum Roma / Ambiente / Diffusori per Ambiente DIFFUSORE AMBIENTE. Spezie di Profumum Roma è l’incontro tra Oriente e Occidente: il cardamomo, spezia preziosa e amata dagli arabi si unisce al frutto emblema del Mediterraneo, l’arancia. I nostri diffusori ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. Immergere tutte le bacchette nella bottiglia di vetro, attendere che per capillarità il profumo venga assorbito dal legno e si diffonda nell’ambiente. Due volte alla settimana capovolgere le bacchette per avere una diffusione più intensa della fragranza. PRODOTTO ORIGINALE GARANTITO!",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/spezie-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=4300",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/12/ambiente-fragrance-SPEZIE.jpg"
-    },
-    "semantic_text": "Profumo SPEZIE 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: MEDITERRANEO, SPEZIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: MEDITERRANEO, SPEZIATO. Note di fondo: MEDITERRANEO, SPEZIATO. Dettagli ed evoluzione: SPEZIE 350ML PROFUMATORE AMBIENTE Profumum Roma / Ambiente / Diffusori per Ambiente DIFFUSORE AMBIENTE. Spezie di Profumum Roma è l’incontro tra Oriente e Occidente: il cardamomo, spezia preziosa e amata dagli arabi si unisce al frutto emblema del Mediterraneo, l’arancia. I nostri diffusori ambiente sono realizzati con essenze di altissima qualità"
-  },
-  {
     "id": "wc_4278",
     "woocommerce_product_id": 4278,
     "name": "SORRISO 100ML",
@@ -24766,40 +23750,6 @@
       "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/12/profumum-sorriso.jpg"
     },
     "semantic_text": "Profumo SORRISO 100ML di Profumum Roma. Famiglie olfattive e sfumature: AGRUMATO, GOURMAND, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO, GOURMAND, VANIGLIATO. Note di fondo: AGRUMATO, GOURMAND, VANIGLIATO. Dettagli ed evoluzione: SORRISO 100ml Profumum Roma / Profumi Descrizione Il piacere della vita e l’entusiasmo di un abbraccio mi regalano il tuo bellissimo sorriso. Note olfattive Cioccolato amaro, Arancia amara, Legni tropicali, Vaniglia PRODOTTO ORIGINALE GARANTITO !"
-  },
-  {
-    "id": "wc_4276",
-    "woocommerce_product_id": 4276,
-    "name": "ARANCIA E CANNELLA 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO",
-      "MEDITERRANEO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AGRUMATO",
-        "MEDITERRANEO"
-      ],
-      "base": []
-    },
-    "description": "ARANCIA E CANNELLA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione I nostri diffusori ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. Immergere tutte le bacchette nella bottiglia di vetro, attendere che per capillarità il profumo venga assorbito dal legno e si diffonda nell’ambiente. Due volte alla settimana capovolgere le bacchette per avere una diffusione più intensa della fragranza. PRODOTTO ORIGINALE GARANTITO",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/arancia-e-cannella/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=4276",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/12/ambiente-profumum-roma-arancia-e-cannella.jpg"
-    },
-    "semantic_text": "Profumo ARANCIA E CANNELLA 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: AGRUMATO, MEDITERRANEO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO, MEDITERRANEO. Note di fondo: AGRUMATO, MEDITERRANEO. Dettagli ed evoluzione: ARANCIA E CANNELLA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione I nostri diffusori ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. Immergere tutte le bacchette nella bottiglia di vetro, attendere che per capillarità il profumo venga assorbito dal legno e si diff"
   },
   {
     "id": "wc_4258",
@@ -25600,7 +24550,6 @@
     "in_stock": true,
     "categories": [
       "montale",
-      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -25951,6 +24900,7 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
+      "nuovi-eventi",
       "profumi",
       "simone-andreoli"
     ],
@@ -26856,282 +25806,6 @@
     "semantic_text": "Profumo SUNPLOSION 100 ML di Simone Andreoli. Famiglie olfattive e sfumature: ESOTICO, FRUTTATO, MUSCHIATO. Note di testa: Lime note di cuore: polpa di mango, Ibisco, Sandalo note di fondo: guava, Acqua di cocco. Note di cuore: Polpa di mango, Ibisco, Sandalo note di fondo: guava, Acqua di cocco. Note di fondo: Guava, Acqua di cocco. Dettagli ed evoluzione: Sunplosion – SIMONE ANDREOLI Aloha State of Mind è un inno alla libertà, all’energia vitale del sole, alla voglia di vivere e abbracciare la vita. Cosa c’è di più energico e rivitalizzante del sole delle Hawaii, dei profumi, del mare e delle spiagge incantevoli di quelle isole? Sunplosion è letteralmente “un’esplosione di sole” hawaiano ma non solo"
   },
   {
-    "id": "wc_3279",
-    "woocommerce_product_id": 3279,
-    "name": "ACQUA DI SALE 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "LEGNOSO",
-      "MARINO",
-      "MEDITERRANEO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "LEGNOSO",
-        "MARINO",
-        "MEDITERRANEO"
-      ],
-      "base": []
-    },
-    "description": "ACQUA DI SALE Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Le onde del mare che s’infrangono a riva regalano nuove conchiglie dalle mille forme e colori alla sabbia che luccica al sole mattutino d’agosto. Nella spiaggia deserta volteggiano spensieratezza e libertà. Note olfattive Legno di cedro, Mirto, Alga marina",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/acqua-di-sale-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3279",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/sale-ambiente-2.jpg"
-    },
-    "semantic_text": "Profumo ACQUA DI SALE 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: LEGNOSO, MARINO, MEDITERRANEO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: LEGNOSO, MARINO, MEDITERRANEO. Note di fondo: LEGNOSO, MARINO, MEDITERRANEO. Dettagli ed evoluzione: ACQUA DI SALE Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Le onde del mare che s’infrangono a riva regalano nuove conchiglie dalle mille forme e colori alla sabbia che luccica al sole mattutino d’agosto. Nella spiaggia deserta volteggiano spensieratezza e libertà. Note olfattive Legno di cedro, Mirto, Alga marina"
-  },
-  {
-    "id": "wc_3277",
-    "woocommerce_product_id": 3277,
-    "name": "BATTITO D&#8217;ALI 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "MEDITERRANEO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "MEDITERRANEO",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "BATTITO D’ALI Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Immanente e trascendente! Che odore ha il battito d’ali di un angelo? Chi lo ha mai sentito? Note olfattive Polvere di cacao, Mirra, Fiori d’arancio, Vaniglia",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/battito-dali-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3277",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/BATTITO-ALI.jpg"
-    },
-    "semantic_text": "Profumo BATTITO D&#8217;ALI 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: MEDITERRANEO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: MEDITERRANEO, VANIGLIATO. Note di fondo: MEDITERRANEO, VANIGLIATO. Dettagli ed evoluzione: BATTITO D’ALI Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Immanente e trascendente! Che odore ha il battito d’ali di un angelo? Chi lo ha mai sentito? Note olfattive Polvere di cacao, Mirra, Fiori d’arancio, Vaniglia"
-  },
-  {
-    "id": "wc_3274",
-    "woocommerce_product_id": 3274,
-    "name": "VANITAS 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AGRUMATO",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "VANITAS Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione La sua presenza è evidente a tutti ed il suo odore si diffonde mescolandosi con i colori di un acceso tramonto. Tutti sono languidamente attratti da lei. Note olfattive Mirra, Fiori d’arancio, Sandalo, Vaniglia",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/vanitas-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3274",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/VANITAS.jpg"
-    },
-    "semantic_text": "Profumo VANITAS 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: AGRUMATO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO, VANIGLIATO. Note di fondo: AGRUMATO, VANIGLIATO. Dettagli ed evoluzione: VANITAS Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione La sua presenza è evidente a tutti ed il suo odore si diffonde mescolandosi con i colori di un acceso tramonto. Tutti sono languidamente attratti da lei. Note olfattive Mirra, Fiori d’arancio, Sandalo, Vaniglia"
-  },
-  {
-    "id": "wc_3272",
-    "woocommerce_product_id": 3272,
-    "name": "MAESTRALE 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "MARINO",
-      "MEDITERRANEO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "MARINO",
-        "MEDITERRANEO"
-      ],
-      "base": []
-    },
-    "description": "MAESTRALE Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione I nostri diffusori ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. Immergere tutte le bacchette nella bottiglia di vetro, attendere che per capillarità il profumo venga assorbito dal legno e si diffonda nell’ambiente. Due volte alla settimana capovolgere le bacchette per avere una diffusione più intensa della fragranza.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/maestrale-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3272",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/MAESTRALE.jpg"
-    },
-    "semantic_text": "Profumo MAESTRALE 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: MARINO, MEDITERRANEO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: MARINO, MEDITERRANEO. Note di fondo: MARINO, MEDITERRANEO. Dettagli ed evoluzione: MAESTRALE Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione I nostri diffusori ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. Immergere tutte le bacchette nella bottiglia di vetro, attendere che per capillarità il profumo venga assorbito dal legno e si diffonda nell"
-  },
-  {
-    "id": "wc_3270",
-    "woocommerce_product_id": 3270,
-    "name": "ACQUA VIVA 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO",
-      "MEDITERRANEO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AGRUMATO",
-        "MEDITERRANEO"
-      ],
-      "base": []
-    },
-    "description": "ACQUA VIVA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Lo sciabordio di una vela che fa rotta verso le isole Eolie. L’attesa del maestrale sotto un tendalino bevendo un sorbetto al limone, attorno a noi l’odore ed il colore del Mediterraneo. Note olfattive Agrumi siciliani, Ginestra di Vulcano, Cedro",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/acua-viva-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3270",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/VIVA.jpg"
-    },
-    "semantic_text": "Profumo ACQUA VIVA 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: AGRUMATO, MEDITERRANEO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO, MEDITERRANEO. Note di fondo: AGRUMATO, MEDITERRANEO. Dettagli ed evoluzione: ACQUA VIVA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Lo sciabordio di una vela che fa rotta verso le isole Eolie. L’attesa del maestrale sotto un tendalino bevendo un sorbetto al limone, attorno a noi l’odore ed il colore del Mediterraneo. Note olfattive Agrumi siciliani, Ginestra di Vulcano, Cedro"
-  },
-  {
-    "id": "wc_3268",
-    "woocommerce_product_id": 3268,
-    "name": "ACQUA E ZUCCHERO 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "AMBRATO",
-      "FRUTTATO",
-      "VANIGLIATO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AMBRATO",
-        "FRUTTATO",
-        "VANIGLIATO"
-      ],
-      "base": []
-    },
-    "description": "ACQUA E ZUCCHERO Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Con il tatto sentivo la sua morbidezza. Il buio della stanza mi nasconde le forme, ma il suo profumo mi scioglie e mi fa sentire come se fossi immerso in un catino di miele. Avvolto di dolce rilassatezza. Note olfattive Fiori d’arancio, Frutti rossi, Vaniglia",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/acua-e-zucchero-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3268",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/ZUCCHERO.jpg"
-    },
-    "semantic_text": "Profumo ACQUA E ZUCCHERO 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: AMBRATO, FRUTTATO, VANIGLIATO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AMBRATO, FRUTTATO, VANIGLIATO. Note di fondo: AMBRATO, FRUTTATO, VANIGLIATO. Dettagli ed evoluzione: ACQUA E ZUCCHERO Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione Con il tatto sentivo la sua morbidezza. Il buio della stanza mi nasconde le forme, ma il suo profumo mi scioglie e mi fa sentire come se fossi immerso in un catino di miele. Avvolto di dolce rilassatezza. Note olfattive Fiori d’arancio, Frutti rossi, Vaniglia"
-  },
-  {
-    "id": "wc_3265",
-    "woocommerce_product_id": 3265,
-    "name": "NEROLI 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "AGRUMATO",
-      "LEGNOSO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "AGRUMATO",
-        "LEGNOSO"
-      ],
-      "base": []
-    },
-    "description": "NEROLI Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione E’ caldo nella distesa di grano appena mietuto e che all’orizzonte sconfina fino al mare. Percorso tra erba bruciata e canto di cicale: inno all’afa soffocante. Nell’immobilità dell’aria, man mano che il blu si avvicina, si spande profumo di agrumeti… Note olfattive Germogli di arancia amara, Mirra, Legno d’arancio",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/neroli-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3265",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/NEROLI.jpg"
-    },
-    "semantic_text": "Profumo NEROLI 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: AGRUMATO, LEGNOSO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: AGRUMATO, LEGNOSO. Note di fondo: AGRUMATO, LEGNOSO. Dettagli ed evoluzione: NEROLI Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione E’ caldo nella distesa di grano appena mietuto e che all’orizzonte sconfina fino al mare. Percorso tra erba bruciata e canto di cicale: inno all’afa soffocante. Nell’immobilità dell’aria, man mano che il blu si avvicina, si spande profumo di agrumeti… Note olfattive Germogli di ar"
-  },
-  {
-    "id": "wc_3263",
-    "woocommerce_product_id": 3263,
-    "name": "TERRA 350ML PROFUMO AMBIENTE",
-    "brand": "PROFUMI AMBIENTE",
-    "sku": "",
-    "price": 95.0,
-    "currency": "EUR",
-    "in_stock": false,
-    "categories": [
-      "profumi-ambiente",
-      "profumum-roma",
-      "profumum-roma-profumi-ambiente"
-    ],
-    "tags": [
-      "SPEZIATO",
-      "TERROSO"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [
-        "SPEZIATO",
-        "TERROSO"
-      ],
-      "base": []
-    },
-    "description": "TERRA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione I nostri diffusori ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. Immergere tutte le bacchette nella bottiglia di vetro, attendere che per capillarità il profumo venga assorbito dal legno e si diffonda nell’ambiente. Due volte alla settimana capovolgere le bacchette per avere una diffusione più intensa della fragranza.",
-    "urls": {
-      "product_page": "https://www.trasparenzeprofumeria.it/product/terra-350ml-profumo-ambiente/",
-      "add_to_cart": "https://www.trasparenzeprofumeria.it/cart/?add-to-cart=3263",
-      "image_url": "https://www.trasparenzeprofumeria.it/wp-content/uploads/2021/07/terra.jpg"
-    },
-    "semantic_text": "Profumo TERRA 350ML PROFUMO AMBIENTE di PROFUMI AMBIENTE. Famiglie olfattive e sfumature: SPEZIATO, TERROSO. Note di testa: Note di testa fresche/aromatiche. Note di cuore: SPEZIATO, TERROSO. Note di fondo: SPEZIATO, TERROSO. Dettagli ed evoluzione: TERRA Profumum Roma / Ambiente / Diffusori per Ambiente Descrizione I nostri diffusori ambiente sono realizzati con essenze di altissima qualità per profumare ogni stanza della casa, lo studio, il negozio. Immergere tutte le bacchette nella bottiglia di vetro, attendere che per capillarità il profumo venga assorbito dal legno e si diffonda nell’amb"
-  },
-  {
     "id": "wc_3222",
     "woocommerce_product_id": 3222,
     "name": "CRAZY IN LOVE 100ML",
@@ -27748,6 +26422,7 @@
     "in_stock": true,
     "categories": [
       "montale",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -27902,6 +26577,7 @@
     "in_stock": true,
     "categories": [
       "montale",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -28269,6 +26945,7 @@
     "in_stock": true,
     "categories": [
       "montale",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -29319,7 +27996,6 @@
     "currency": "EUR",
     "in_stock": false,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "profumum-roma"
     ],
@@ -29805,7 +28481,6 @@
     "currency": "EUR",
     "in_stock": true,
     "categories": [
-      "nuovi-eventi",
       "profumi",
       "profumum-roma"
     ],
@@ -30142,7 +28817,7 @@
     "sku": "",
     "price": 155.0,
     "currency": "EUR",
-    "in_stock": true,
+    "in_stock": false,
     "categories": [
       "orto-parisi",
       "profumi"
@@ -30649,6 +29324,7 @@
     "in_stock": true,
     "categories": [
       "montale",
+      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
@@ -31112,7 +29788,6 @@
     "in_stock": true,
     "categories": [
       "montale",
-      "nuovi-eventi",
       "profumi"
     ],
     "tags": [
