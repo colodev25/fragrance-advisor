@@ -22,7 +22,12 @@ GUIDED_STEPS = {
     },
     3: {
         "question": "Hai una preferenza sul budget o intensità?",
-        "options": ["Accessibile (sotto 150€)", "Profumeria Artistica d'Élite", "Nessun limite di budget"]
+        "options": [
+            "Accessibile (sotto 120€)",
+            "Profumeria Artistica (120€ - 200€)",
+            "Alta Gamma & Estratti (oltre 200€)",
+            "Nessun limite di budget"
+        ]
     }
 }
 
@@ -171,12 +176,29 @@ class FragranceAdvisor:
     def _generate_guided_recommendations(self, answers: list, session_id: str) -> dict:
         family = answers[0] if len(answers) > 0 else "Artistico"
         occasion = answers[1] if len(answers) > 1 else "Tutti i giorni"
-        budget = answers[2] if len(answers) > 2 else "Standard"
+        budget_str = answers[2] if len(answers) > 2 else "Nessun limite"
 
-        limit_price = 150.0 if "150" in budget else None
-        search_prompt = f"Profumo {family} ideale per {occasion}. Mood e intensità: {budget}"
+        # Parsing deterministico del budget per ChromaDB
+        min_p = None
+        max_p = None
 
-        results = self.search_engine.search(query=search_prompt, max_price=limit_price, n_results=3)
+        if "sotto 120" in budget_str.lower() or "< 120" in budget_str:
+            max_p = 120.0
+        elif "120" in budget_str and "200" in budget_str:
+            min_p = 120.0
+            max_p = 200.0
+        elif "oltre 200" in budget_str.lower() or "> 200" in budget_str:
+            min_p = 200.0
+        # "Nessun limite" lascia min_p e max_p a None
+
+        search_prompt = f"Profumo {family} ideale per {occasion}."
+
+        results = self.search_engine.search(
+            query=search_prompt,
+            min_price=min_p,
+            max_price=max_p,
+            n_results=3
+        )
 
         context_items = []
         first_product = None
@@ -205,7 +227,7 @@ class FragranceAdvisor:
 
         if not context_items:
             return {
-                "reply": "Non ho trovato fragranze a catalogo perfettamente corrispondenti a questa combinazione. Prova a selezionare un'altra famiglia olfattiva!",
+                "reply": "Non ho trovato fragranze a catalogo che rientrino esattamente in questa specifica combinazione di note e fascia di prezzo. Prova a selezionare un'altra fascia o una famiglia olfattiva differente!",
                 "options": ["🎯 Ricomincia percorso guidato", "💬 Fai una domanda libera"],
                 "step": None,
                 "mode": "free"
@@ -220,7 +242,7 @@ class FragranceAdvisor:
             f"L'utente ha completato il percorso guidato con queste preferenze:\n"
             f"- Famiglia olfattiva: {family}\n"
             f"- Occasione/Uso: {occasion}\n"
-            f"- Budget/Stile: {budget}\n\n"
+            f"- Fascia Budget: {budget_str}\n\n"
             f"PRODOTTI REALI PRESENTI A CATALOGO:\n{context_str}\n\n"
             "REGOLE ANTI-ALLUCINAZIONE E STRUTTURA DELLA RISPOSTA:\n"
             "1. Presenta ESCLUSIVAMENTE i prodotti elencati sopra. NON inventare nomi, marchi, prezzi o profumi non presenti nel testo.\n"

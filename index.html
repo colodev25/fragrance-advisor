@@ -13,20 +13,36 @@
     .chat-toggle:hover { transform: scale(1.05); }
 
     /* Finestra Chat */
-    .chat-widget { position: fixed; bottom: 90px; right: 24px; width: 390px; height: 540px; background: white; border-radius: 16px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; border: 1px solid #eaeaea; z-index: 999; }
+    .chat-widget { position: fixed; bottom: 90px; right: 24px; width: 400px; height: 560px; background: white; border-radius: 16px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; border: 1px solid #eaeaea; z-index: 999; }
     .chat-header { background: #111; color: white; padding: 14px 18px; font-size: 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
     .chat-close { background: transparent; border: none; color: #aaa; font-size: 18px; cursor: pointer; }
 
     /* Messaggi */
     .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-    .msg { max-width: 84%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; word-wrap: break-word; }
+    .msg { max-width: 86%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; word-wrap: break-word; }
     .user { background: #111; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
     .bot { background: #f3f3f5; color: #222; align-self: flex-start; border-bottom-left-radius: 2px; white-space: pre-wrap; }
-    .bot a { color: #0969da; font-weight: 600; text-decoration: underline; }
+    .bot a { 
+      display: inline-block; 
+      margin-top: 4px; 
+      color: #0969da; 
+      font-weight: 600; 
+      text-decoration: underline; 
+    }
 
-    /* Opzioni e Bottoni Rapidi */
+    /* Opzioni e Chip Rapidi */
     .options-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .option-chip { background: white; border: 1px solid #111; color: #111; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }
+    .option-chip { 
+      background: white; 
+      border: 1px solid #111; 
+      color: #111; 
+      padding: 6px 12px; 
+      border-radius: 16px; 
+      font-size: 12px; 
+      font-weight: 500; 
+      cursor: pointer; 
+      transition: all 0.15s ease; 
+    }
     .option-chip:hover { background: #111; color: white; }
     .option-chip.selected { background: #111; color: white; }
 
@@ -78,18 +94,22 @@
       }
     }
 
+    function formatLinks(text) {
+      // Converte i link markdown assicurando che l'etichetta del carrello sia sempre in italiano
+      return text.replace(/\[(.*?)\]\((.*?)\)/g, (match, label, url) => {
+        const lowerLabel = label.toLowerCase();
+        if (lowerLabel.includes("cart") || lowerLabel.includes("carrello") || url.includes("add-to-cart")) {
+          label = "Aggiungi al Carrello";
+        }
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      });
+    }
+
     function appendMessage(text, sender, options = [], step = null) {
       const box = document.getElementById('messages');
       const el = document.createElement('div');
       el.className = `msg ${sender}`;
-      el.innerHTML = text.replace(/\[(.*?)\]\((.*?)\)/g, (match, label, url) => {
-        // Se il link contiene il parametro di aggiunta al carrello o una dicitura simile, forza sempre l'italiano
-        const lowerLabel = label.toLowerCase();
-          if (lowerLabel.includes("cart") || lowerLabel.includes("carrello") || url.includes("add-to-cart")) {
-            label = "Aggiungi al Carrello";
-          }
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-      });
+      el.innerHTML = formatLinks(text);
 
       if (options && options.length > 0) {
         const optContainer = document.createElement('div');
@@ -113,9 +133,8 @@
 
     function handleOptionClick(btnElement, text, step) {
       const parentMsg = btnElement.closest('.msg');
-      const box = document.getElementById('messages');
 
-      // 1. Rimuove dalla visualizzazione tutti i messaggi successivi a questo
+      // Rimuove visivamente tutti i messaggi successivi per consentire il riavvolgimento
       let nextNode = parentMsg.nextElementSibling;
       while (nextNode) {
         const toRemove = nextNode;
@@ -123,12 +142,12 @@
         toRemove.remove();
       }
 
-      // 2. Aggiorna lo stato visivo dei pulsanti in questo contenitore
+      // Evidenzia visivamente la scelta attiva
       const container = btnElement.closest('.options-container');
       container.querySelectorAll('.option-chip').forEach(b => b.classList.remove('selected'));
       btnElement.classList.add('selected');
 
-      // 3. Invia la richiesta indicando lo step specifico da resettare
+      // Invia la richiesta passando lo step esatto al backend
       sendMessage(text, step);
     }
 
