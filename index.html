@@ -28,6 +28,7 @@
     .options-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .option-chip { background: white; border: 1px solid #111; color: #111; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }
     .option-chip:hover { background: #111; color: white; }
+    .option-chip.selected { background: #111; color: white; }
 
     /* Input Bar */
     .chat-input-bar { display: flex; border-top: 1px solid #eee; padding: 8px 12px; background: #fff; }
@@ -50,9 +51,9 @@
     <div class="chat-messages" id="messages">
       <div class="msg bot">
         Benvenuto! Sono il tuo consulente olfattivo. Come preferisci procedere?
-        <div class="options-container">
-          <button class="option-chip" onclick="selectOption('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
-          <button class="option-chip" onclick="selectOption('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
+        <div class="options-container" data-step="0">
+          <button class="option-chip" onclick="handleOptionClick(this, '🎯 Guidami nella scelta', null)">🎯 Guidami nella scelta</button>
+          <button class="option-chip" onclick="handleOptionClick(this, '💬 Fai una domanda libera', null)">💬 Fai una domanda libera</button>
         </div>
       </div>
     </div>
@@ -77,20 +78,29 @@
       }
     }
 
-    function appendMessage(text, sender, options = []) {
+    function appendMessage(text, sender, options = [], step = null) {
       const box = document.getElementById('messages');
       const el = document.createElement('div');
       el.className = `msg ${sender}`;
-      el.innerHTML = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      el.innerHTML = text.replace(/\[(.*?)\]\((.*?)\)/g, (match, label, url) => {
+        // Se il link contiene il parametro di aggiunta al carrello o una dicitura simile, forza sempre l'italiano
+        const lowerLabel = label.toLowerCase();
+          if (lowerLabel.includes("cart") || lowerLabel.includes("carrello") || url.includes("add-to-cart")) {
+            label = "Aggiungi al Carrello";
+          }
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      });
 
       if (options && options.length > 0) {
         const optContainer = document.createElement('div');
         optContainer.className = 'options-container';
+        if (step !== null) optContainer.setAttribute('data-step', step);
+
         options.forEach(opt => {
           const btn = document.createElement('button');
           btn.className = 'option-chip';
           btn.innerText = opt;
-          btn.onclick = () => selectOption(opt);
+          btn.onclick = () => handleOptionClick(btn, opt, step);
           optContainer.appendChild(btn);
         });
         el.appendChild(optContainer);
@@ -101,18 +111,34 @@
       return el;
     }
 
-    function selectOption(text) {
-      document.getElementById('userInput').value = text;
-      sendMessage();
+    function handleOptionClick(btnElement, text, step) {
+      const parentMsg = btnElement.closest('.msg');
+      const box = document.getElementById('messages');
+
+      // 1. Rimuove dalla visualizzazione tutti i messaggi successivi a questo
+      let nextNode = parentMsg.nextElementSibling;
+      while (nextNode) {
+        const toRemove = nextNode;
+        nextNode = nextNode.nextElementSibling;
+        toRemove.remove();
+      }
+
+      // 2. Aggiorna lo stato visivo dei pulsanti in questo contenitore
+      const container = btnElement.closest('.options-container');
+      container.querySelectorAll('.option-chip').forEach(b => b.classList.remove('selected'));
+      btnElement.classList.add('selected');
+
+      // 3. Invia la richiesta indicando lo step specifico da resettare
+      sendMessage(text, step);
     }
 
-    async function sendMessage() {
+    async function sendMessage(manualText = null, stepOverride = null) {
       const input = document.getElementById('userInput');
-      const text = input.value.trim();
+      const text = manualText !== null ? manualText : input.value.trim();
       if (!text) return;
 
       appendMessage(text, 'user');
-      input.value = '';
+      if (manualText === null) input.value = '';
 
       const loading = appendMessage("Sto consultando il catalogo...", "bot");
 
@@ -122,13 +148,14 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: text,
-            session_id: currentSessionId
+            session_id: currentSessionId,
+            step_override: stepOverride
           })
         });
 
         const data = await res.json();
         loading.remove();
-        appendMessage(data.reply, "bot", data.options);
+        appendMessage(data.reply, "bot", data.options, data.step);
 
       } catch (e) {
         loading.remove();

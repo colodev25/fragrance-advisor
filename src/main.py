@@ -18,13 +18,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Istanza singleton in RAM per conservare sessioni e stati tra le chiamate HTTP
 advisor = FragranceAdvisor()
 
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = "default"
     max_price: Optional[float] = None
+    step_override: Optional[int] = None
 
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
@@ -32,11 +32,13 @@ async def chat_endpoint(req: ChatRequest):
     result = advisor.advise(
         user_query=req.message,
         session_id=sid,
-        max_price=req.max_price
+        max_price=req.max_price,
+        step_override=req.step_override
     )
     return {
         "reply": result["reply"],
         "options": result.get("options", []),
+        "step": result.get("step"),
         "mode": result.get("mode", "free"),
         "session_id": sid
     }
