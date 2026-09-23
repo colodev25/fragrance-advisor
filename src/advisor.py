@@ -1,5 +1,7 @@
 import os
 import re
+import json
+from pathlib import Path
 from collections import defaultdict
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -10,6 +12,9 @@ except ModuleNotFoundError:
     from search import FragranceSearchEngine
 
 load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+CATALOG_PATH = BASE_DIR / "data" / "catalog.json"
 
 GUIDED_STEPS = {
     1: {
@@ -31,6 +36,7 @@ GUIDED_STEPS = {
     }
 }
 
+
 class FragranceAdvisor:
     def __init__(self):
         self.search_engine = FragranceSearchEngine()
@@ -42,62 +48,106 @@ class FragranceAdvisor:
             base_url="https://api.groq.com/openai/v1",
             api_key=groq_key
         )
-        
+
         self.sessions = defaultdict(list)
         self.active_perfumes = {}
         # session_id -> {"step": None|1|2|3, "answers": []}
         self.guided_states = defaultdict(lambda: {"step": None, "answers": []})
 
+        # Caricamento del catalogo per il matching nominale delle fragranze citate
+        self.catalog_products = []
+        if CATALOG_PATH.exists():
+            try:
+                with open(CATALOG_PATH, "r", encoding="utf-8") as f:
+                    self.catalog_products = json.load(f)
+            except Exception as e:
+                print(f"[ADVISOR] Avviso: caricamento catalog.json fallito: {e}")
+
+    def _find_mentioned_product(self, query: str) -> dict | None:
+        """
+        Individua se nella frase dell'utente è presente il nome di un profumo a catalogo.
+        """
+        if not self.catalog_products:
+            return None
+
+        q_clean = " " + re.sub(r"[?!.,;:\"\'\(\)]", " ", query.lower()) + " "
+
+        for prod in self.catalog_products:
+            raw_name = prod.get("name", "").strip()
+            if not raw_name:
+                continue
+
+            # Rimuove diciture accessorie come formati e concentrazioni per matching robusto
+            norm_name = re.sub(r"\b\d+\s*ml\b", "", raw_name, flags=re.I)
+            norm_name = re.sub(r"\b(eau de parfum|extrait de parfum|edp|edt|millésime)\b", "", norm_name, flags=re.I)
+            norm_name = re.sub(r"[?!.,;:\"\'\(\)]", " ", norm_name).strip().lower()
+            norm_name = re.sub(r"\s+", " ", norm_name)
+
+            if len(norm_name) >= 3 and f" {norm_name} " in q_clean:
+                return {
+                    "name": prod.get("name", ""),
+                    "brand": prod.get("brand", "Profumeria Artistica"),
+                    "price": float(prod.get("price", 0.0)),
+                    "family": prod.get("family", ""),
+                    "ptype": prod.get("ptype", ""),
+                    "add_to_cart_url": prod.get("urls", {}).get("add_to_cart", ""),
+                    "product_page_url": prod.get("urls", {}).get("product_page", ""),
+                    "image_url": prod.get("urls", {}).get("image_url", ""),
+                    "document": prod.get("semantic_text", prod.get("description", ""))
+                }
+
+        return None
+
     def _determine_intent(self, query: str, active_perfume: dict) -> str:
-        """
-        Determina se l'utente vuole continuare a valutare il profumo attivo (VALUTA)
-        oppure cercare un nuovo profumo (CAMBIA).
-        """
         if not active_perfume:
             return "CAMBIA"
 
-        # Rimuove punteggiatura per facilitare il match deterministico
         q = re.sub(r"[?!.,;:]", " ", query.lower()).strip()
 
-        # 1. CAMBIO ESPLICITO (Priorità assoluta: se l'utente chiede chiaramente un'alternativa)
+        # 1. CAMBIO ESPLICITO E INTENTI DI RICERCA
         switch_patterns = [
-            r"\bun altro\b", r"\bun'altra\b", r"\baltri profumi\b", r"\baltre fragranze\b",
-            r"\bmostrami altro\b", r"\bconsigliami un altro\b", r"\btrovami un altro\b",
-            r"\bcambia profumo\b", r"\bcambiamo\b", r"\bpassiamo a\b",
-            r"\bcerco un profumo\b", r"\bcerco una fragranza\b",
-            r"\bvorrei un profumo\b", r"\bvorrei una fragranza\b",
-            r"\bqualcos'altro\b", r"\bqualcosa di diverso\b", r"\bdiverso\b", r"\bdiversa\b"
+            # Formule con "qualcosa"
+            r"\b(vorrei|voglio|cerco|cercavo|cercami|trova|trovami|proponi|proponimi)\s+qualcosa\b",
+            r"\bqualcosa\s+con\b", r"\bqualcosa\s+di\b",
+            r"\bqualcos[' ]altro\b", r"\bqualcosa\s+d[' ]altr[oa]\b",
+
+            # Verbo di ricerca / richiesta + oggetto (un/una/profumo/note/alternativa...)
+            r"\b(vorrei|voglio|cerco|cercavo|cerca|cercami|trova|trovami|consiglia|consigliami|mostra|mostrami|proponi|proponimi|suggerisci|suggeriscimi)\b.*\b(un|una|uno|profumo|fragranza|note|accordo|flacone|alternativa)\b",
+
+            # Richiesta esplicita di alternative ("un altro", "altra fragranza", ecc.)
+            r"\bun\s+altr[oa]\b", r"\bun[' ]altra\b",
+            r"\baltr[oaei]\s+profum[ie]\b", r"\baltr[oaei]\s+fragranz[ea]\b",
+            r"\b(mostra|mostrami|consiglia|consigliami|trova|trovami|cerca|cercami|proponi|proponimi)\s+altr[oa]\b",
+
+            # Reset o cambio esplicito
+            r"\bcambia\s+profumo\b", r"\bcambiamo\b", r"\bpassiamo\s+a\b",
+            r"\balternativa\b", r"\balternative\b", r"\bdivers[oaei]\b"
         ]
         if any(re.search(p, q) for p in switch_patterns):
             return "CAMBIA"
 
-        # 2. VALUTAZIONE DETERMINISTICA (Prezzo, note, piramide, durata, occasioni, pronomi)
+        # 2. VALUTAZIONE DETERMINISTICA SUL PROFUMO ATTIVO
         stay_patterns = [
-            # Note e composizione olfattiva
-            r"\bnote\b", r"\bnota\b", r"\bpiramide\b", r"\bingredienti\b", 
-            r"\bcomposizione\b", r"\baccordi\b", r"\baccordo\b",
-            
-            # Pronomi riferiti al profumo attivo
-            r"\bsu[oaei]\b",          # suo, sua, suoi, sue
-            r"\bquest[oaei]\b",       # questo, questa, questi, queste
-            r"\blo posso\b", r"\bla posso\b", r"\bsi puo\b", r"\bsi può\b",
-            
-            # Prezzo e costo
-            r"\bcosta\b", r"\bcosto\b", r"\bprezzo\b", r"\beuro\b", r"\b€\b",
-            
-            # Performance e scia
-            r"\bquanto dura\b", r"\bdura\b", r"\bdurata\b", r"\bpersistenza\b", r"\bproiezione\b", r"\bsillage\b",
-            
-            # Valutazione contestuale
-            r"\bva bene\b", r"\bè adatto\b", r"\bè adatta\b", r"\bposso usarlo\b", r"\bposso usarla\b",
-            r"\bper l'ufficio\b", r"\bin ufficio\b", r"\bal lavoro\b", r"\bdi giorno\b", r"\bdi sera\b",
-            r"\bin spiaggia\b", r"\bal mare\b", r"\ba cena\b", r"\ba pranzo\b", r"\bin palestra\b",
-            r"\bestiv[oae]\b", r"\binvernal[ei]\b", r"\bprimaveril[ei]\b", r"\bautunnal[ei]\b"
+            r"\b(le|quali|che|su[oaei])\s+note\b",
+            r"\bnote\s+di\s+(testa|cuore|fondo)\b",
+            r"\b(ha|contiene)\s+note\b",
+            r"\bpiramide\b", r"\bcomposizione\b",
+            r"\b(quali|che)\s+ingredienti\b",
+            r"\bsu[oaei]\b",
+            r"\bquest[oaei]\b",
+            r"\blo\s+posso\b", r"\bla\s+posso\b", r"\bsi\s+pu[oò]\b",
+            r"\b(costa|costo|prezzo|euro|€)\b",
+            r"\b(quanto\s+dura|durata|persistenza|proiezione|sillage|scia)\b",
+            r"\b(va\s+bene|è\s+adatt[oa]|adatt[oa]\s+a)\b",
+            r"\b(per\s+l'ufficio|in\s+ufficio|al\s+lavoro)\b",
+            r"\b(di\s+giorno|di\s+sera|a\s+cena|a\s+pranzo)\b",
+            r"\b(in\s+spiaggia|al\s+mare|in\s+palestra)\b",
+            r"\b(estiv[oae]|invernal[ei]|primaveril[ei]|autunnal[ei])\b"
         ]
         if any(re.search(p, q) for p in stay_patterns):
             return "VALUTA"
 
-        # 3. FALLBACK LLM: Se la frase è ambigua, interroga il modello rapido
+        # 3. FALLBACK LLM
         prompt = (
             f"Stiamo parlando del profumo: '{active_perfume['name']}' ({active_perfume.get('brand', '')}).\n"
             f"Messaggio del cliente: \"{query}\"\n\n"
@@ -115,7 +165,6 @@ class FragranceAdvisor:
                 max_tokens=4
             )
             decision = res.choices[0].message.content.strip().upper()
-            # FIX FONDAMENTALE: Se non c'è un'esplicita volontà di cambio, mantieni il profumo attivo
             return "CAMBIA" if "CAMBIA" in decision else "VALUTA"
         except Exception:
             return "VALUTA"
@@ -130,7 +179,7 @@ class FragranceAdvisor:
 
         # Trigger avvio/riavvio percorso guidato
         start_guided_triggers = [
-            "guidami", "guida", "ricomincia", "riparti", 
+            "guidami", "guida", "ricomincia", "riparti",
             "percorso guidato", "ricomincia percorso", "inizia guida"
         ]
         if any(t in q_lower for t in start_guided_triggers):
@@ -146,7 +195,7 @@ class FragranceAdvisor:
 
         # Trigger chat libera
         start_free_triggers = [
-            "chiedi liberamente", "fai una domanda libera", "domanda libera", 
+            "chiedi liberamente", "fai una domanda libera", "domanda libera",
             "chat libera", "parla liberamente"
         ]
         if any(t in q_lower for t in start_free_triggers):
@@ -159,7 +208,7 @@ class FragranceAdvisor:
                 "mode": "free"
             }
 
-        # GESTIONE STEP GUIDATO CON RIPARTENZA DINAMICA
+        # Gestione Step del percorso guidato
         effective_step = step_override if step_override is not None else state["step"]
 
         if effective_step is not None:
@@ -189,7 +238,6 @@ class FragranceAdvisor:
                 state["step"] = None
                 return self._generate_guided_recommendations(state["answers"], session_id)
 
-        # Flusso conversazione libera
         return self._handle_free_chat(user_query, session_id, max_price)
 
     def _generate_guided_recommendations(self, answers: list, session_id: str) -> dict:
@@ -197,7 +245,6 @@ class FragranceAdvisor:
         occasion = answers[1] if len(answers) > 1 else "Tutti i giorni"
         budget_str = answers[2] if len(answers) > 2 else "Nessun limite"
 
-        # Parsing deterministico del budget per ChromaDB
         min_p = None
         max_p = None
 
@@ -208,7 +255,6 @@ class FragranceAdvisor:
             max_p = 200.0
         elif "oltre 200" in budget_str.lower() or "> 200" in budget_str:
             min_p = 200.0
-        # "Nessun limite" lascia min_p e max_p a None
 
         search_prompt = f"Profumo {family} ideale per {occasion}."
 
@@ -226,22 +272,29 @@ class FragranceAdvisor:
             for i in range(len(results["ids"][0])):
                 meta = results["metadatas"][0][i]
                 doc = results["documents"][0][i]
-                
+
+                prod_data = {
+                    "name": meta.get("name", ""),
+                    "brand": meta.get("brand", "Profumeria Artistica"),
+                    "price": meta.get("price", 0.0),
+                    "family": meta.get("family", ""),
+                    "ptype": meta.get("ptype", ""),
+                    "add_to_cart_url": meta.get("add_to_cart_url", ""),
+                    "product_page_url": meta.get("product_page_url", ""),
+                    "image_url": meta.get("image_url", ""),
+                    "document": doc
+                }
+
                 if i == 0:
-                    first_product = {
-                        "name": meta.get("name", ""),
-                        "brand": meta.get("brand", "Profumeria Artistica"),
-                        "price": meta.get("price", 0.0),
-                        "add_to_cart_url": meta.get("add_to_cart_url", ""),
-                        "document": doc
-                    }
+                    first_product = prod_data
 
                 context_items.append(
                     f"PROPOSTA {i+1}:\n"
-                    f"- Nome: {meta['name']} ({meta.get('brand', 'Profumeria Artistica')})\n"
-                    f"  Prezzo di vendita: {meta['price']} EUR\n"
-                    f"  Link Carrello: {meta['add_to_cart_url']}\n"
-                    f"  Profilo olfattivo: {doc}"
+                    f"- Nome: {prod_data['name']} ({prod_data['brand']})\n"
+                    f"  Tipologia: {prod_data['ptype']} | Famiglia: {prod_data['family']}\n"
+                    f"  Prezzo di vendita: {prod_data['price']} EUR\n"
+                    f"  Link Acquisto: {prod_data['add_to_cart_url']}\n"
+                    f"  Profilo olfattivo e d'uso: {doc}"
                 )
 
         if not context_items:
@@ -293,41 +346,45 @@ class FragranceAdvisor:
 
     def _handle_free_chat(self, user_query: str, session_id: str, max_price: float) -> dict:
         history = self.sessions[session_id]
-        active = self.active_perfumes.get(session_id)
+        active_before = self.active_perfumes.get(session_id)
 
-        intent = self._determine_intent(user_query, active)
-        is_follow_up = (intent == "VALUTA" and active is not None)
+        # 1. Verifica se l'utente ha citato esplicitamente un profumo a catalogo
+        mentioned_product = self._find_mentioned_product(user_query)
+        is_new_product_switch = False
 
-        print(f"\n[ROUTER DEBUG] Profumo attivo: '{active.get('name') if active else 'NESSUNO'}'")
-        print(f"[ROUTER DEBUG] Domanda: '{user_query}' -> Decisione: {'SEGUI PRODOTTO (VALUTA)' if is_follow_up else 'CERCA NUOVO (CAMBIA)'}")
+        if mentioned_product:
+            if not active_before or active_before.get("name") != mentioned_product.get("name"):
+                is_new_product_switch = True
+            self.active_perfumes[session_id] = mentioned_product
+            print(f"[ENTITY MATCH] '{mentioned_product['name']}' (Nuovo switch: {is_new_product_switch})")
 
-        if is_follow_up:
+        # RAMO 1: L'utente ha citato un NUOVO profumo -> Presentazione con PREZZO e CARRELLO
+        if is_new_product_switch and mentioned_product:
             context_str = (
-                f"[PRODOTTO ATTUALMENTE DISCUSSO]\n"
-                f"- Nome: {active['name']}\n"
-                f"- Brand: {active.get('brand', 'Profumeria Artistica')}\n"
-                f"- Prezzo di vendita ufficiale: {active['price']} EUR\n"
-                f"- Link Carrello: {active['add_to_cart_url']}\n"
-                f"- Profilo olfattivo e note: {active['document']}"
+                f"[PRODOTTO RICHIESTO DAL CLIENTE]\n"
+                f"- Nome: {mentioned_product['name']}\n"
+                f"- Brand: {mentioned_product.get('brand', 'Profumeria Artistica')}\n"
+                f"- Tipologia: {mentioned_product.get('ptype', '')} | Famiglia: {mentioned_product.get('family', '')}\n"
+                f"- Prezzo di vendita ufficiale: {mentioned_product['price']} EUR\n"
+                f"- Link Acquisto: {mentioned_product['add_to_cart_url']}\n"
+                f"- Profilo olfattivo, note ed evoluzione: {mentioned_product['document']}"
             )
-            
+
             system_prompt = (
-                "Sei un Maitre Parfumeur e critico olfattivo di altissimo livello in una profumeria artistica.\n"
-                "Il tuo dovere principale è l'ONESTÀ e l'AUTOREVOLEZZA PROFESSIONALE: NON fare il compiacente e NON dire di sì a tutto.\n\n"
-                "REGOLE CRITICHE PER IL GIUDIZIO E CHIARIMENTI (BLUF):\n"
-                "1. DECISIONE NETTA NELLA PRIMA FRASE:\n"
-                "   - Se la richiesta dell'utente è palesemente inadatta o sconveniente (es. note dolci/gourmand al mare d'estate, "
-                "scie pesanti in palestra o ufficio, colonie effimere nel gelo invernale), BOCCIALA SENZA ESITAZIONE esordendo con fermezza ed eleganza: "
-                "'Assolutamente no, te lo sconsiglio vivamente.', oppure 'No, è una combinazione che non funziona affatto.'.\n"
-                "   - Se invece è adeguata (es. agrumato per l'estate), rispondi affermativamente confermando con sicurezza.\n"
-                "   - NON usare formule ipocrite di compromesso come 'potrebbe andare bene se dosato poco'.\n"
-                "2. MOTIVAZIONE TECNICA IN 1-2 FRASI: Spiega la ragione chimico-olfattiva concreta (calore/umidità, sillage, evaporazione molecolare).\n"
-                "3. INDICAZIONE DI ROTTA IN CASO DI BOCCIATURA: Suggerisci in mezza frase che tipo di profilo servirebbe invece in quel contesto.\n"
-                "4. GESTIONE DI PREZZO E LINK AL CARRELLO (REGOLA FONDAMENTALE):\n"
-                "   - Nelle normali domande di chiarimento, parere o valutazione contestuale (es. 'va bene per le giornate estive?', 'quanto dura?', 'per l'ufficio?'), "
-                "NON inserire né il prezzo né il link al carrello. Rispondi solo alla domanda posta in modo puntuale.\n"
-                "   - Inserisci il prezzo e il link SOLO se l'utente richiede ESPLICITAMENTE il costo, dove acquistarlo o il link di acquisto.\n"
-                "5. SINTESI TOTALE: Massimo 3 o 4 frasi concise. Niente paragrafi dispersivi."
+                "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n"
+                "L'utente ha chiesto espressamente informazioni su questo specifico profumo presente a catalogo.\n\n"
+                "REGOLE TASSATIVE DI RISPOSTA:\n"
+                "1. Rispondi alla richiesta dell'utente con eleganza, autorevolezza e precisione descrivendo la fragranza, "
+                "le sue note olfattive o l'aspetto specifico su cui l'utente ha chiesto lumi.\n"
+                "2. Trattandosi della prima presentazione di questa fragranza nella conversazione, devi OBBLIGATORIAMENTE includere nelle ultime due righe separate:\n"
+                "   **Prezzo:** PREZZO_DI_VENDITA EUR\n"
+                "   [Aggiungi al Carrello](URL_FORNITO)\n"
+                "3. FORMATO RISPOSTA OBBLIGATORIO:\n"
+                "   **Nome Profumo** di Brand\n"
+                "   Descrizione raffinata e risposta puntuale alla richiesta del cliente (massimo 2-3 frasi).\n"
+                "   **Prezzo:** PREZZO EUR\n"
+                "   [Aggiungi al Carrello](URL_FORNITO)\n\n"
+                "4. Sii sintetico, elegante e professionale."
             )
 
             messages = [{"role": "system", "content": system_prompt}]
@@ -335,60 +392,109 @@ class FragranceAdvisor:
             messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
         else:
-            results = self.search_engine.search(query=user_query, max_price=max_price, n_results=5)
-            
-            if not results["ids"] or len(results["ids"][0]) == 0:
-                fallback_reply = (
-                    "Non ho trovato a catalogo una fragranza che corrisponda a queste specifiche caratteristiche. "
-                    "Puoi provare a indicare una famiglia olfattiva più generica oppure iniziare il nostro percorso guidato."
-                )
-                self.sessions[session_id].append({"role": "user", "content": user_query})
-                self.sessions[session_id].append({"role": "assistant", "content": fallback_reply})
-                return {"reply": fallback_reply, "options": ["🎯 Guidami nella scelta"], "step": None, "mode": "free"}
+            active = self.active_perfumes.get(session_id)
+            intent = self._determine_intent(user_query, active)
+            is_follow_up = (intent == "VALUTA" and active is not None)
 
-            candidates_text = []
-            candidates_map = {}
-            for i in range(len(results["ids"][0])):
-                meta = results["metadatas"][0][i]
-                doc = results["documents"][0][i]
-                pid = f"PRODOTTO_{i+1}"
-                candidates_map[pid] = {
-                    "name": meta.get("name", ""),
-                    "brand": meta.get("brand", "Profumeria Artistica"),
-                    "price": meta.get("price", 0.0),
-                    "add_to_cart_url": meta.get("add_to_cart_url", ""),
-                    "document": doc
-                }
-                candidates_text.append(
-                    f"[{pid}]\n"
-                    f"Nome: {meta['name']}\n"
-                    f"Brand: {meta.get('brand', 'Profumeria Artistica')}\n"
-                    f"Prezzo: {meta['price']} EUR\n"
-                    f"Link: {meta['add_to_cart_url']}\n"
-                    f"Descrizione e Note: {doc}"
+            print(f"\n[ROUTER DEBUG] Profumo attivo: '{active.get('name') if active else 'NESSUNO'}'")
+            print(f"[ROUTER DEBUG] Domanda: '{user_query}' -> Decisione: {'SEGUI PRODOTTO (VALUTA)' if is_follow_up else 'CERCA NUOVO (CAMBIA)'}")
+
+            # RAMO 2: Follow-up sullo stesso profumo già discusso -> SENZA PREZZO E CARRELLO (salvo richiesta esplicita)
+            if is_follow_up:
+                context_str = (
+                    f"[PRODOTTO ATTUALMENTE DISCUSSO]\n"
+                    f"- Nome: {active['name']}\n"
+                    f"- Brand: {active.get('brand', 'Profumeria Artistica')}\n"
+                    f"- Famiglia: {active.get('family', '')} | Tipologia: {active.get('ptype', '')}\n"
+                    f"- Prezzo di vendita ufficiale: {active['price']} EUR\n"
+                    f"- Link Acquisto: {active['add_to_cart_url']}\n"
+                    f"- Profilo olfattivo, note ed occasioni d'uso: {active['document']}"
                 )
 
-            context_str = "\n\n".join(candidates_text)
+                system_prompt = (
+                    "Sei un Maitre Parfumeur e critico olfattivo di altissimo livello in una boutique di profumeria artistica.\n"
+                    "Il tuo dovere principale è l'ONESTÀ e l'AUTOREVOLEZZA PROFESSIONALE: NON fare il compiacente e NON dire di sì a tutto.\n\n"
+                    "REGOLE CRITICHE PER IL GIUDIZIO E CHIARIMENTI (BLUF):\n"
+                    "1. DECISIONE NETTA NELLA PRIMA FRASE:\n"
+                    "   - Se l'utente chiede spiegazioni sulle note o sulla piramide, descrivile con eleganza evidenziando testa, cuore e fondo.\n"
+                    "   - Se chiede esplicitamente il prezzo o il costo, indicalo subito.\n"
+                    "   - Se la richiesta dell'utente è palesemente inadatta o non compatibile col profumo discusso, sconsiglialo con fermezza ed eleganza.\n"
+                    "   - Se invece è adeguata (es. marino/agrumato per l'estate), conferma con sicurezza.\n"
+                    "2. MOTIVAZIONE TECNICA IN 1-2 FRASI: Spiega la ragione chimico-olfattiva concreta basandoti sulla piramide e sul contesto d'uso.\n"
+                    "3. DIVIETO ASSOLUTO DI RACCOMANDARE ALTRI PROFUMI A MEMORIA:\n"
+                    "   - NON citare, NON inventare e NON proporre nomi di altri profumi non presenti in questo contesto.\n"
+                    "   - Se il profumo discusso non va bene per le note o l'occasione richiesta, dillo con chiarezza e aggiungi semplicemente che, se vuole, puoi cercargli una fragranza a catalogo con quelle caratteristiche specifiche.\n"
+                    "4. GESTIONE DI PREZZO E LINK AL CARRELLO:\n"
+                    "   - Nelle normali domande di chiarimento, note, parere o idoneità, NON inserire né il prezzo né il link al carrello.\n"
+                    "   - Inserisci il prezzo e il link SOLO se l'utente richiede ESPLICITAMENTE il costo, il prezzo o il link di acquisto.\n"
+                    "5. SINTESI TOTALE: Massimo 3 o 4 frasi concise. Niente testi dispersivi."
+                )
 
-            system_prompt = (
-                "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di nicchia.\n\n"
-                "COMPITO DI SELEZIONE RIGOROSA:\n"
-                "Hai a disposizione una lista di CANDIDATI estratti dal catalogo.\n"
-                "1. Analizza la richiesta dell'utente.\n"
-                "2. Scegli TRA I CANDIDATI ESATTAMENTE UN SOLO PRODOTTO che rispecchia REALMENTE e COERENTEMENTE la richiesta.\n"
-                "3. REGOLA ANTI-CONTRADDIZIONE: Se un candidato è intenso/caldo, NON proporlo per richieste di freschezza/leggerezza.\n"
-                "4. FORMATO RISPOSTA OBBLIGATORIO (Proposta di un nuovo profumo o alternativa):\n"
-                "   [ID: PRODOTTO_X]\n"
-                "   **Nome Profumo** di Brand\n"
-                "   Descrizione raffinata e diretta (massimo 2-3 frasi) del perché è la scelta ideale per le sue note olfattive.\n"
-                "   **Prezzo:** PREZZO EUR\n"
-                "   [Aggiungi al Carrello](URL_FORNITO)\n\n"
-                "   NOTA: Riporta TASSATIVAMENTE il prezzo sulla riga successiva alla descrizione e IMMEDIATAMENTE PRIMA del link al carrello.\n"
-                "5. SCARTO: Se NESSUN candidato è adatto, scrivi '[ID: NESSUNO]' all'inizio e spiega gentilmente che al momento non abbiamo la fragranza adatta."
-            )
+                messages = [{"role": "system", "content": system_prompt}]
+                messages.extend(history[-2:])
+                messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
-            messages = [{"role": "system", "content": system_prompt}]
-            messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCANDIDATI CATALOGO DISPONIBILI:\n{context_str}"})
+            # RAMO 3: Ricerca di un nuovo profumo tramite ChromaDB -> Con PREZZO e CARRELLO
+            else:
+                results = self.search_engine.search(query=user_query, max_price=max_price, n_results=5)
+
+                if not results["ids"] or len(results["ids"][0]) == 0:
+                    fallback_reply = (
+                        "Non ho trovato a catalogo una fragranza che corrisponda a queste specifiche caratteristiche. "
+                        "Puoi provare a indicare una famiglia olfattiva più generica oppure iniziare il nostro percorso guidato."
+                    )
+                    self.sessions[session_id].append({"role": "user", "content": user_query})
+                    self.sessions[session_id].append({"role": "assistant", "content": fallback_reply})
+                    return {"reply": fallback_reply, "options": ["🎯 Guidami nella scelta"], "step": None, "mode": "free"}
+
+                candidates_text = []
+                candidates_map = {}
+                for i in range(len(results["ids"][0])):
+                    meta = results["metadatas"][0][i]
+                    doc = results["documents"][0][i]
+                    pid = f"PRODOTTO_{i+1}"
+                    candidates_map[pid] = {
+                        "name": meta.get("name", ""),
+                        "brand": meta.get("brand", "Profumeria Artistica"),
+                        "price": meta.get("price", 0.0),
+                        "family": meta.get("family", ""),
+                        "ptype": meta.get("ptype", ""),
+                        "add_to_cart_url": meta.get("add_to_cart_url", ""),
+                        "product_page_url": meta.get("product_page_url", ""),
+                        "image_url": meta.get("image_url", ""),
+                        "document": doc
+                    }
+                    candidates_text.append(
+                        f"[{pid}]\n"
+                        f"Nome: {meta['name']}\n"
+                        f"Brand: {meta.get('brand', 'Profumeria Artistica')}\n"
+                        f"Tipologia: {meta.get('ptype', '')} | Famiglia: {meta.get('family', '')}\n"
+                        f"Prezzo: {meta['price']} EUR\n"
+                        f"Link Acquisto: {meta['add_to_cart_url']}\n"
+                        f"Descrizione e Note: {doc}"
+                    )
+
+                context_str = "\n\n".join(candidates_text)
+
+                system_prompt = (
+                    "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n\n"
+                    "COMPITO DI SELEZIONE RIGOROSA:\n"
+                    "Hai a disposizione una lista di CANDIDATI estratti dal catalogo.\n"
+                    "1. Analizza la richiesta dell'utente.\n"
+                    "2. Scegli TRA I CANDIDATI ESATTAMENTE UN SOLO PRODOTTO che rispecchia REALMENTE e COERENTEMENTE la richiesta.\n"
+                    "3. REGOLA ANTI-CONTRADDIZIONE: Se un candidato è caldo/intenso, NON proporlo per richieste di freschezza marina o leggerezza.\n"
+                    "4. FORMATO RISPOSTA OBBLIGATORIO (Proposta di un nuovo profumo o alternativa):\n"
+                    "   [ID: PRODOTTO_X]\n"
+                    "   **Nome Profumo** di Brand\n"
+                    "   Descrizione raffinata e diretta (massimo 2-3 frasi) del perché è la scelta ideale per le sue note olfattive ed occasioni d'uso.\n"
+                    "   **Prezzo:** PREZZO EUR\n"
+                    "   [Aggiungi al Carrello](URL_FORNITO)\n\n"
+                    "   NOTA: Riporta TASSATIVAMENTE il prezzo sulla riga successiva alla descrizione e IMMEDIATAMENTE PRIMA del link al carrello.\n"
+                    "5. SCARTO: Se NESSUN candidato è adatto, scrivi '[ID: NESSUNO]' all'inizio e spiega gentilmente che al momento non abbiamo la fragranza adatta."
+                )
+
+                messages = [{"role": "system", "content": system_prompt}]
+                messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCANDIDATI CATALOGO DISPONIBILI:\n{context_str}"})
 
         response = self.client.chat.completions.create(
             model="openai/gpt-oss-120b",
@@ -397,13 +503,14 @@ class FragranceAdvisor:
         )
         reply = response.choices[0].message.content
 
-        if not is_follow_up and "candidates_map" in locals():
+        # Registrazione del profumo attivo per il Ramo 3 (da ricerca candidati)
+        if not (is_new_product_switch and mentioned_product) and not is_follow_up and "candidates_map" in locals():
             match = re.search(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]", reply, re.IGNORECASE)
             if match:
                 selected_id = match.group(1).upper()
                 if selected_id in candidates_map:
                     self.active_perfumes[session_id] = candidates_map[selected_id]
-                    print(f"[ADVISOR] Profumo attivo registrato con successo: {candidates_map[selected_id]['name']}")
+                    print(f"[ADVISOR] Profumo attivo registrato: {candidates_map[selected_id]['name']}")
                 reply = re.sub(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]\s*", "", reply).strip()
             else:
                 self.active_perfumes[session_id] = candidates_map["PRODOTTO_1"]
