@@ -15,3 +15,6 @@ The assistant interacts with the customer through a natural-language conversatio
 ## Purpose
 
 The goal of the project is to make the perfume selection process simpler and more personalized, providing customers with an interactive way to discover fragrances that fit their preferences.
+
+## Target
+Optimized for _Etualy.com_
