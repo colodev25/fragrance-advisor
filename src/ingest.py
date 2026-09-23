@@ -38,9 +38,9 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Shopify-Catalog-Ingest)"}
 ALLOWED_TYPES = {"fragranze", "profumi", "profumo", "eau de parfum", "extrait de parfum"}
 
 EXCLUDED_KEYWORDS = [
-    "crema", "bagnodoccia", "doccia schiuma", "sapone", "shampoo",
+    "crema", "hair", "bagnodoccia", "doccia schiuma", "sapone", "shampoo",
     "balsamo", "olio corpo", "candela", "diffusore", "ambiente",
-    "solare", "siero", "scrub", "lozione", "deodorante"
+    "solare", "siero", "scrub", "lozione", "deodorante", "sample", "Profumo per capelli", "Capelli", 
 ]
 
 # ==============================================================================

@@ -16,10 +16,25 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 CATALOG_PATH = BASE_DIR / "data" / "catalog.json"
 
+# ==============================================================================
+# MAPPATURA MACRO-CATEGORIE E FAMIGLIE OLFATTIVE DEL PERCORSO GUIDATO
+# ==============================================================================
+MACRO_FAMILIES = {
+    "🍋 Fresco o Agrumato": ["Acquatica", "Agrumata", "Aromatica", "Verde"],
+    "🌸 Floreale o Fruttato": ["Floreale", "Floreale - sample", "Fruttata", "Talcata"],
+    "🍦 Dolce o Caldo": ["Ambrata", "Gourmand", "Orientale", "Vanigliata"],
+    "🪵 Legnoso o Intenso": ["Chypre", "Cuoiata", "Legnosa", "Muschiata", "Speziata", "Tabaccosa"]
+}
+
 GUIDED_STEPS = {
     1: {
         "question": "Che tipo di sensazione o famiglia olfattiva preferisci?",
-        "options": ["Fresco & Agrumato", "Dolce & Gourmand", "Ambrato & Orientale", "Legnoso & Cuoiato"]
+        "options": [
+            "🍋 Fresco o Agrumato",
+            "🌸 Floreale o Fruttato",
+            "🍦 Dolce o Caldo",
+            "🪵 Legnoso o Intenso"
+        ]
     },
     2: {
         "question": "In quale contesto o stagione desideri indossarlo principalmente?",
@@ -62,6 +77,30 @@ class FragranceAdvisor:
             except Exception as e:
                 print(f"[ADVISOR] Avviso: caricamento catalog.json fallito: {e}")
 
+    def _resolve_macro_family(self, family_ans: str) -> tuple[str, list[str]]:
+        """
+        Riconosce la macro-categoria scelta (sia da pulsante che da testo libero)
+        e restituisce la tupla (nome_macro, [sotto_famiglie]).
+        """
+        ans_clean = family_ans.lower().strip()
+
+        # 1. Match diretto su etichetta pulsante
+        for macro_key, sub_fams in MACRO_FAMILIES.items():
+            if macro_key.lower() == ans_clean or macro_key.lower() in ans_clean:
+                return macro_key, sub_fams
+
+        # 2. Match flessibile su parole chiave se l'utente ha digitato a mano
+        if any(w in ans_clean for w in ["fresc", "agrum", "acquat", "aromat", "verd"]):
+            return "🍋 Fresco o Agrumato", MACRO_FAMILIES["🍋 Fresco o Agrumato"]
+        if any(w in ans_clean for w in ["floreal", "fruttat", "talcat", "fior"]):
+            return "🌸 Floreale o Fruttato", MACRO_FAMILIES["🌸 Floreale o Fruttato"]
+        if any(w in ans_clean for w in ["dolc", "cald", "gourmand", "vanigli", "ambrat", "oriental"]):
+            return "🍦 Dolce o Caldo", MACRO_FAMILIES["🍦 Dolce o Caldo"]
+        if any(w in ans_clean for w in ["legnos", "intens", "speziat", "cuoi", "chypre", "tabacc", "muschi"]):
+            return "🪵 Legnoso o Intenso", MACRO_FAMILIES["🪵 Legnoso o Intenso"]
+
+        return family_ans, [family_ans]
+
     def _find_mentioned_product(self, query: str) -> dict | None:
         """Individua se nella frase è presente il nome di un profumo a catalogo."""
         if not self.catalog_products:
@@ -95,53 +134,42 @@ class FragranceAdvisor:
         return None
 
     def _extract_price_constraints(self, query: str, active_perfume: dict | None) -> tuple[float | None, float | None, str]:
-        """
-        Estrae vincoli di budget (min e max) sia relativi (es. 'più economico' del profumo attivo)
-        sia assoluti (es. 'sotto i 200€', 'tra 100 e 150 euro').
-        Restituisce (min_price, max_price, query_pulita_per_ricerca).
-        """
+        """Estrae vincoli di budget relativi o assoluti e ripulisce la query semantica."""
         min_p = None
         max_p = None
         q = query.strip()
 
-        # 1. VINCOLI RELATIVI (rispetto al profumo attivo)
+        # Vincoli relativi
         is_cheaper = bool(re.search(r"\b(pi[uù]\s+economic[oa]|meno\s+costos[oa]|pi[uù]\s+abbordabile|pi[uù]\s+accessibile|spendere\s+meno|a\s+meno|costa\s+meno)\b", q, re.I))
         is_expensive = bool(re.search(r"\b(pi[uù]\s+costos[oa]|pi[uù]\s+pregiat[oa]|di\s+fascia\s+pi[uù]\s+alta|pi[uù]\s+esclusiv[oa]|di\s+lusso|alta\s+gamma|alta\s+profumeria|spendere\s+di\s+pi[uù])\b", q, re.I))
 
         if is_cheaper and active_perfume and active_perfume.get("price"):
             current_price = float(active_perfume["price"])
             max_p = max(0.0, current_price - 0.5)
-            print(f"[PRICE PARSER] Riconosciuta richiesta 'più economico': max_price impostato a {max_p}€ (precedente: {current_price}€)")
+            print(f"[PRICE PARSER] 'più economico': max_price impostato a {max_p}€ (precedente: {current_price}€)")
 
         elif is_expensive and active_perfume and active_perfume.get("price"):
             current_price = float(active_perfume["price"])
             min_p = current_price + 0.5
-            print(f"[PRICE PARSER] Riconosciuta richiesta 'più esclusivo/costoso': min_price impostato a {min_p}€ (precedente: {current_price}€)")
+            print(f"[PRICE PARSER] 'più costoso': min_price impostato a {min_p}€ (precedente: {current_price}€)")
 
-        # 2. VINCOLI ASSOLUTI (Pattern numerici espliciti)
-        # 2a. Range esplicito: 'tra 100 e 200 euro', 'da 80 a 120€'
+        # Vincoli assoluti
         range_match = re.search(r"\b(?:tra|da)\s+(?:i\s+)?(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\s+(?:e|a)\s+(?:i\s+)?(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\b", q, re.I)
         if range_match:
             min_p = float(range_match.group(1).replace(",", "."))
             max_p = float(range_match.group(2).replace(",", "."))
-            print(f"[PRICE PARSER] Range rilevato: da {min_p}€ a {max_p}€")
 
-        # 2b. Tetto massimo: 'sotto i 200€', 'meno di 150 euro', 'massimo 120', 'budget 100€', 'entro 180'
         max_match = re.search(r"\b(?:sotto\s+(?:i\s+)?|meno\s+di\s+|massimo\s+|max\s+|entro\s+(?:i\s+)?|fino\s+a\s+|budget\s+(?:di\s+)?|<|<=)\s*(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\b", q, re.I)
         if max_match and not range_match:
             val = float(max_match.group(1).replace(",", "."))
             max_p = val if max_p is None else min(max_p, val)
-            print(f"[PRICE PARSER] Limite massimo rilevato: {max_p}€")
 
-        # 2c. Soglia minima: 'oltre i 200€', 'più di 150 euro', 'almeno 100', 'minimo 80'
         min_match = re.search(r"\b(?:sopra\s+(?:i\s+)?|oltre\s+(?:i\s+)?|pi[uù]\s+di\s+|almeno\s+|minimo\s+|min\s+|>|>=)\s*(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\b", q, re.I)
         if min_match and not range_match:
             val = float(min_match.group(1).replace(",", "."))
             min_p = val if min_p is None else max(min_p, val)
-            print(f"[PRICE PARSER] Limite minimo rilevato: {min_p}€")
 
-        # 3. PULIZIA DELLA QUERY PER LA RICERCA SEMANTICA
-        # Rimuove le formule di prezzo dalla stringa per non sporcare il calcolo vettoriale di ChromaDB
+        # Pulizia stringa per ricerca semantica
         search_query = q
         search_query = re.sub(r"\b(?:tra|da)\s+(?:i\s+)?\d+(?:[.,]\d+)?\s*(?:€|euro)?\s+(?:e|a)\s+(?:i\s+)?\d+(?:[.,]\d+)?\s*(?:€|euro)?\b", "", search_query, flags=re.I)
         search_query = re.sub(r"\b(?:sotto\s+(?:i\s+)?|meno\s+di\s+|massimo\s+|max\s+|entro\s+(?:i\s+)?|fino\s+a\s+|budget\s+(?:di\s+)?|<|<=)\s*\d+(?:[.,]\d+)?\s*(?:€|euro)?\b", "", search_query, flags=re.I)
@@ -151,13 +179,10 @@ class FragranceAdvisor:
         search_query = re.sub(r"\b(pi[uù]\s+costos[oa]|pi[uù]\s+pregiat[oa]|di\s+fascia\s+pi[uù]\s+alta|pi[uù]\s+esclusiv[oa]|di\s+lusso|alta\s+gamma|alta\s+profumeria|spendere\s+di\s+pi[uù])\b", "", search_query, flags=re.I)
         search_query = re.sub(r"\s+", " ", search_query).strip()
 
-        # Se dopo la rimozione dei filtri di prezzo la frase è priva di indicazioni olfattive
-        # (es. era solo 'cercami un alternativa più economica'), eredita il contesto del profumo attivo
-        words = [w for w in re.findall(r"\b[a-zA-Zàèéìòù]+\b", search_query.lower()) if len(w) > 2 and w not in ["vorrei", "cerco", "cercami", "trova", "trovami", "consiglia", "consigliami", "profumo", "fragranza", "alternativa", "altro", "altra"]]
+        words = [w for w in re.findall(r"\b[a-zA-Zàèéìòù]+\b", search_query.lower()) if len(w) > 2 and w not in ["vorrei", "cerco", "cercami", "cercavo", "trova", "trovami", "consiglia", "consigliami", "profumo", "fragranza", "alternativa", "altro", "altra"]]
         if not words and active_perfume:
             fam = active_perfume.get("family", "")
             search_query = f"Profumo {fam} affine a {active_perfume['name']}"
-            print(f"[PRICE PARSER] Nessuna nota specificata: la ricerca eredita la famiglia '{fam}' del profumo attivo.")
 
         return min_p, max_p, search_query
 
@@ -167,22 +192,15 @@ class FragranceAdvisor:
 
         q = re.sub(r"[?!.,;:]", " ", query.lower()).strip()
 
-        # 1. CAMBIO ESPLICITO, RICERCA O RICHIESTA DI BUDGET DIVERSO
+        # 1. CAMBIO ESPLICITO, RICERCA O RICHIESTA BUDGET
         switch_patterns = [
-            # Formule di prezzo relativo (es. 'più economico', 'meno costoso') -> CAMBIA sempre
             r"\b(pi[uù]\s+economic[oa]|meno\s+costos[oa]|pi[uù]\s+abbordabile|pi[uù]\s+accessibile|spendere\s+meno|a\s+meno|costa\s+meno)\b",
             r"\b(pi[uù]\s+costos[oa]|pi[uù]\s+pregiat[oa]|alta\s+gamma|spendere\s+di\s+pi[uù])\b",
-
-            # Filtri di budget espliciti nella query (es. 'sotto i 200€', 'meno di 150', 'tra 100 e 150')
             r"\b(?:sotto\s+i?|meno\s+di|entro\s+i?|fino\s+a|oltre\s+i?|pi[uù]\s+di|budget\s+di?)\s*\d+\b",
             r"\b(?:tra|da)\s+\d+.*\b(?:e|a)\s+\d+\b",
-
-            # Formule con 'qualcosa' o ricerca
             r"\b(vorrei|voglio|cerco|cercavo|cercami|trova|trovami|proponi|proponimi)\s+qualcosa\b",
             r"\bqualcosa\s+con\b", r"\bqualcosa\s+di\b",
             r"\bqualcos[' ]altro\b", r"\bqualcosa\s+d[' ]altr[oa]\b",
-
-            # Richiesta esplicita di profumo o alternativa
             r"\b(vorrei|voglio|cerco|cercavo|cerca|cercami|trova|trovami|consiglia|consigliami|mostra|mostrami|proponi|proponimi|suggerisci|suggeriscimi)\b.*\b(un|una|uno|profumo|fragranza|note|accordo|flacone|alternativa)\b",
             r"\bun\s+altr[oa]\b", r"\bun[' ]altra\b",
             r"\baltr[oaei]\s+profum[ie]\b", r"\baltr[oaei]\s+fragranz[ea]\b",
@@ -203,12 +221,8 @@ class FragranceAdvisor:
             r"\bsu[oaei]\b",
             r"\bquest[oaei]\b",
             r"\blo\s+posso\b", r"\bla\s+posso\b", r"\bsi\s+pu[oò]\b",
-
-            # Domande sul costo/prezzo del prodotto corrente
             r"\b(quanto\s+costa|qual\s+[eè]\s+il\s+prezzo|quanto\s+viene|costo\s+effettivo|[eè]\s+costos[oa])\b",
             r"^\s*(prezzo|costo)\s*\??\s*$",
-
-            # Performance e occasioni
             r"\b(quanto\s+dura|durata|persistenza|proiezione|sillage|scia)\b",
             r"\b(va\s+bene|è\s+adatt[oa]|adatt[oa]\s+a)\b",
             r"\b(per\s+l'ufficio|in\s+ufficio|al\s+lavoro)\b",
@@ -291,7 +305,7 @@ class FragranceAdvisor:
                     "mode": "guided"
                 }
             elif effective_step == 2:
-                first_ans = state["answers"][0] if len(state["answers"]) > 0 else "Artistico"
+                first_ans = state["answers"][0] if len(state["answers"]) > 0 else "🍋 Fresco o Agrumato"
                 state["answers"] = [first_ans, query_clean]
                 state["step"] = 3
                 return {
@@ -301,7 +315,7 @@ class FragranceAdvisor:
                     "mode": "guided"
                 }
             elif effective_step == 3:
-                first_ans = state["answers"][0] if len(state["answers"]) > 0 else "Artistico"
+                first_ans = state["answers"][0] if len(state["answers"]) > 0 else "🍋 Fresco o Agrumato"
                 second_ans = state["answers"][1] if len(state["answers"]) > 1 else "Tutti i giorni"
                 state["answers"] = [first_ans, second_ans, query_clean]
                 state["step"] = None
@@ -310,9 +324,16 @@ class FragranceAdvisor:
         return self._handle_free_chat(user_query, session_id, max_price)
 
     def _generate_guided_recommendations(self, answers: list, session_id: str) -> dict:
-        family = answers[0] if len(answers) > 0 else "Artistico"
+        family_raw = answers[0] if len(answers) > 0 else "🍋 Fresco o Agrumato"
         occasion = answers[1] if len(answers) > 1 else "Tutti i giorni"
         budget_str = answers[2] if len(answers) > 2 else "Nessun limite"
+
+        # Risoluzione macro-categoria e relative sotto-famiglie
+        macro_label, sub_fams = self._resolve_macro_family(family_raw)
+        sub_fams_str = ", ".join(sub_fams)
+        clean_macro = re.sub(r"^[^\w\s]+", "", macro_label).strip()
+
+        print(f"[GUIDED SEARCH] Macro scelta: '{macro_label}' -> Sotto-famiglie: {sub_fams}")
 
         min_p = None
         max_p = None
@@ -325,7 +346,11 @@ class FragranceAdvisor:
         elif "oltre 200" in budget_str.lower() or "> 200" in budget_str:
             min_p = 200.0
 
-        search_prompt = f"Profumo {family} ideale per {occasion}."
+        # Query semantica ad alta densità che include sia la macro-sensazione sia le sotto-famiglie
+        search_prompt = (
+            f"Profumo {clean_macro} appartenente a famiglie come {sub_fams_str}. "
+            f"Ideale per {occasion}."
+        )
 
         results = self.search_engine.search(
             query=search_prompt,
@@ -368,7 +393,7 @@ class FragranceAdvisor:
 
         if not context_items:
             return {
-                "reply": "Non ho trovato fragranze a catalogo che rientrino esattamente in questa specifica combinazione di note e fascia di prezzo. Prova a selezionare un'altra fascia o una famiglia olfattiva differente!",
+                "reply": f"Non ho trovato fragranze a catalogo che rientrino esattamente nella categoria '{macro_label}' per la fascia di prezzo selezionata. Prova a scegliere un'altra fascia o un'altra macro-categoria!",
                 "options": ["🎯 Ricomincia percorso guidato", "💬 Fai una domanda libera"],
                 "step": None,
                 "mode": "free"
@@ -381,7 +406,7 @@ class FragranceAdvisor:
 
         prompt = (
             f"L'utente ha completato il percorso guidato con queste preferenze:\n"
-            f"- Famiglia olfattiva: {family}\n"
+            f"- Macro-categoria olfattiva: {macro_label} (include famiglie come: {sub_fams_str})\n"
             f"- Occasione/Uso: {occasion}\n"
             f"- Fascia Budget: {budget_str}\n\n"
             f"PRODOTTI REALI PRESENTI A CATALOGO:\n{context_str}\n\n"
@@ -389,7 +414,7 @@ class FragranceAdvisor:
             "1. Presenta ESCLUSIVAMENTE i prodotti elencati sopra. NON inventare nomi, marchi, prezzi o profumi non presenti nel testo.\n"
             "2. Per ciascun profumo adotta TASSATIVAMENTE questa struttura ordinata su righe separate:\n"
             "   - **Nome Profumo** di Brand\n"
-            "   - Breve descrizione raffinata (1 o 2 frasi) con le note salienti e il motivo per cui rispecchia la richiesta.\n"
+            f"   - Breve descrizione raffinata (1 o 2 frasi) con le note salienti e spiegando come rispecchia la macro-sensazione '{clean_macro}'.\n"
             "   - **Prezzo:** PREZZO_DI_VENDITA EUR\n"
             "   - [Aggiungi al Carrello](URL_FORNITO)\n\n"
             "3. Il prezzo DEVE apparire sulla riga successiva alla descrizione e PRIMA del link al carrello.\n"
@@ -403,7 +428,7 @@ class FragranceAdvisor:
         )
         reply = response.choices[0].message.content
 
-        self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato completato: {', '.join(answers)}"})
+        self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato completato: {macro_label}, {occasion}, {budget_str}"})
         self.sessions[session_id].append({"role": "assistant", "content": reply})
 
         return {
@@ -417,7 +442,7 @@ class FragranceAdvisor:
         history = self.sessions[session_id]
         active_before = self.active_perfumes.get(session_id)
 
-        # 1. Riconoscimento nominale esplicito di un profumo citato a catalogo
+        # 1. Verifica se l'utente ha citato un profumo esplicito a catalogo
         mentioned_product = self._find_mentioned_product(user_query)
         is_new_product_switch = False
 
@@ -427,7 +452,7 @@ class FragranceAdvisor:
             self.active_perfumes[session_id] = mentioned_product
             print(f"[ENTITY MATCH] '{mentioned_product['name']}' (Nuovo switch: {is_new_product_switch})")
 
-        # RAMO 1: Profumo citato esplicitamente per la prima volta -> PREZZO e CARRELLO obbligatori
+        # RAMO 1: Profumo citato per nome per la prima volta -> PREZZO e CARRELLO obbligatori
         if is_new_product_switch and mentioned_product:
             context_str = (
                 f"[PRODOTTO RICHIESTO DAL CLIENTE]\n"
@@ -466,7 +491,7 @@ class FragranceAdvisor:
             print(f"\n[ROUTER DEBUG] Profumo attivo: '{active.get('name') if active else 'NESSUNO'}'")
             print(f"[ROUTER DEBUG] Domanda: '{user_query}' -> Decisione: {'SEGUI PRODOTTO (VALUTA)' if is_follow_up else 'CERCA NUOVO (CAMBIA)'}")
 
-            # RAMO 2: Domanda di chiarimento/valutazione sullo stesso profumo attivo -> SENZA CARRELLO
+            # RAMO 2: Chiarimento o approfondimento sullo stesso profumo -> SENZA CARRELLO
             if is_follow_up:
                 context_str = (
                     f"[PRODOTTO ATTUALMENTE DISCUSSO]\n"
@@ -501,15 +526,14 @@ class FragranceAdvisor:
                 messages.extend(history[-2:])
                 messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
-            # RAMO 3: Ricerca di un nuovo profumo (con estrazione dinamica dei vincoli di prezzo)
+            # RAMO 3: Ricerca di un nuovo profumo su ChromaDB con filtri di prezzo
             else:
                 parsed_min_p, parsed_max_p, search_query_clean = self._extract_price_constraints(user_query, active)
 
-                # Priorità ai vincoli estratti dal testo; fallback su max_price passato come parametro
                 effective_max_p = parsed_max_p if parsed_max_p is not None else max_price
                 effective_min_p = parsed_min_p
 
-                print(f"[SEARCH EXEC] Query per ChromaDB: '{search_query_clean}' | Filtri Prezzo: min={effective_min_p}, max={effective_max_p}")
+                print(f"[SEARCH EXEC] Query ChromaDB: '{search_query_clean}' | Filtri Prezzo: min={effective_min_p}, max={effective_max_p}")
 
                 results = self.search_engine.search(
                     query=search_query_clean,
@@ -591,7 +615,7 @@ class FragranceAdvisor:
         )
         reply = response.choices[0].message.content
 
-        # Registrazione del profumo attivo per il Ramo 3 (da ricerca candidati)
+        # Registrazione del profumo attivo per il Ramo 3
         if not (is_new_product_switch and mentioned_product) and not is_follow_up and "candidates_map" in locals():
             match = re.search(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]", reply, re.IGNORECASE)
             if match:
