@@ -1,13 +1,12 @@
 """
-build_catalog.py / ingest.py
+ingest.py - Shopify Universal Extractor (Sanitized Edition)
 
-Scarica i prodotti della categoria 'profumi' tramite WooCommerce Store API,
-applica i filtri di esclusione (cosmesi, creme, bagnoschiuma),
-arricchisce i dati tramite pipeline ibrida (Regex + LLM Fallback con Groq)
-e salva catalog.json e scartati.json per il motore vettoriale.
+Scarica il catalogo tramite /products.json di Shopify, analizza i blocchi
+collapsible dinamici del tema (Piramide, Famiglia, Tipologia, Usage Profile),
+elimina tassativamente tag HTML (<br>), tronca metadati estranei (formato, EDP)
+e produce data/catalog.json strutturato per ChromaDB e l'Advisor.
 
 Uso:
-    pip install requests beautifulsoup4 python-dotenv openai
     python src/ingest.py
 """
 
@@ -16,7 +15,6 @@ import json
 import os
 import re
 import time
-import unicodedata
 from pathlib import Path
 
 import requests
@@ -26,95 +24,221 @@ from openai import OpenAI
 
 load_dotenv()
 
-# ---------------- CONFIG ----------------
-SITE = os.getenv("WC_STORE_URL", "https://www.trasparenzeprofumeria.it").rstrip("/")
-BASE = f"{SITE}/wp-json/wc/store/v1"
-CATEGORY_SLUG = "profumi"
-
-# Parole chiave per scartare prodotti non pertinenti (cosmesi, corpo, ambiente)
-EXCLUDED_KEYWORDS = [
-    "cosmesi", "skincare", "skin care", "solari", "cura del corpo", 
-    "trattamento", "trattamenti", "accessori",
-    "crema", "creme", "siero", "serum", "maschera", "scrub", 
-    "peeling", "tonico", "lozione", "bagnodoccia", "doccia schiuma", 
-    "bagnoschiuma", "sapone", "shampoo", "balsamo", "olio corpo", 
-    "deodorante", "emulsione", "contour", "detergente", "struccante",
-    "latte corpo", "gel doccia", "candela", "diffusore", "ambiente"
-]
-
+# ---------------- CONFIGURAZIONE ----------------
+SITE = os.getenv("SHOPIFY_STORE_URL", "").rstrip("/")
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 OUTPUT_FILE = DATA_DIR / "catalog.json"
 DROPPED_FILE = DATA_DIR / "scartati.json"
 
-PER_PAGE = 100
-PAUSE = 1.0
+PER_PAGE = 250
 TIMEOUT = 30
-HEADERS = {"User-Agent": "Mozilla/5.0 (catalog-builder)"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Shopify-Catalog-Ingest)"}
 
-SYSTEM_CATEGORIES = {
-    "profumi", "fragranze", "promozioni", "promozioni-esclusive",
-    "outlet", "novita", "in-evidenza", "ultimi-pezzi", "face-out", 
-    "campioni", "nuovi-eventi", "nuovi eventi"
-}
+ALLOWED_TYPES = {"fragranze", "profumi", "profumo", "eau de parfum", "extrait de parfum"}
 
-# Client Groq per fallback semantico
+EXCLUDED_KEYWORDS = [
+    "crema", "bagnodoccia", "doccia schiuma", "sapone", "shampoo",
+    "balsamo", "olio corpo", "candela", "diffusore", "ambiente",
+    "solare", "siero", "scrub", "lozione", "deodorante"
+]
+
 GROQ_KEY = os.getenv("GROQ_API_KEY")
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
     api_key=GROQ_KEY
 ) if GROQ_KEY else None
-# ----------------------------------------
 
 session = requests.Session()
 session.headers.update(HEADERS)
+# ------------------------------------------------
 
 
-def norm(text: str) -> str:
-    """Minuscolo, senza accenti, senza spazi/trattini/punteggiatura."""
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z0-9]", "", text.lower())
-
-
-EXCLUDED_NORM = [norm(t) for t in EXCLUDED_KEYWORDS]
-
-
-def clean_html(raw_html: str) -> str:
-    """Rimuove tag HTML, decodifica entità e normalizza gli spazi."""
-    if not raw_html:
+def clean_text(raw_text: str) -> str:
+    """Rimuove tassativamente tag HTML, entità speciali e spazi multipli."""
+    if not raw_text:
         return ""
-    soup = BeautifulSoup(raw_html, "html.parser")
-    text = soup.get_text(separator=" ")
+    text = re.sub(r"<\s*br\s*/?>", " ", raw_text, flags=re.I)
+    text = re.sub(r"<[^>]+>", " ", text)
     text = html.unescape(text)
-    return re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"&[a-zA-Z0-9#]+;", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 
-def extract_brand(product: dict) -> str:
-    """Ricava il Brand del profumo scartando le categorie generiche."""
-    if "brands" in product and product["brands"]:
-        return html.unescape(product["brands"][0].get("name", "Profumeria Artistica")).strip()
-
-    for cat in product.get("categories", []):
-        slug = cat.get("slug", "").lower().strip()
-        name = html.unescape(cat.get("name", "")).strip()
-
-        if any(term in slug for term in ["promozion", "offerta", "stock", "face-out", "ultimo-pezzo"]):
-            continue
-        if slug in SYSTEM_CATEGORIES:
-            continue
-
-        return name if name else slug.replace("-", " ").title()
-
-    return "Profumeria Artistica"
-
-
-def extract_pyramid_regex(description: str) -> dict:
+def clean_note_items(raw_text: str) -> list[str]:
     """
-    Fase 1: Tenta di individuare le note olfattive tramite pattern classici
-    supportando formati italiani ed inglesi.
+    Sanitizza le note olfattive:
+    1. Rimuove qualsiasi tag HTML residuo (<br>, <span>, ecc.) ed entità.
+    2. Tronca immediatamente metadati spuri (Formato:, EDP, ml, ecc.).
+    3. Suddivide su virgole, punti e virgola, trattini e congiunzioni (' e ', ' ed ', ' & ').
+    4. Restituisce una lista di ingredienti puliti con iniziale maiuscola.
     """
+    if not raw_text:
+        return []
+
+    # 1. Sostituisce tag di interruzione con separatori ed elimina tutto l'HTML
+    text = re.sub(r"<\s*br\s*/?>", ", ", raw_text, flags=re.I)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    text = re.sub(r"&[a-zA-Z0-9#]+;", " ", text)
+
+    # 2. Taglia via tutto ciò che segue etichette di metadati (es. 'Formato:', 'Concentrazione:', ecc.)
+    text = re.split(
+        r"\b(?:formato|formati|concentrazione|tipologia|famiglia|genere|volume|quantit[aà]|confezione|packaging|made\s+in)\s*[:\-]",
+        text,
+        flags=re.I
+    )[0]
+
+    # 3. Rimuove indicazioni di formato residue rimaste isolate (es. 'EDP 2 x 15 ml', '100 ml')
+    text = re.sub(r"\b\d+\s*(?:x\s*\d+\s*)?(?:ml|cl|g|gr|oz)\b", "", text, flags=re.I)
+    text = re.sub(r"\b(?:edp|edt|extrait\s+de\s+parfum|eau\s+de\s+parfum|eau\s+de\s+toilette)\b", "", text, flags=re.I)
+
+    # 4. Suddivide su punteggiatura e sulle congiunzioni italiane/inglesi ('e', 'ed', '&', 'and')
+    raw_parts = re.split(r"[,;–•/\n\r]|\b(?:e|ed|and|&)\b", text, flags=re.I)
+
+    cleaned_list = []
+    for part in raw_parts:
+        p = re.sub(r"[\.()\*•–\-\"\':]", " ", part).strip()
+        p = re.sub(r"\s+", " ", p)
+
+        if not p or len(p) < 2:
+            continue
+        if p.isdigit():
+            continue
+        if p.lower() in ["formato", "edp", "edt", "unisex", "donna", "uomo", "parfum"]:
+            continue
+
+        if p.isupper():
+            p = p.title()
+        else:
+            p = p[:1].upper() + p[1:]
+
+        cleaned_list.append(p)
+
+    return cleaned_list
+
+
+def parse_pyramid_from_html(container) -> dict:
+    """Estrae le note olfattive convertendo i blocchi HTML in righe separate."""
     pyramid = {"top": [], "heart": [], "base": []}
-    if not description:
+    if not container:
+        return pyramid
+
+    container_copy = BeautifulSoup(str(container), "html.parser")
+
+    # Sostituisce i tag <br> con newline reali per isolare le righe
+    for br in container_copy.find_all("br"):
+        br.replace_with("\n")
+
+    for block in container_copy.find_all(["p", "div", "li"]):
+        block.insert_after("\n")
+
+    raw_lines = container_copy.get_text().split("\n")
+
+    for raw_line in raw_lines:
+        line = clean_text(raw_line)
+        if not line or len(line) < 3:
+            continue
+
+        # Note di Testa
+        if re.search(r"\b(?:note\s+di\s+testa|testa|top\s+notes?)\b", line, re.I):
+            val = re.split(r"(?:note\s+di\s+testa|testa|top\s+notes?)\s*[:\-]\s*", line, flags=re.I)[-1]
+            val = re.split(r"\b(?:note\s+di\s+cuore|note\s+di\s+fondo|cuore|fondo|heart|base|formato\b|formati\b)", val, flags=re.I)[0]
+            pyramid["top"].extend(clean_note_items(val))
+
+        # Note di Cuore
+        elif re.search(r"\b(?:note\s+di\s+cuore|cuore|heart\s+notes?|middle\s+notes?)\b", line, re.I):
+            val = re.split(r"(?:note\s+di\s+cuore|cuore|heart\s+notes?|middle\s+notes?)\s*[:\-]\s*", line, flags=re.I)[-1]
+            val = re.split(r"\b(?:note\s+di\s+testa|note\s+di\s+fondo|testa|fondo|top|base|formato\b|formati\b)", val, flags=re.I)[0]
+            pyramid["heart"].extend(clean_note_items(val))
+
+        # Note di Fondo
+        elif re.search(r"\b(?:note\s+di\s+fondo|fondo|base\s+notes?)\b", line, re.I):
+            val = re.split(r"(?:note\s+di\s+fondo|fondo|base\s+notes?)\s*[:\-]\s*", line, flags=re.I)[-1]
+            val = re.split(r"\b(?:note\s+di\s+testa|note\s+di\s+cuore|testa|cuore|top|heart|formato\b|formati\b)", val, flags=re.I)[0]
+            pyramid["base"].extend(clean_note_items(val))
+
+    for section in pyramid:
+        pyramid[section] = list(dict.fromkeys(pyramid[section]))
+
+    return pyramid
+
+
+def parse_shopify_sections(body_html: str) -> dict:
+    """Mappa i collapsibles del tema isolando sezioni tecniche e storytelling."""
+    data = {
+        "top": [],
+        "heart": [],
+        "base": [],
+        "family": "",
+        "ptype": "",
+        "usage_profile": "",
+        "description": ""
+    }
+
+    if not body_html:
+        return data
+
+    soup = BeautifulSoup(body_html, "html.parser")
+    buttons = soup.find_all("button", class_=lambda c: c and "collapsible-trigger" in c)
+
+    for btn in buttons:
+        target_id = btn.get("aria-controls", "").strip()
+        btn_title = clean_text(btn.get_text()).lower()
+
+        content_div = None
+        if target_id:
+            content_div = soup.find(id=re.compile(f"^{re.escape(target_id)}$", re.I))
+
+        if not content_div:
+            parent = btn.find_parent(class_=lambda c: c and "collapsibles-wrapper" in c)
+            if parent:
+                content_div = parent.find(class_=lambda c: c and "collapsible-content" in c)
+
+        if not content_div:
+            continue
+
+        inner = content_div.find(class_=lambda c: c and "collapsible-content__inner" in c) or content_div
+
+        # 1. Piramide Olfattiva
+        if "piramid" in btn_title or "pyramid" in btn_title or target_id.lower() in ["piramide", "piramideolfattiva"]:
+            pyr = parse_pyramid_from_html(inner)
+            data["top"] = pyr["top"]
+            data["heart"] = pyr["heart"]
+            data["base"] = pyr["base"]
+
+        # 2. Famiglia Olfattiva
+        elif "famigli" in btn_title or "family" in btn_title or target_id.lower() in ["famiglia", "famigliaolfattiva"]:
+            raw_fam = clean_text(inner.get_text())
+            data["family"] = re.sub(r"^famiglia\s*(?:olfattiva)?\s*[:\-]\s*", "", raw_fam, flags=re.I).strip()
+
+        # 3. Tipologia di Profumo (ptype)
+        elif "tipolog" in btn_title or "concentrazion" in btn_title or target_id.lower() in ["tipologia", "tipologia-profumo"]:
+            raw_ptype = clean_text(inner.get_text())
+            data["ptype"] = re.sub(r"^tipologia\s*(?:di\s*profumo)?\s*[:\-]\s*", "", raw_ptype, flags=re.I).strip()
+
+        # 4. Usage Profile (Per chi è adatto e quando indossarlo)
+        elif any(k in btn_title for k in ["per chi", "quando indossar", "adatto"]) or target_id.lower() in ["why", "perchi"]:
+            raw_usage = clean_text(inner.get_text())
+            data["usage_profile"] = re.sub(r"^(?:per chi|quando indossarlo)\s*[:\-]\s*", "", raw_usage, flags=re.I).strip()
+
+    # Estrazione testo introduttivo rimuovendo i collapsibles
+    soup_intro = BeautifulSoup(body_html, "html.parser")
+    for elem in soup_intro.find_all(class_=lambda c: c and ("collapsibles-wrapper" in c or "collapsible-content" in c or "collapsible-trigger" in c)):
+        elem.decompose()
+
+    intro_text = clean_text(soup_intro.get_text())
+    intro_text = re.sub(r"\bformato\s*:\s*[^\.\n]+", "", intro_text, flags=re.I).strip()
+    data["description"] = intro_text
+
+    return data
+
+
+def extract_pyramid_regex_fallback(text: str) -> dict:
+    """Fallback Regex globale per schede prive di accordion standard."""
+    pyramid = {"top": [], "heart": [], "base": []}
+    if not text:
         return pyramid
 
     patterns = {
@@ -123,285 +247,256 @@ def extract_pyramid_regex(description: str) -> dict:
         "base": r"(?:note\s+di\s+fondo|fondo|base\s+notes?)\s*[:\-]\s*([^.\n\r]+?)(?=(?:note\s+di|testa|cuore|fondo|top|heart|base|\.|\n|\r|$))",
     }
 
-    found = False
     for section, pattern in patterns.items():
-        match = re.search(pattern, description, re.IGNORECASE)
-        if match:
-            raw_items = match.group(1)
-            parts = re.split(r"[,;–\-/•]", raw_items)
-            cleaned = [p.strip().capitalize() for p in parts if len(p.strip()) > 1 and not p.strip().isdigit()]
-            if cleaned:
-                pyramid[section] = cleaned
-                found = True
+        m = re.search(pattern, text, re.I)
+        if m:
+            pyramid[section] = clean_note_items(m.group(1))
 
-    return pyramid if found else {"top": [], "heart": [], "base": []}
+    return pyramid
 
 
-def extract_pyramid_llm(name: str, brand: str, description: str) -> dict:
-    """
-    Fase 2: Fallback semantico con Groq gpt-oss-20b per descrizioni narrative o discorsive.
-    """
+def extract_pyramid_llm_fallback(name: str, brand: str, text: str) -> dict:
+    """Fallback tramite Groq per schede puramente discorsive."""
     empty = {"top": [], "heart": [], "base": []}
-    if not client or not description or len(description.strip()) < 30:
+    if not client or not text or len(text.strip()) < 30:
         return empty
-
-    desc_sample = description if len(description) <= 1500 else (description[:700] + "\n...\n" + description[-800:])
 
     prompt = (
         f"Profumo: '{name}' di '{brand}'.\n"
-        f"Testo descrittivo:\n\"\"\"{desc_sample}\"\"\"\n\n"
-        "COMPITO:\n"
-        "Estrai gli ingredienti olfattivi (agrumi, frutti, fiori, spezie, legni, resine, muschi, accordi) "
-        "e suddividili nella piramide olfattiva (top, heart, base).\n\n"
-        "REGOLE TASSATIVE:\n"
-        "1. Includi solo ingredienti reali (es. lime, arancia dolce, ylang ylang, sandalo, ambra grigia).\n"
-        "2. NON inserire aggettivi astratti o marketing (es. 'femminilità', 'sfrenate', 'passione', 'peccato').\n"
-        "3. Se nel testo le note sono elencate alla fine senza etichetta (es. 'Lime, arancia...', 'Passion fruit, pesca...', 'Ambra, sandalo...'), "
-        "assegnale nell'ordine logico a top, heart e base.\n"
-        "4. Rispondi ESCLUSIVAMENTE con un JSON valido in questo formato esatto:\n"
-        "{\n"
-        "  \"top\": [\"nota1\", \"nota2\"],\n"
-        "  \"heart\": [\"nota3\", \"nota4\"],\n"
-        "  \"base\": [\"nota5\", \"nota6\"]\n"
-        "}"
+        f"Testo: \"\"\"{text[:1100]}\"\"\"\n\n"
+        "Estrai la piramide olfattiva in JSON escludendo formati, ml e parole di marketing:\n"
+        "{\"top\": [\"nota1\"], \"heart\": [\"nota2\"], \"base\": [\"nota3\"]}\n"
+        "Rispondi ESCLUSIVAMENTE con il JSON."
     )
 
-    for attempt in range(3):
-        try:
-            res = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.0,
-                max_tokens=250
-            )
-            content = res.choices[0].message.content.strip()
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            if json_match:
-                data = json.loads(json_match.group(0))
-                return {
-                    "top": [str(x).strip().capitalize() for x in data.get("top", []) if len(str(x).strip()) > 1],
-                    "heart": [str(x).strip().capitalize() for x in data.get("heart", []) if len(str(x).strip()) > 1],
-                    "base": [str(x).strip().capitalize() for x in data.get("base", []) if len(str(x).strip()) > 1]
-                }
-            return empty
-        except Exception as e:
-            if "429" in str(e):
-                time.sleep(2 * (attempt + 1))
-            else:
-                break
+    try:
+        res = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0,
+            max_tokens=220
+        )
+        m = re.search(r"\{.*\}", res.choices[0].message.content, re.DOTALL)
+        if m:
+            data = json.loads(m.group(0))
+            return {
+                "top": [n for x in data.get("top", []) for n in clean_note_items(str(x))],
+                "heart": [n for x in data.get("heart", []) for n in clean_note_items(str(x))],
+                "base": [n for x in data.get("base", []) for n in clean_note_items(str(x))]
+            }
+    except Exception:
+        pass
     return empty
 
 
-def parse_olfactory_pyramid_hybrid(description: str, tags: list, name: str, brand: str, use_llm: bool = True) -> tuple[dict, str]:
-    """
-    Pipeline ibrida per l'estrazione delle note:
-    1. Prova prima con regex veloci.
-    2. Se mancano note e use_llm=True, invoca Groq LLM.
-    3. Fallback sui tags in caso di insuccesso totale.
-    """
-    pyramid = extract_pyramid_regex(description)
-    total_notes = len(pyramid["top"]) + len(pyramid["heart"]) + len(pyramid["base"])
+def fetch_all_shopify_products() -> list:
+    """Scarica i prodotti dallo store Shopify gestendo la paginazione."""
+    if not SITE:
+        print("[!] SHOPIFY_STORE_URL non configurato nel file .env.")
+        return []
 
-    if total_notes >= 3:
-        return pyramid, "regex"
-
-    if use_llm and client and len(description) > 30:
-        llm_pyramid = extract_pyramid_llm(name, brand, description)
-        llm_notes_count = len(llm_pyramid["top"]) + len(llm_pyramid["heart"]) + len(llm_pyramid["base"])
-        if llm_notes_count > 0:
-            # Piccola pausa funzionale per evitare rate-limit con Groq
-            time.sleep(0.2)
-            return llm_pyramid, "llm"
-
-    # Fallback sui tag
-    if not pyramid["top"] and not pyramid["heart"] and not pyramid["base"]:
-        pyramid["heart"] = [t.capitalize() for t in tags]
-
-    return pyramid, "tags"
-
-
-def build_semantic_text(name: str, brand: str, pyramid: dict, tags: list, description: str) -> str:
-    """Genera la stringa ad alta densità semantica per il modello di embedding."""
-    tags_str = ", ".join(tags) if tags else "Artistico"
-    top_str = ", ".join(pyramid.get("top", [])) or "Note di testa fresche/aromatiche"
-    heart_str = ", ".join(pyramid.get("heart", [])) or tags_str
-    base_str = ", ".join(pyramid.get("base", [])) or tags_str
-
-    desc_snippet = description[:350].strip() if description else ""
-
-    return (
-        f"Profumo {name} di {brand}. "
-        f"Famiglie olfattive e sfumature: {tags_str}. "
-        f"Note di testa: {top_str}. Note di cuore: {heart_str}. Note di fondo: {base_str}. "
-        f"Dettagli ed evoluzione: {desc_snippet}"
-    )
-
-
-def get(url, params=None, retries=3):
-    """GET con tentativi progressivi in caso di errori di rete o 5xx."""
-    for attempt in range(1, retries + 1):
-        try:
-            r = session.get(url, params=params, timeout=TIMEOUT)
-            r.raise_for_status()
-            return r
-        except requests.RequestException as e:
-            if attempt == retries:
-                raise
-            wait = attempt * 2
-            print(f"Errore ({e}), riprovo tra {wait}s...")
-            time.sleep(wait)
-
-
-def get_category_id(slug):
-    """Ricava l'id numerico della categoria a partire dallo slug."""
+    products = []
     page = 1
+    print(f"[*] Connessione a Shopify Store: {SITE}...")
+
     while True:
-        r = get(f"{BASE}/products/categories", {"per_page": PER_PAGE, "page": page})
-        for cat in r.json():
-            if cat["slug"] == slug:
-                return cat["id"]
-        if page >= int(r.headers.get("X-WP-TotalPages", 1)):
-            raise ValueError(f"Categoria '{slug}' non trovata")
-        page += 1
+        url = f"{SITE}/products.json"
+        params = {"limit": PER_PAGE, "page": page}
+
+        try:
+            res = session.get(url, params=params, timeout=TIMEOUT)
+            if res.status_code != 200:
+                print(f"[!] Risposta HTTP {res.status_code} alla pagina {page}: {res.text[:150]}")
+                break
+
+            payload = res.json()
+            batch = payload.get("products", [])
+            if not batch:
+                break
+
+            products.extend(batch)
+            print(f"    Pagina {page}: scaricati {len(batch)} prodotti (Totale scaricato: {len(products)})...")
+
+            if len(batch) < PER_PAGE:
+                break
+
+            page += 1
+            time.sleep(0.3)
+
+        except Exception as e:
+            print(f"[!] Errore di rete alla pagina {page}: {e}")
+            break
+
+    return products
 
 
-def fetch_products(cat_id):
-    """Scarica tutti i prodotti della categoria, pagina per pagina."""
-    products, page = [], 1
-    while True:
-        r = get(
-            f"{BASE}/products",
-            {"category": cat_id, "per_page": PER_PAGE, "page": page},
-        )
-        batch = r.json()
-        products.extend(batch)
-        total_pages = int(r.headers.get("X-WP-TotalPages", 1))
-        print(f"Pagina {page}/{total_pages}: {len(batch)} prodotti scaricati...")
-        if page >= total_pages:
-            return products
-        page += 1
-        time.sleep(PAUSE)
+def is_fragrance(prod: dict) -> bool:
+    """Esclude cosmesi, accessori, candele o articoli non profumo."""
+    p_type = prod.get("product_type", "").strip().lower()
+    title = prod.get("title", "").lower()
+    tags = [t.lower() for t in prod.get("tags", [])]
 
+    all_str = f"{title} {' '.join(tags)} {p_type}"
+    if any(bad in all_str for bad in EXCLUDED_KEYWORDS):
+        return False
 
-def is_excluded(product: dict) -> bool:
-    """Scarta il prodotto se appartiene a cosmesi o se il nome/tag/categoria contengono termini esclusi."""
-    name_norm = norm(product.get("name", ""))
-    
-    if any(bad in name_norm for bad in EXCLUDED_NORM):
+    if p_type in ALLOWED_TYPES or any(k in all_str for k in ["eau de parfum", "extrait", "millésime", "profumo", "parfum"]):
         return True
 
-    for cat in product.get("categories", []):
-        cat_slug = norm(cat.get("slug", ""))
-        cat_name = norm(cat.get("name", ""))
-        if any(bad in cat_slug or bad in cat_name for bad in EXCLUDED_NORM):
-            return True
-
-    for tag in product.get("tags", []):
-        t_name = norm(tag.get("name", ""))
-        t_slug = norm(tag.get("slug", ""))
-        if any(bad in t_name or bad in t_slug for bad in EXCLUDED_NORM):
-            return True
-
-    return False
+    return True if not p_type else False
 
 
-def slim(product: dict, use_llm: bool = True) -> tuple[dict, str]:
-    """Arricchisce e normalizza i dati del prodotto per il catalogo semantico."""
-    prices = product.get("prices", {})
-    minor = prices.get("currency_minor_unit", 2)
-    price = int(prices["price"]) / 10**minor if prices.get("price") else 0.0
+def transform_product(prod: dict) -> dict:
+    """Mappa il prodotto Shopify nello schema catalog.json arricchito e pulito."""
+    prod_id = f"sh_{prod['id']}"
+    title = clean_text(prod.get("title", ""))
+    brand = clean_text(prod.get("vendor", "Profumeria Artistica"))
+    handle = prod.get("handle", "")
 
-    raw_desc = product.get("description", "") or product.get("short_description", "")
-    description = clean_html(raw_desc)
+    variants = prod.get("variants", [])
+    available_variants = [v for v in variants if v.get("available", True)]
+    active_variants = available_variants if available_variants else variants
 
-    clean_name = html.unescape(product.get("name", "")).strip()
-    tags = [t["name"] for t in product.get("tags", [])]
-    brand = extract_brand(product)
+    first_var = active_variants[0] if active_variants else {}
+    variant_id = first_var.get("id", "")
+    sku = first_var.get("sku", "")
 
-    pyramid, source = parse_olfactory_pyramid_hybrid(
-        description, tags, name=clean_name, brand=brand, use_llm=use_llm
+    try:
+        price = round(float(first_var.get("price", 0.0)), 2)
+    except (ValueError, TypeError):
+        price = 0.0
+
+    in_stock = any(v.get("available", False) for v in variants) if variants else True
+
+    # 1. Parsing delle sezioni HTML strutturate del tema
+    parsed = parse_shopify_sections(prod.get("body_html", ""))
+
+    pyramid = {
+        "top": parsed["top"],
+        "heart": parsed["heart"],
+        "base": parsed["base"]
+    }
+
+    # 2. Fallback su tutta la scheda se la piramide è vuota
+    total_notes = len(pyramid["top"]) + len(pyramid["heart"]) + len(pyramid["base"])
+    if total_notes == 0:
+        raw_clean_all = clean_text(prod.get("body_html", ""))
+        pyramid = extract_pyramid_regex_fallback(raw_clean_all)
+        total_notes = len(pyramid["top"]) + len(pyramid["heart"]) + len(pyramid["base"])
+
+    # 3. Fallback con Groq LLM
+    if total_notes == 0:
+        desc_sample = parsed["description"] or parsed["usage_profile"] or clean_text(prod.get("body_html", ""))
+        pyramid = extract_pyramid_llm_fallback(title, brand, desc_sample)
+
+    ptype = parsed["ptype"]
+    if not ptype:
+        tags_lower = [t.lower() for t in prod.get("tags", [])]
+        if "eau de parfum" in tags_lower:
+            ptype = "Eau de Parfum"
+        elif "extrait de parfum" in tags_lower:
+            ptype = "Extrait de Parfum"
+
+    image_url = ""
+    if prod.get("images"):
+        image_url = prod["images"][0].get("src", "")
+    elif first_var.get("featured_image"):
+        image_url = first_var["featured_image"].get("src", "")
+
+    urls = {
+        "product_page": f"{SITE}/products/{handle}" if handle else "",
+        "add_to_cart": f"{SITE}/cart/{variant_id}:1" if variant_id else "",
+        "image_url": image_url
+    }
+
+    tags_list = prod.get("tags", [])
+    tags_str = ", ".join(tags_list) if tags_list else "Artistico"
+    top_str = ", ".join(pyramid["top"]) if pyramid["top"] else "fresche/agrumate"
+    heart_str = ", ".join(pyramid["heart"]) if pyramid["heart"] else "floreali/speziate"
+    base_str = ", ".join(pyramid["base"]) if pyramid["base"] else "legnose/ambrate"
+    family_str = parsed["family"] or "Profumeria Artistica"
+    ptype_str = ptype or "Eau de Parfum"
+    context_str = parsed["usage_profile"][:300] if parsed["usage_profile"] else parsed["description"][:300]
+
+    semantic_text = (
+        f"Profumo {title} di {brand}. "
+        f"Tipologia: {ptype_str}. "
+        f"Famiglia olfattiva: {family_str}. Tag: {tags_str}. "
+        f"Note di testa: {top_str}. Note di cuore: {heart_str}. Note di fondo: {base_str}. "
+        f"Carattere, contesto d'uso e occasioni: {context_str}"
     )
-    semantic_text = build_semantic_text(clean_name, brand, pyramid, tags, description)
 
-    entry = {
-        "id": f"wc_{product['id']}",
-        "woocommerce_product_id": product["id"],
-        "name": clean_name,
+    return {
+        "id": prod_id,
+        "shopify_product_id": prod["id"],
+        "name": title,
         "brand": brand,
-        "sku": product.get("sku", ""),
+        "sku": sku,
         "price": price,
         "currency": "EUR",
-        "in_stock": product.get("is_in_stock", True),
-        "categories": [c["slug"] for c in product.get("categories", [])],
-        "tags": tags,
+        "in_stock": in_stock,
+        "tags": tags_list,
         "olfactory_pyramid": pyramid,
-        "description": description,
-        "urls": {
-            "product_page": product.get("permalink", f"{SITE}/?p={product['id']}"),
-            "add_to_cart": f"{SITE}/cart/?add-to-cart={product['id']}",
-            "image_url": product["images"][0]["src"] if product.get("images") else None,
-        },
-        "semantic_text": semantic_text,
+        "family": parsed["family"],
+        "ptype": ptype,
+        "usage_profile": parsed["usage_profile"],
+        "description": parsed["description"],
+        "urls": urls,
+        "semantic_text": semantic_text
     }
-    return entry, source
-
-
-def save_json(path, data):
-    """Scrittura atomica per garantire l'integrità del catalogo."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, path)
 
 
 def main():
-    print("=== AVVIO PIPELINE DI INGESTIONE CATALOGO ===")
-    cat_id = get_category_id(CATEGORY_SLUG)
-    print(f"Categoria '{CATEGORY_SLUG}' identificata con id: {cat_id}")
+    print("=== AVVIO PIPELINE DI INGESTIONE SHOPIFY (SANITIZED) ===")
+    raw_products = fetch_all_shopify_products()
+    if not raw_products:
+        print("[!] Nessun prodotto recuperato. Verifica SHOPIFY_STORE_URL nel file .env.")
+        return
 
-    raw_products = fetch_products(cat_id)
-    raw = list({p["id"]: p for p in raw_products}.values())
-    if not raw:
-        raise SystemExit("Nessun prodotto ricevuto: catalogo esistente lasciato intatto.")
+    kept_products = [p for p in raw_products if is_fragrance(p)]
+    dropped_products = [p for p in raw_products if not is_fragrance(p)]
 
-    kept = [p for p in raw if not is_excluded(p)]
-    dropped = [p for p in raw if is_excluded(p)]
+    print(f"\nScaricati: {len(raw_products)} | Riconosciuti come Profumi: {len(kept_products)} | Esclusi: {len(dropped_products)}")
 
-    print(f"\nScaricati: {len(raw)} | Selezionati (Profumi): {len(kept)} | Esclusi: {len(dropped)}")
+    print(f"[*] Elaborazione semantica e sanitizzazione di {len(kept_products)} profumi...")
+    catalog = []
+    pyramids_found = 0
+    families_found = 0
+    ptypes_found = 0
+    usage_found = 0
 
-    print(f"\n[*] Elaborazione e arricchimento olfattivo di {len(kept)} profumi...")
-    kept_processed = []
-    regex_count = 0
-    llm_count = 0
-    tags_count = 0
+    for i, p in enumerate(kept_products, 1):
+        item = transform_product(p)
+        catalog.append(item)
 
-    for i, p in enumerate(kept, 1):
-        item, source = slim(p, use_llm=True)
-        kept_processed.append(item)
+        total_notes = len(item["olfactory_pyramid"]["top"]) + len(item["olfactory_pyramid"]["heart"]) + len(item["olfactory_pyramid"]["base"])
+        if total_notes > 0:
+            pyramids_found += 1
+        if item["family"]:
+            families_found += 1
+        if item["ptype"]:
+            ptypes_found += 1
+        if item["usage_profile"]:
+            usage_found += 1
 
-        if source == "regex":
-            regex_count += 1
-        elif source == "llm":
-            llm_count += 1
-        else:
-            tags_count += 1
+        if i % 50 == 0 or i == len(kept_products):
+            print(f"    Elaborati {i}/{len(kept_products)} profumi...")
 
-        if i % 25 == 0 or i == len(kept):
-            print(f"    Elaborati {i}/{len(kept)} profumi...")
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # I prodotti scartati vengono processati senza sprecare token LLM
-    dropped_processed = [slim(p, use_llm=False)[0] for p in dropped]
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(catalog, f, ensure_ascii=False, indent=2)
 
-    save_json(OUTPUT_FILE, kept_processed)
-    save_json(DROPPED_FILE, dropped_processed)
+    with open(DROPPED_FILE, "w", encoding="utf-8") as f:
+        json.dump(dropped_products, f, ensure_ascii=False, indent=2)
 
-    print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
-    print(f"Salvati in {OUTPUT_FILE}: {len(kept_processed)} profumi")
-    print(f"  - Note estratte via Regex diretta:       {regex_count}")
-    print(f"  - Note recuperate con Groq LLM:          {llm_count}")
-    print(f"  - Fallback sui tag (nessuna nota nel testo): {tags_count}")
-    print(f"Salvati in {DROPPED_FILE}: {len(dropped_processed)} articoli esclusi")
+    print("\n=== RIEPILOGO INGESTIONE SANITIZZATA ===")
+    print(f"Profumi salvati in {OUTPUT_FILE}: {len(catalog)}")
+    print(f"  - Piramidi olfattive estratte:  {pyramids_found}/{len(catalog)}")
+    print(f"  - Famiglie olfattive rilevate: {families_found}/{len(catalog)}")
+    print(f"  - Tipologie (ptype) rilevate:  {ptypes_found}/{len(catalog)}")
+    print(f"  - Profili d'uso rilevati:       {usage_found}/{len(catalog)}")
+    print(f"Articoli scartati in {DROPPED_FILE}: {len(dropped_products)}")
 
 
 if __name__ == "__main__":
