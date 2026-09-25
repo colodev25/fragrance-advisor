@@ -224,7 +224,7 @@
     .oa-messages-container {
       flex: 1;
       overflow-y: auto;
-      padding: 22px 18px;
+      padding: 22px 18px 24px;
       background: var(--oa-bg-chat);
       display: flex;
       flex-direction: column;
@@ -380,7 +380,7 @@
     }
 
     /* ==========================================================================
-       HOVER EFFECT ETUALY (LINEA A SCORRIMENTO ORIZZONTALE)
+       HOVER EFFECT ETUALY: LINEA A SCORRIMENTO ORIZZONTALE
        ========================================================================== */
     .oa-card-title-link {
       color: inherit;
@@ -682,6 +682,11 @@
       gap: 7px;
     }
 
+    .oa-chips-container:empty {
+      display: none;
+      padding: 0;
+    }
+
     .oa-chip {
       background: var(--oa-white);
       border: 1px solid var(--oa-border);
@@ -913,20 +918,12 @@
 
     // RIPULITURA COMPLETA DELLA CHAT PER RIPARTIRE DA ZERO
     restartBtn.addEventListener("click", () => {
-      // 1. Rigenera un nuovo session ID per azzerare la memoria nel backend
       sessionId = "sess_" + Math.random().toString(36).substring(2, 11);
       sessionStorage.setItem("oa_session_id", sessionId);
 
-      // 2. Ripulisce i messaggi a schermo e ripristina il messaggio di benvenuto iniziale
       messagesContainer.innerHTML = INITIAL_WELCOME_HTML;
-
-      // 3. Nasconde e resetta lo stepper progress
       updateStepper(null);
-
-      // 4. Ripristina i chips iniziali
       chipsContainer.innerHTML = INITIAL_CHIPS_HTML;
-
-      // 5. Svuota il campo di input
       input.value = "";
       scrollToBottom();
     });
@@ -971,6 +968,18 @@
 
     function scrollToBottom() {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // SCORRIMENTO MIRATO VERSO L'ALTO: posiziona l'elemento in cima alla vista
+    function scrollToElementTop(el) {
+      if (!el) {
+        scrollToBottom();
+        return;
+      }
+      // Il timeout garantisce che il ricalcolo delle altezze (dovuto ai bottoni chips) sia terminato
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
     }
 
     function updateStepper(step) {
@@ -1076,7 +1085,7 @@
               </div>
             </div>
 
-            <!-- RETRO SLIDE-OVER (FRASE COMPLETA SENZA TAGLI + PILLS NOTE + TRAITS) -->
+            <!-- RETRO SLIDE-OVER -->
             <div class="oa-card-slideover">
               <div class="oa-slide-header">
                 <div class="oa-slide-meta">
@@ -1201,10 +1210,12 @@
 
         const hasProducts = Boolean(data.products && data.products.length > 0);
 
+        // 1. Inserimento testo del Maître Parfumeur
         if (data.reply) {
           botMsgDiv.innerHTML = renderMarkdownText(data.reply, hasProducts);
         }
 
+        // 2. Inserimento Product Cards
         if (hasProducts) {
           data.products.forEach(prod => {
             const cardHtml = createProductCardHtml(prod);
@@ -1213,10 +1224,11 @@
         }
 
         messagesContainer.appendChild(botMsgDiv);
-        scrollToBottom();
 
+        // 3. Aggiorna lo stepper
         updateStepper(data.step);
 
+        // 4. Renderizza le opzioni PRIMA di calcolare la posizione finale dello scroll
         if (data.options && data.options.length > 0) {
           chipsContainer.innerHTML = "";
           data.options.forEach(opt => {
@@ -1226,7 +1238,13 @@
             btn.onclick = () => handleChipClick(opt);
             chipsContainer.appendChild(btn);
           });
+        } else {
+          chipsContainer.innerHTML = "";
         }
+
+        // 5. SCORRIMENTO VERSO L'ALTO SULLA DOMANDA/PROPOSTA DEL BOT
+        // Colloca la domanda del bot direttamente in cima alla vista, impedendo che finisca sotto le opzioni
+        scrollToElementTop(botMsgDiv);
 
       } catch (err) {
         removeTyping();
