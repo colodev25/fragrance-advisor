@@ -5,15 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Consulente Olfattivo d'Élite</title>
   
-  <!-- Google Fonts: Cormorant Garamond (Serif di Lusso) & Plus Jakarta Sans (UI moderna) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    /* ==========================================================================
-       DESIGN SYSTEM "HAUTE PARFUMERIE" (CSS Scoped con prefisso oa-)
-       ========================================================================== */
     :root {
       --oa-bg-page: #F4F1EA;
       --oa-bg-widget: #FAF8F5;
@@ -51,7 +47,6 @@
       padding: 20px;
     }
 
-    /* Launcher Fluttuante (Bottone in basso a destra per aprire il widget) */
     .oa-launcher-btn {
       position: fixed;
       bottom: 24px;
@@ -90,7 +85,6 @@
       text-transform: uppercase;
     }
 
-    /* Contenitore Principale Chat */
     .oa-widget-container {
       position: fixed;
       bottom: 24px;
@@ -118,7 +112,6 @@
       transform: translateY(0) scale(1);
     }
 
-    /* Header del Widget */
     .oa-header {
       padding: 16px 20px;
       background: #FFFFFF;
@@ -209,7 +202,6 @@
       height: 18px;
     }
 
-    /* Barra di Avanzamento Percorso Guidato (Stepper) */
     .oa-stepper-bar {
       height: 3px;
       width: 100%;
@@ -229,7 +221,6 @@
       transition: width 0.4s ease;
     }
 
-    /* Area Messaggi */
     .oa-messages-container {
       flex: 1;
       overflow-y: auto;
@@ -248,9 +239,8 @@
       border-radius: 4px;
     }
 
-    /* Singolo Messaggio */
     .oa-msg {
-      max-width: 88%;
+      max-width: 92%;
       line-height: 1.5;
       font-size: 13.5px;
       animation: oaFadeIn 0.3s ease forwards;
@@ -261,7 +251,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Messaggio Utente */
     .oa-msg-user {
       align-self: flex-end;
       background: var(--oa-user-bubble);
@@ -272,7 +261,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     }
 
-    /* Messaggio Consulente / Bot */
     .oa-msg-bot {
       align-self: flex-start;
       background: var(--oa-bot-bubble);
@@ -281,6 +269,7 @@
       border-radius: 16px 16px 16px 4px;
       border: 1px solid var(--oa-border);
       box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      width: 100%;
     }
 
     .oa-msg-bot p {
@@ -290,19 +279,17 @@
       margin-bottom: 0;
     }
 
-    /* ==========================================================================
-       SCHEDA PRODOTTO (PRODUCT CARD) GRAFICA
-       ========================================================================== */
+    /* PRODUCT CARD DETERMINISTICA */
     .oa-product-card {
       background: #FFFFFF;
       border: 1px solid var(--oa-border);
       border-radius: var(--oa-radius-md);
-      padding: 16px;
-      margin: 12px 0;
+      padding: 14px;
+      margin: 12px 0 6px 0;
       box-shadow: 0 4px 16px rgba(0,0,0,0.04);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
@@ -318,13 +305,27 @@
     }
 
     .oa-card-image {
-      width: 68px;
-      height: 68px;
+      width: 72px;
+      height: 72px;
       border-radius: var(--oa-radius-sm);
-      background: #F9F8F6;
+      background: #FFFFFF;
       border: 1px solid var(--oa-border-light);
-      object-fit: cover;
+      object-fit: contain;
+      padding: 4px;
       flex-shrink: 0;
+    }
+
+    .oa-card-image-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--oa-accent-gold-light);
+    }
+
+    .oa-card-image-placeholder svg {
+      width: 26px;
+      height: 26px;
+      stroke: var(--oa-accent-gold-hover);
     }
 
     .oa-card-meta {
@@ -353,7 +354,7 @@
     }
 
     .oa-card-desc {
-      font-size: 12.5px;
+      font-size: 12px;
       color: var(--oa-text-muted);
       line-height: 1.45;
     }
@@ -364,7 +365,7 @@
       justify-content: space-between;
       border-top: 1px solid var(--oa-border-light);
       padding-top: 10px;
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
     .oa-card-price {
@@ -400,9 +401,6 @@
       stroke: #FFFFFF;
     }
 
-    /* ==========================================================================
-       PULSANTI OPZIONI (QUICK CHIPS)
-       ========================================================================== */
     .oa-chips-container {
       padding: 8px 16px 12px;
       display: flex;
@@ -430,7 +428,6 @@
       transform: translateY(-1px);
     }
 
-    /* Typing Indicator (3 puntini raffinati) */
     .oa-typing {
       display: inline-flex;
       align-items: center;
@@ -460,7 +457,6 @@
       40% { opacity: 1; transform: scale(1.15); }
     }
 
-    /* Input Area */
     .oa-input-container {
       padding: 12px 16px;
       background: #FFFFFF;
@@ -516,9 +512,6 @@
       transform: translateX(1px);
     }
 
-    /* ==========================================================================
-       RESPONSIVE MOBILE (< 600px) - BOTTOM SHEET A TUTTO SCHERMO
-       ========================================================================== */
     @media (max-width: 600px) {
       .oa-widget-container {
         bottom: 0;
@@ -541,7 +534,6 @@
 </head>
 <body>
 
-  <!-- Launcher Fluttuante (Apri Consulente) -->
   <button class="oa-launcher-btn" id="oaLauncher" aria-label="Apri consulente olfattivo">
     <svg viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z"/>
@@ -549,9 +541,7 @@
     <span class="oa-launcher-text">Maitre Parfumeur</span>
   </button>
 
-  <!-- Finestra Widget -->
   <div class="oa-widget-container is-active" id="oaWidget">
-    <!-- Header -->
     <header class="oa-header">
       <div class="oa-header-brand">
         <div class="oa-header-avatar">
@@ -585,27 +575,22 @@
       </div>
     </header>
 
-    <!-- Indicatore di progresso a 4 step -->
     <div class="oa-stepper-bar" id="oaStepper">
       <div class="oa-stepper-progress" id="oaProgress"></div>
     </div>
 
-    <!-- Lista Messaggi -->
     <div class="oa-messages-container" id="oaMessages">
-      <!-- Messaggio di Benvenuto Iniziale -->
       <div class="oa-msg oa-msg-bot">
         <p>Benvenuto nella nostra boutique olfattiva d'élite.</p>
         <p>Sono il tuo Maitre Parfumeur: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
       </div>
     </div>
 
-    <!-- Pulsanti di Scelta Rapida (Chips) -->
     <div class="oa-chips-container" id="oaChips">
       <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
       <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
     </div>
 
-    <!-- Barra di Digitazione -->
     <form class="oa-input-container" id="oaForm">
       <input type="text" class="oa-input-field" id="oaInput" placeholder="Chiedi note, consigli o un profumo..." autocomplete="off">
       <button type="submit" class="oa-send-btn" aria-label="Invia">
@@ -617,20 +602,15 @@
     </form>
   </div>
 
-  <!-- ==========================================================================
-       LOGICA JAVASCRIPT MODERNA
-       ========================================================================== -->
   <script>
     const BACKEND_URL = "http://127.0.0.1:8000/chat";
 
-    // Gestione Session ID persistente nel browser
     let sessionId = sessionStorage.getItem("oa_session_id");
     if (!sessionId) {
       sessionId = "sess_" + Math.random().toString(36).substring(2, 11);
       sessionStorage.setItem("oa_session_id", sessionId);
     }
 
-    // Elementi DOM
     const widget = document.getElementById("oaWidget");
     const launcher = document.getElementById("oaLauncher");
     const closeBtn = document.getElementById("oaCloseBtn");
@@ -642,16 +622,13 @@
     const stepper = document.getElementById("oaStepper");
     const progress = document.getElementById("oaProgress");
 
-    // Toggle Apertura / Chiusura
     launcher.addEventListener("click", () => widget.classList.add("is-active"));
     closeBtn.addEventListener("click", () => widget.classList.remove("is-active"));
 
-    // Tasto Ricomincia
     restartBtn.addEventListener("click", () => {
       handleChipClick("ricomincia percorso");
     });
 
-    // Invio da Form
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const text = input.value.trim();
@@ -660,12 +637,10 @@
       sendUserMessage(text);
     });
 
-    // Invio da Chip
     function handleChipClick(text) {
       sendUserMessage(text);
     }
 
-    // Aggiungi Messaggio Utente a Schermo
     function appendUserMessage(text) {
       const msgDiv = document.createElement("div");
       msgDiv.className = "oa-msg oa-msg-user";
@@ -674,7 +649,6 @@
       scrollToBottom();
     }
 
-    // Indicatore di Digitazione (Typing)
     function showTyping() {
       const typingDiv = document.createElement("div");
       typingDiv.className = "oa-typing";
@@ -697,7 +671,6 @@
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Aggiornamento Stepper a 4 step
     function updateStepper(step) {
       if (!step) {
         stepper.classList.remove("is-visible");
@@ -708,73 +681,105 @@
       progress.style.width = percentage + "%";
     }
 
-    // ==========================================================================
-    // PARSER MARKDOWN & GENERATORE PRODUCT CARD VISIVE
-    // ==========================================================================
-    function parseBotReplyToHtml(rawText) {
-      // Regex per catturare una proposta profumo strutturata:
-      // Gruppo 1: Nome del profumo (**Nome**)
-      // Gruppo 2: Brand
-      // Gruppo 3: Descrizione
-      // Gruppo 4: Prezzo
-      // Gruppo 5: URL Carrello Shopify
-      const productRegex = /\*\*([^*]+)\*\*\s+(?:di|by)\s+([^\n\r]+)[\r\n]+([\s\S]*?)[\r\n]+\*\*Prezzo:\*\*\s*([0-9.,]+)\s*EUR[\r\n]+\[Aggiungi al Carrello\]\((https?:\/\/[^\s\)]+)\)/gi;
-
-      let html = rawText;
-      let hasProduct = false;
-
-      html = html.replace(productRegex, (match, name, brand, desc, price, cartUrl) => {
-        hasProduct = true;
-        const cleanDesc = desc.trim();
-        
-        return `
-          <div class="oa-product-card">
-            <div class="oa-card-header">
-              <div class="oa-card-meta">
-                <div class="oa-card-vendor">${escapeHtml(brand.trim())}</div>
-                <div class="oa-card-title">${escapeHtml(name.trim())}</div>
-              </div>
-            </div>
-            <div class="oa-card-desc">${escapeHtml(cleanDesc)}</div>
-            <div class="oa-card-footer">
-              <div class="oa-card-price">€ ${escapeHtml(price.trim())}</div>
-              <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="9" cy="21" r="1"></circle>
-                  <circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                </svg>
-                <span>Aggiungi al Carrello</span>
-              </a>
-            </div>
-          </div>
-        `;
-      });
-
-      // Se non è una product card, normalizza i paragrafi e i grassetti normali
-      if (!hasProduct) {
-        // Converte **grassetto** in <strong>
-        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        // Converte a capo doppi in paragrafi
-        const paragraphs = html.split(/\n\n+/).filter(p => p.trim().length > 0);
-        html = paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
-      }
-
-      return html;
-    }
-
     function escapeHtml(text) {
+      if (!text) return "";
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
     }
 
     // ==========================================================================
-    // CHIAMATA AL BACKEND FASTAPI
+    // RENDERING DETERMINISTICO DELLA PRODUCT CARD
+    // ==========================================================================
+    function createProductCardHtml(prod) {
+      const name = prod.name || "Profumo Artistico";
+      const brand = prod.brand || "Profumeria Artistica";
+      const price = typeof prod.price === "number" ? prod.price.toFixed(2) : prod.price || "0.00";
+      const cartUrl = prod.add_to_cart_url || "#";
+      const imageUrl = prod.image_url || "";
+      const desc = prod.description || "";
+
+      let imageHtml = "";
+      if (imageUrl && imageUrl.startsWith("http") && !imageUrl.includes("NESSUNA")) {
+        imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.onerror=null; this.src=''; this.classList.add('oa-card-image-placeholder');">`;
+      } else {
+        imageHtml = `
+          <div class="oa-card-image oa-card-image-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 3h6v3H9zM7 6h10v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6z"></path>
+              <rect x="5" y="10" width="14" height="12" rx="3"></rect>
+            </svg>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="oa-product-card">
+          <div class="oa-card-header">
+            ${imageHtml}
+            <div class="oa-card-meta">
+              <div class="oa-card-vendor">${escapeHtml(brand)}</div>
+              <div class="oa-card-title">${escapeHtml(name)}</div>
+            </div>
+          </div>
+          ${desc ? `<div class="oa-card-desc">${escapeHtml(desc)}</div>` : ''}
+          <div class="oa-card-footer">
+            <div class="oa-card-price">${escapeHtml(price)}€</div>
+            <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <span>Aggiungi al Carrello</span>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================================================
+    // PARSER MARKDOWN UNIVERSALE PER IL TESTO DELLA CHAT
+    // ==========================================================================
+    function renderMarkdownText(rawText, hasStructuredProducts = false) {
+      if (!rawText) return "";
+
+      let text = rawText;
+
+      // Se il backend invia già le schede prodotto strutturate, pulisce eventuali stringhe duplicate
+      if (hasStructuredProducts) {
+        text = text.replace(/^\s*(?:Prezzo|Price)\s*:\s*[^\n\r]+/gmi, '');
+        text = text.replace(/^\s*\[(?:Aggiungi al Carrello\vert{}Add to Cart\vert{}Acquista)\]\([^\)]+\)/gmi, '');
+        text = text.replace(/^\s*\[(?:Immagine\vert{}Image\vert{}Foto)\]\([^\)]+\)/gmi, '');
+      }
+
+      // Convertitore universale: trasforma qualsiasi [Immagine](url) o ![alt](url) in vero <img>
+      text = text.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/gi, (m, alt, url) => {
+        return `<img class="oa-card-image" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" style="width:80px;height:80px;margin:8px 0;display:block;" loading="lazy">`;
+      });
+      text = text.replace(/\[(?:Immagine\vert{}Image\vert{}Foto)\]\((https?:\/\/[^\s\)]+)\)/gi, (m, url) => {
+        return `<img class="oa-card-image" src="${escapeHtml(url)}" style="width:80px;height:80px;margin:8px 0;display:block;" loading="lazy">`;
+      });
+
+      // Convertitore universale: trasforma qualsiasi [Testo](url) in vero link cliccabile <a>
+      text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi, (m, label, url) => {
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-accent-gold-hover);font-weight:600;text-decoration:underline;">${escapeHtml(label)}</a>`;
+      });
+
+      // Grassetti
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      // Suddivisione in paragrafi
+      const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
+      return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    }
+
+    // ==========================================================================
+    // CHIAMATA AL BACKEND
     // ==========================================================================
     async function sendUserMessage(text) {
       appendUserMessage(text);
-      chipsContainer.innerHTML = ""; // Rimuove opzioni precedenti
+      chipsContainer.innerHTML = "";
       showTyping();
 
       try {
@@ -794,17 +799,27 @@
         const data = await response.json();
         removeTyping();
 
-        // 1. Rendering del messaggio bot con Product Card grafica
         const botMsgDiv = document.createElement("div");
         botMsgDiv.className = "oa-msg oa-msg-bot";
-        botMsgDiv.innerHTML = parseBotReplyToHtml(data.reply);
+
+        const hasProducts = Boolean(data.products && data.products.length > 0);
+
+        // 1. Rendering del testo del Maitre Parfumeur
+        botMsgDiv.innerHTML = renderMarkdownText(data.reply, hasProducts);
+
+        // 2. Rendering delle Product Card reali (se presenti nella risposta)
+        if (hasProducts) {
+          data.products.forEach(prod => {
+            const cardHtml = createProductCardHtml(prod);
+            botMsgDiv.insertAdjacentHTML('beforeend', cardHtml);
+          });
+        }
+
         messagesContainer.appendChild(botMsgDiv);
         scrollToBottom();
 
-        // 2. Aggiorna lo stepper se siamo in percorso guidato
         updateStepper(data.step);
 
-        // 3. Rendering dei nuovi pulsanti di risposta rapida (Chips)
         if (data.options && data.options.length > 0) {
           chipsContainer.innerHTML = "";
           data.options.forEach(opt => {

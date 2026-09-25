@@ -82,7 +82,6 @@ class FragranceAdvisor:
                 print(f"[ADVISOR] Avviso: caricamento catalog.json fallito: {e}")
 
     def _resolve_macro_family(self, family_ans: str) -> tuple[str, list[str]]:
-        """Riconosce la macro-categoria scelta e restituisce le relative sotto-famiglie."""
         ans_clean = family_ans.lower().strip()
 
         for macro_key, sub_fams in MACRO_FAMILIES.items():
@@ -101,7 +100,6 @@ class FragranceAdvisor:
         return family_ans, [family_ans]
 
     def _find_mentioned_product(self, query: str) -> dict | None:
-        """Individua se nella frase è presente il nome di un profumo a catalogo."""
         if not self.catalog_products:
             return None
 
@@ -127,13 +125,13 @@ class FragranceAdvisor:
                     "add_to_cart_url": prod.get("urls", {}).get("add_to_cart", ""),
                     "product_page_url": prod.get("urls", {}).get("product_page", ""),
                     "image_url": prod.get("urls", {}).get("image_url", ""),
+                    "description": prod.get("usage_profile") or prod.get("description", "")[:180],
                     "document": prod.get("semantic_text", prod.get("description", ""))
                 }
 
         return None
 
     def _extract_price_constraints(self, query: str, active_perfume: dict | None) -> tuple[float | None, float | None, str]:
-        """Estrae vincoli di budget relativi o assoluti e ripulisce la query semantica."""
         min_p = None
         max_p = None
         q = query.strip()
@@ -144,12 +142,9 @@ class FragranceAdvisor:
         if is_cheaper and active_perfume and active_perfume.get("price"):
             current_price = float(active_perfume["price"])
             max_p = max(0.0, current_price - 0.5)
-            print(f"[PRICE PARSER] 'più economico': max_price impostato a {max_p}€ (precedente: {current_price}€)")
-
         elif is_expensive and active_perfume and active_perfume.get("price"):
             current_price = float(active_perfume["price"])
             min_p = current_price + 0.5
-            print(f"[PRICE PARSER] 'più costoso': min_price impostato a {min_p}€ (precedente: {current_price}€)")
 
         range_match = re.search(r"\b(?:tra|da)\s+(?:i\s+)?(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\s+(?:e|a)\s+(?:i\s+)?(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\b", q, re.I)
         if range_match:
@@ -267,6 +262,7 @@ class FragranceAdvisor:
             return {
                 "reply": "Perfetto! Ripartiamo con 4 brevi domande per selezionare le fragranze ideali per te.\n\n" + GUIDED_STEPS[1]["question"],
                 "options": GUIDED_STEPS[1]["options"],
+                "products": [],
                 "step": 1,
                 "mode": "guided"
             }
@@ -281,13 +277,13 @@ class FragranceAdvisor:
             return {
                 "reply": "Certamente! Dimmi pure: quale fragranza, nota olfattiva o sensazione stai cercando?",
                 "options": [],
+                "products": [],
                 "step": None,
                 "mode": "free"
             }
 
         effective_step = step_override if step_override is not None else state["step"]
 
-        # Gestione sequenziale dei 4 Step guidati
         if effective_step is not None:
             if effective_step == 1:
                 state["answers"] = [query_clean]
@@ -295,6 +291,7 @@ class FragranceAdvisor:
                 return {
                     "reply": GUIDED_STEPS[2]["question"],
                     "options": GUIDED_STEPS[2]["options"],
+                    "products": [],
                     "step": 2,
                     "mode": "guided"
                 }
@@ -305,6 +302,7 @@ class FragranceAdvisor:
                 return {
                     "reply": GUIDED_STEPS[3]["question"],
                     "options": GUIDED_STEPS[3]["options"],
+                    "products": [],
                     "step": 3,
                     "mode": "guided"
                 }
@@ -316,6 +314,7 @@ class FragranceAdvisor:
                 return {
                     "reply": GUIDED_STEPS[4]["question"],
                     "options": GUIDED_STEPS[4]["options"],
+                    "products": [],
                     "step": 4,
                     "mode": "guided"
                 }
@@ -339,8 +338,6 @@ class FragranceAdvisor:
         sub_fams_str = ", ".join(sub_fams)
         clean_macro = re.sub(r"^[^\w\s]+", "", macro_label).strip()
 
-        print(f"[GUIDED SEARCH] Macro: '{macro_label}' ({sub_fams}) | Destinatario: '{gender}' | Occasione: '{occasion}' | Budget: '{budget_str}'")
-
         min_p = None
         max_p = None
 
@@ -352,7 +349,6 @@ class FragranceAdvisor:
         elif "oltre 200" in budget_str.lower() or "> 200" in budget_str:
             min_p = 200.0
 
-        # Query semantica ad alta densità arricchita con macro-famiglia, sotto-famiglie, genere e occasione
         search_prompt = (
             f"Profumo {clean_macro} appartenente a famiglie come {sub_fams_str}. "
             f"Fragranza destinata a {gender}. Ideale per contesto {occasion}."
@@ -366,7 +362,7 @@ class FragranceAdvisor:
         )
 
         context_items = []
-        first_product = None
+        structured_products = []
 
         if results["ids"] and len(results["ids"][0]) > 0:
             for i in range(len(results["ids"][0])):
@@ -376,56 +372,57 @@ class FragranceAdvisor:
                 prod_data = {
                     "name": meta.get("name", ""),
                     "brand": meta.get("brand", "Profumeria Artistica"),
-                    "price": meta.get("price", 0.0),
+                    "price": float(meta.get("price", 0.0)),
                     "family": meta.get("family", ""),
                     "ptype": meta.get("ptype", ""),
                     "add_to_cart_url": meta.get("add_to_cart_url", ""),
                     "product_page_url": meta.get("product_page_url", ""),
                     "image_url": meta.get("image_url", ""),
+                    "description": meta.get("family", "Profumeria Artistica"),
                     "document": doc
                 }
 
+                structured_products.append({
+                    "name": prod_data["name"],
+                    "brand": prod_data["brand"],
+                    "price": prod_data["price"],
+                    "family": prod_data["family"],
+                    "ptype": prod_data["ptype"],
+                    "add_to_cart_url": prod_data["add_to_cart_url"],
+                    "image_url": prod_data["image_url"],
+                    "description": f"Creazione {prod_data['family']} ({prod_data['ptype']}). Ideale per {occasion}."
+                })
+
                 if i == 0:
-                    first_product = prod_data
+                    self.active_perfumes[session_id] = prod_data
 
                 context_items.append(
-                    f"PROPOSTA {i+1}:\n"
-                    f"- Nome: {prod_data['name']} ({prod_data['brand']})\n"
-                    f"  Tipologia: {prod_data['ptype']} | Famiglia: {prod_data['family']}\n"
-                    f"  Prezzo di vendita: {prod_data['price']} EUR\n"
-                    f"  Link Acquisto: {prod_data['add_to_cart_url']}\n"
-                    f"  Profilo olfattivo e d'uso: {doc}"
+                    f"PROPOSTA {i+1}: {prod_data['name']} ({prod_data['brand']})\n"
+                    f"Profilo e note: {doc}"
                 )
 
-        if not context_items:
+        if not structured_products:
             return {
                 "reply": f"Non ho trovato fragranze a catalogo che rientrino esattamente nella categoria '{macro_label}' per {gender} nella fascia di prezzo selezionata. Prova a scegliere un'altra fascia o un'altra macro-categoria!",
                 "options": ["🎯 Ricomincia percorso guidato", "💬 Fai una domanda libera"],
+                "products": [],
                 "step": None,
                 "mode": "free"
             }
-
-        if first_product:
-            self.active_perfumes[session_id] = first_product
 
         context_str = "\n\n".join(context_items)
 
         prompt = (
             f"L'utente ha completato il percorso guidato con queste preferenze:\n"
-            f"- Macro-categoria olfattiva: {macro_label} (include famiglie come: {sub_fams_str})\n"
-            f"- Destinatario / Genere: {gender}\n"
+            f"- Macro-categoria olfattiva: {macro_label} ({sub_fams_str})\n"
+            f"- Destinatario: {gender}\n"
             f"- Occasione/Uso: {occasion}\n"
-            f"- Fascia Budget: {budget_str}\n\n"
-            f"PRODOTTI REALI PRESENTI A CATALOGO:\n{context_str}\n\n"
-            "REGOLE ANTI-ALLUCINAZIONE E STRUTTURA DELLA RISPOSTA:\n"
-            "1. Presenta ESCLUSIVAMENTE i prodotti elencati sopra. NON inventare nomi, marchi, prezzi o profumi non presenti nel testo.\n"
-            "2. Per ciascun profumo adotta TASSATIVAMENTE questa struttura ordinata su righe separate:\n"
-            "   - **Nome Profumo** di Brand\n"
-            f"   - Breve descrizione raffinata (1 o 2 frasi) con le note salienti, spiegando come rispecchia la macro-sensazione '{clean_macro}' e l'idoneità per {gender}.\n"
-            "   - **Prezzo:** PREZZO_DI_VENDITA EUR\n"
-            "   - [Aggiungi al Carrello](URL_FORNITO)\n\n"
-            "3. Il prezzo DEVE apparire sulla riga successiva alla descrizione e PRIMA del link al carrello.\n"
-            "Sii raffinato, sintetico ed elegante."
+            f"- Budget: {budget_str}\n\n"
+            f"CREAZIONI SELEZIONATE DAL CATALOGO:\n{context_str}\n\n"
+            "COMPITO:\n"
+            "Presenta brevemente con tono raffinato ed esperto da Maitre Parfumeur queste creazioni selezionate, "
+            "spiegando in 1-2 frasi per ciascuna il motivo per cui rispecchia la richiesta olfattiva.\n"
+            "NON inserire link o URL nel testo (verranno mostrati automaticamente dal nostro sistema visivo)."
         )
 
         response = self.client.chat.completions.create(
@@ -435,12 +432,13 @@ class FragranceAdvisor:
         )
         reply = response.choices[0].message.content
 
-        self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato completato: {macro_label}, {gender}, {occasion}, {budget_str}"})
+        self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato: {macro_label}, {gender}, {occasion}, {budget_str}"})
         self.sessions[session_id].append({"role": "assistant", "content": reply})
 
         return {
             "reply": reply,
             "options": ["🎯 Ricomincia percorso guidato", "💬 Fai una domanda libera"],
+            "products": structured_products,
             "step": None,
             "mode": "free"
         }
@@ -458,79 +456,93 @@ class FragranceAdvisor:
             self.active_perfumes[session_id] = mentioned_product
             print(f"[ENTITY MATCH] '{mentioned_product['name']}' (Nuovo switch: {is_new_product_switch})")
 
-        # RAMO 1: Profumo citato per nome per la prima volta -> PREZZO e CARRELLO obbligatori
+        # RAMO 1: Profumo citato esplicitamente per la prima volta
         if is_new_product_switch and mentioned_product:
             context_str = (
                 f"[PRODOTTO RICHIESTO DAL CLIENTE]\n"
                 f"- Nome: {mentioned_product['name']}\n"
                 f"- Brand: {mentioned_product.get('brand', 'Profumeria Artistica')}\n"
                 f"- Tipologia: {mentioned_product.get('ptype', '')} | Famiglia: {mentioned_product.get('family', '')}\n"
-                f"- Prezzo di vendita ufficiale: {mentioned_product['price']} EUR\n"
-                f"- Link Acquisto: {mentioned_product['add_to_cart_url']}\n"
+                f"- Prezzo: {mentioned_product['price']}€\n"
                 f"- Profilo olfattivo, note ed evoluzione: {mentioned_product['document']}"
             )
 
             system_prompt = (
                 "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n"
-                "L'utente ha chiesto espressamente informazioni su questo specifico profumo presente a catalogo.\n\n"
-                "REGOLE TASSATIVE DI RISPOSTA:\n"
-                "1. Rispondi alla richiesta dell'utente con eleganza, autorevolezza e precisione descrivendo la fragranza e le note.\n"
-                "2. Trattandosi della prima presentazione di questa fragranza, includi OBBLIGATORIAMENTE nelle ultime due righe:\n"
-                "   **Prezzo:** PREZZO_DI_VENDITA EUR\n"
-                "   [Aggiungi al Carrello](URL_FORNITO)\n"
-                "3. FORMATO RISPOSTA OBBLIGATORIO:\n"
-                "   **Nome Profumo** di Brand\n"
-                "   Descrizione raffinata e risposta puntuale alla richiesta del cliente (massimo 2-3 frasi).\n"
-                "   **Prezzo:** PREZZO EUR\n"
-                "   [Aggiungi al Carrello](URL_FORNITO)"
+                "L'utente ha chiesto espressamente informazioni su questo specifico profumo presente a catalogo.\n"
+                "Rispondi alla richiesta dell'utente con eleganza, autorevolezza e precisione descrivendo la fragranza e le sue note salienti in 2 o 3 frasi concise.\n"
+                "NON inserire link, URL o immagini nel testo (verranno mostrati automaticamente dalla UI)."
             )
 
             messages = [{"role": "system", "content": system_prompt}]
             messages.extend(history[-2:])
             messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
+            response = self.client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=messages,
+                temperature=0.0
+            )
+            reply = response.choices[0].message.content
+
+            product_payload = [{
+                "name": mentioned_product["name"],
+                "brand": mentioned_product["brand"],
+                "price": mentioned_product["price"],
+                "family": mentioned_product.get("family", ""),
+                "ptype": mentioned_product.get("ptype", ""),
+                "add_to_cart_url": mentioned_product["add_to_cart_url"],
+                "image_url": mentioned_product.get("image_url", ""),
+                "description": mentioned_product.get("description", "")
+            }]
+
+            self.sessions[session_id].append({"role": "user", "content": user_query})
+            self.sessions[session_id].append({"role": "assistant", "content": reply})
+
+            return {"reply": reply, "options": [], "products": product_payload, "step": None, "mode": "free"}
+
         else:
             active = self.active_perfumes.get(session_id)
             intent = self._determine_intent(user_query, active)
             is_follow_up = (intent == "VALUTA" and active is not None)
 
-            print(f"\n[ROUTER DEBUG] Profumo attivo: '{active.get('name') if active else 'NESSUNO'}'")
-            print(f"[ROUTER DEBUG] Domanda: '{user_query}' -> Decisione: {'SEGUI PRODOTTO (VALUTA)' if is_follow_up else 'CERCA NUOVO (CAMBIA)'}")
-
-            # RAMO 2: Chiarimento o approfondimento sullo stesso profumo -> SENZA CARRELLO
+            # RAMO 2: Chiarimento o approfondimento sullo stesso profumo -> NESSUNA CARD
             if is_follow_up:
                 context_str = (
                     f"[PRODOTTO ATTUALMENTE DISCUSSO]\n"
                     f"- Nome: {active['name']}\n"
                     f"- Brand: {active.get('brand', 'Profumeria Artistica')}\n"
                     f"- Famiglia: {active.get('family', '')} | Tipologia: {active.get('ptype', '')}\n"
-                    f"- Prezzo di vendita ufficiale: {active['price']} EUR\n"
-                    f"- Link Acquisto: {active['add_to_cart_url']}\n"
+                    f"- Prezzo: {active['price']}€\n"
                     f"- Profilo olfattivo, note ed occasioni d'uso: {active['document']}"
                 )
 
                 system_prompt = (
                     "Sei un Maitre Parfumeur e critico olfattivo di altissimo livello in una boutique di profumeria artistica.\n"
                     "Il tuo dovere principale è l'ONESTÀ e l'AUTOREVOLEZZA PROFESSIONALE: NON fare il compiacente e NON dire di sì a tutto.\n\n"
-                    "REGOLE CRITICHE PER IL GIUDIZIO E CHIARIMENTI (BLUF):\n"
-                    "1. DECISIONE NETTA NELLA PRIMA FRASE:\n"
-                    "   - Se l'utente chiede spiegazioni sulle note o sulla piramide, descrivile con eleganza evidenziando testa, cuore e fondo.\n"
-                    "   - Se chiede esplicitamente il prezzo o il costo, indicalo subito.\n"
-                    "   - Se la richiesta dell'utente è palesemente inadatta o non compatibile col profumo discusso, sconsiglialo con fermezza ed eleganza.\n"
-                    "   - Se invece è adeguata (es. marino/agrumato per l'estate), conferma con sicurezza.\n"
-                    "2. MOTIVAZIONE TECNICA IN 1-2 FRASI: Spiega la ragione chimico-olfattiva concreta basandoti sulla piramide e sul contesto d'uso.\n"
-                    "3. DIVIETO ASSOLUTO DI RACCOMANDARE ALTRI PROFUMI A MEMORIA:\n"
-                    "   - NON citare, NON inventare e NON proporre nomi di altri profumi non presenti in questo contesto.\n"
-                    "   - Se il profumo discusso non va bene per le note o l'occasione richiesta, dillo con chiarezza e aggiungi che puoi cercargli una fragranza a catalogo con quelle caratteristiche.\n"
-                    "4. GESTIONE DI PREZZO E LINK AL CARRELLO:\n"
-                    "   - Nelle normali domande di chiarimento, note, parere o idoneità, NON inserire né il prezzo né il link al carrello.\n"
-                    "   - Inserisci il prezzo e il link SOLO se l'utente richiede ESPLICITAMENTE il costo, il prezzo o il link di acquisto.\n"
-                    "5. SINTESI TOTALE: Massimo 3 o 4 frasi concise. Niente testi dispersivi."
+                    "REGOLE CRITICHE:\n"
+                    "1. Se l'utente chiede spiegazioni sulle note o sulla piramide, descrivile con eleganza evidenziando testa, cuore e fondo.\n"
+                    "2. Se la richiesta dell'utente è inadatta o non compatibile col profumo discusso, sconsiglialo con fermezza ed eleganza.\n"
+                    "3. DIVIETO ASSOLUTO DI RACCOMANDARE ALTRI PROFUMI A MEMORIA.\n"
+                    "4. NON inserire link o URL al carrello.\n"
+                    "5. SINTESI TOTALE: Massimo 3 o 4 frasi concise."
                 )
 
                 messages = [{"role": "system", "content": system_prompt}]
                 messages.extend(history[-2:])
                 messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
+
+                response = self.client.chat.completions.create(
+                    model="openai/gpt-oss-120b",
+                    messages=messages,
+                    temperature=0.0
+                )
+                reply = response.choices[0].message.content
+
+                self.sessions[session_id].append({"role": "user", "content": user_query})
+                self.sessions[session_id].append({"role": "assistant", "content": reply})
+
+                return {"reply": reply, "options": [], "products": [], "step": None, "mode": "free"}
 
             # RAMO 3: Ricerca di un nuovo profumo su ChromaDB con filtri di prezzo
             else:
@@ -538,8 +550,6 @@ class FragranceAdvisor:
 
                 effective_max_p = parsed_max_p if parsed_max_p is not None else max_price
                 effective_min_p = parsed_min_p
-
-                print(f"[SEARCH EXEC] Query ChromaDB: '{search_query_clean}' | Filtri Prezzo: min={effective_min_p}, max={effective_max_p}")
 
                 results = self.search_engine.search(
                     query=search_query_clean,
@@ -549,20 +559,14 @@ class FragranceAdvisor:
                 )
 
                 if not results["ids"] or len(results["ids"][0]) == 0:
-                    if effective_max_p or effective_min_p:
-                        filtro_desc = f"sotto i {effective_max_p}€" if effective_max_p else f"sopra i {effective_min_p}€"
-                        fallback_reply = (
-                            f"Non ho trovato a catalogo una fragranza che corrisponda a queste caratteristiche nella fascia di prezzo indicata ({filtro_desc}). "
-                            "Puoi provare ad ampliare il budget o richiedere una famiglia olfattiva differente."
-                        )
-                    else:
-                        fallback_reply = (
-                            "Non ho trovato a catalogo una fragranza che corrisponda a queste specifiche caratteristiche. "
-                            "Puoi provare a indicare una famiglia olfattiva più generica oppure iniziare il nostro percorso guidato."
-                        )
+                    filtro_desc = f"sotto i {effective_max_p}€" if effective_max_p else f"sopra i {effective_min_p}€" if effective_min_p else ""
+                    fallback_reply = (
+                        f"Non ho trovato a catalogo una fragranza che corrisponda a queste caratteristiche {filtro_desc}. "
+                        "Puoi provare a indicare una famiglia olfattiva differente oppure iniziare il nostro percorso guidato."
+                    )
                     self.sessions[session_id].append({"role": "user", "content": user_query})
                     self.sessions[session_id].append({"role": "assistant", "content": fallback_reply})
-                    return {"reply": fallback_reply, "options": ["🎯 Guidami nella scelta"], "step": None, "mode": "free"}
+                    return {"reply": fallback_reply, "options": ["🎯 Guidami nella scelta"], "products": [], "step": None, "mode": "free"}
 
                 candidates_text = []
                 candidates_map = {}
@@ -573,67 +577,70 @@ class FragranceAdvisor:
                     candidates_map[pid] = {
                         "name": meta.get("name", ""),
                         "brand": meta.get("brand", "Profumeria Artistica"),
-                        "price": meta.get("price", 0.0),
+                        "price": float(meta.get("price", 0.0)),
                         "family": meta.get("family", ""),
                         "ptype": meta.get("ptype", ""),
                         "add_to_cart_url": meta.get("add_to_cart_url", ""),
                         "product_page_url": meta.get("product_page_url", ""),
                         "image_url": meta.get("image_url", ""),
+                        "description": meta.get("family", "Profumeria Artistica"),
                         "document": doc
                     }
                     candidates_text.append(
-                        f"[{pid}]\n"
-                        f"Nome: {meta['name']}\n"
-                        f"Brand: {meta.get('brand', 'Profumeria Artistica')}\n"
-                        f"Tipologia: {meta.get('ptype', '')} | Famiglia: {meta.get('family', '')}\n"
-                        f"Prezzo: {meta['price']} EUR\n"
-                        f"Link Acquisto: {meta['add_to_cart_url']}\n"
-                        f"Descrizione e Note: {doc}"
+                        f"[{pid}] {meta['name']} di {meta.get('brand', 'Profumeria Artistica')} - {meta['price']}€\n"
+                        f"Note e carattere: {doc}"
                     )
 
                 context_str = "\n\n".join(candidates_text)
 
                 system_prompt = (
-                    "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n\n"
-                    "COMPITO DI SELEZIONE RIGOROSA:\n"
-                    "Hai a disposizione una lista di CANDIDATI estratti dal catalogo che rispettano già i vincoli di budget e note richiesti.\n"
+                    "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n"
+                    "Hai a disposizione una lista di CANDIDATI estratti dal catalogo.\n"
                     "1. Analizza la richiesta dell'utente.\n"
-                    "2. Scegli TRA I CANDIDATI ESATTAMENTE UN SOLO PRODOTTO che rispecchia REALMENTE e COERENTEMENTE la richiesta.\n"
-                    "3. Se l'utente ha chiesto un'alternativa più economica o ha specificato un tetto di spesa, evidenzia con eleganza come questa creazione offra grande caratura mantenendosi nella fascia desiderata.\n"
-                    "4. REGOLA ANTI-CONTRADDIZIONE: Se un candidato è caldo/intenso, NON proporlo per richieste di freschezza marina o leggerezza.\n"
-                    "5. FORMATO RISPOSTA OBBLIGATORIO:\n"
+                    "2. Scegli TRA I CANDIDATI ESATTAMENTE UN SOLO PRODOTTO che rispecchia REALMENTE la richiesta.\n"
+                    "3. FORMATO RISPOSTA:\n"
                     "   [ID: PRODOTTO_X]\n"
-                    "   **Nome Profumo** di Brand\n"
-                    "   Descrizione raffinata e diretta (massimo 2-3 frasi) del perché è la scelta ideale per le sue note olfattive ed occasioni d'uso.\n"
-                    "   **Prezzo:** PREZZO EUR\n"
-                    "   [Aggiungi al Carrello](URL_FORNITO)\n\n"
-                    "   NOTA: Riporta TASSATIVAMENTE il prezzo sulla riga successiva alla descrizione e IMMEDIATAMENTE PRIMA del link al carrello.\n"
-                    "6. SCARTO: Se NESSUN candidato è adatto, scrivi '[ID: NESSUNO]' all'inizio e spiega gentilmente che al momento non abbiamo la fragranza adatta."
+                    "   Spiega con eleganza e precisione (2-3 frasi) perché questa creazione è la scelta perfetta per le sue note e sensazioni.\n"
+                    "   NON inserire link, URL o immagini nel testo.\n"
+                    "4. SCARTO: Se nessun candidato è adatto, scrivi '[ID: NESSUNO]' all'inizio e spiega gentilmente la situazione."
                 )
 
                 messages = [{"role": "system", "content": system_prompt}]
                 messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCANDIDATI CATALOGO DISPONIBILI:\n{context_str}"})
 
-        response = self.client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            messages=messages,
-            temperature=0.0
-        )
-        reply = response.choices[0].message.content
+                response = self.client.chat.completions.create(
+                    model="openai/gpt-oss-120b",
+                    messages=messages,
+                    temperature=0.0
+                )
+                reply = response.choices[0].message.content
 
-        if not (is_new_product_switch and mentioned_product) and not is_follow_up and "candidates_map" in locals():
-            match = re.search(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]", reply, re.IGNORECASE)
-            if match:
-                selected_id = match.group(1).upper()
-                if selected_id in candidates_map:
-                    self.active_perfumes[session_id] = candidates_map[selected_id]
-                    print(f"[ADVISOR] Profumo attivo registrato: {candidates_map[selected_id]['name']}")
-                reply = re.sub(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]\s*", "", reply).strip()
-            else:
-                self.active_perfumes[session_id] = candidates_map["PRODOTTO_1"]
-                print(f"[ADVISOR FALLBACK] Profumo attivo registrato (primo candidato): {candidates_map['PRODOTTO_1']['name']}")
+                selected_product = None
+                match = re.search(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]", reply, re.IGNORECASE)
+                if match:
+                    selected_id = match.group(1).upper()
+                    if selected_id in candidates_map:
+                        selected_product = candidates_map[selected_id]
+                        self.active_perfumes[session_id] = selected_product
+                    reply = re.sub(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]\s*", "", reply).strip()
+                else:
+                    selected_product = candidates_map["PRODOTTO_1"]
+                    self.active_perfumes[session_id] = selected_product
 
-        self.sessions[session_id].append({"role": "user", "content": user_query})
-        self.sessions[session_id].append({"role": "assistant", "content": reply})
+                product_payload = []
+                if selected_product:
+                    product_payload.append({
+                        "name": selected_product["name"],
+                        "brand": selected_product["brand"],
+                        "price": selected_product["price"],
+                        "family": selected_product.get("family", ""),
+                        "ptype": selected_product.get("ptype", ""),
+                        "add_to_cart_url": selected_product["add_to_cart_url"],
+                        "image_url": selected_product.get("image_url", ""),
+                        "description": selected_product.get("description", "")
+                    })
 
-        return {"reply": reply, "options": [], "step": None, "mode": "free"}
+                self.sessions[session_id].append({"role": "user", "content": user_query})
+                self.sessions[session_id].append({"role": "assistant", "content": reply})
+
+                return {"reply": reply, "options": [], "products": product_payload, "step": None, "mode": "free"}
