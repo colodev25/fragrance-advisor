@@ -16,9 +16,6 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 CATALOG_PATH = BASE_DIR / "data" / "catalog.json"
 
-# ==============================================================================
-# MAPPATURA MACRO-CATEGORIE E FAMIGLIE OLFATTIVE DEL PERCORSO GUIDATO
-# ==============================================================================
 MACRO_FAMILIES = {
     "🍋 Fresco o Agrumato": ["Acquatica", "Agrumata", "Aromatica", "Verde"],
     "🌸 Floreale o Fruttato": ["Floreale", "Floreale - sample", "Fruttata", "Talcata"],
@@ -125,11 +122,107 @@ class FragranceAdvisor:
                     "add_to_cart_url": prod.get("urls", {}).get("add_to_cart", ""),
                     "product_page_url": prod.get("urls", {}).get("product_page", ""),
                     "image_url": prod.get("urls", {}).get("image_url", ""),
-                    "description": prod.get("usage_profile") or prod.get("description", "")[:180],
                     "document": prod.get("semantic_text", prod.get("description", ""))
                 }
 
         return None
+
+    def _enrich_product_payload(self, prod_dict: dict, card_type: str = "slideover") -> dict:
+        """
+        Estrae e organizza gli attributi puliti per il retro della card (Soluzione 2):
+        - story: micro-frase d'atmosfera senza ridondanze su nome o brand
+        - key_notes: elenco di 4-6 note salienti da mostrare come pillole grafiche
+        - traits: stringa compatta di metadati (es. 'Extrait de Parfum • Unisex • Primavera/Estate')
+        """
+        p_name = prod_dict.get("name", "").strip()
+        p_brand = prod_dict.get("brand", "Profumeria Artistica").strip()
+        p_price = float(prod_dict.get("price", 0.0))
+        p_family = prod_dict.get("family", "").strip()
+        p_ptype = prod_dict.get("ptype", "").strip() or "Profumo Artistico"
+        p_cart = prod_dict.get("add_to_cart_url", "")
+        p_img = prod_dict.get("image_url", "")
+
+        # Cerca il record originale completo da catalog.json
+        cat_match = None
+        for cp in self.catalog_products:
+            if cp.get("name", "").strip().lower() == p_name.lower():
+                cat_match = cp
+                break
+
+        key_notes = []
+        story = ""
+        traits = ""
+
+        if cat_match:
+            # 1. Estrazione Note Chiave
+            pyr = cat_match.get("olfactory_pyramid", {})
+            top = [n.strip() for n in pyr.get("top", []) if n.strip()][:2]
+            heart = [n.strip() for n in pyr.get("heart", []) if n.strip()][:2]
+            base = [n.strip() for n in pyr.get("base", []) if n.strip()][:2]
+            key_notes = list(dict.fromkeys(top + heart + base))[:6]
+
+            # Fallback note se piramide assente: estrae dai tag o dalla famiglia
+            if not key_notes and cat_match.get("family"):
+                key_notes = [f.strip() for f in cat_match["family"].split(",") if f.strip()][:4]
+
+            # 2. Micro-Storytelling depurato
+            raw_text = cat_match.get("description", "") or cat_match.get("usage_profile", "")
+            # Rimuove l'intestazione standard di catalogazione
+            cleaned = re.sub(rf"^Profumo\s+{re.escape(p_name)}.*?\.\s*", "", raw_text, flags=re.I)
+            cleaned = re.sub(r"\bformato\s*:\s*[^\.\n]+", "", cleaned, flags=re.I)
+            cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+            # Estrae la prima frase significativa
+            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', cleaned) if len(s.strip()) > 15]
+            if sentences:
+                story = sentences[0]
+                if len(story) > 150:
+                    story = story[:147].rsplit(" ", 1)[0] + "..."
+            else:
+                fam_label = p_family or "raffinata"
+                story = f"Una composizione olfattiva di caratura artistica incentrata su armonie {fam_label.lower()} di grande persistenza."
+
+            # 3. Metadati / Traits
+            trait_parts = [p_ptype]
+            tags = [t.lower() for t in cat_match.get("tags", [])]
+            if "unisex" in tags:
+                trait_parts.append("Unisex")
+            elif any("lei" in t or "donna" in t for t in tags):
+                trait_parts.append("Per Lei")
+            elif any("lui" in t or "uomo" in t for t in tags):
+                trait_parts.append("Per Lui")
+            else:
+                trait_parts.append("Unisex")
+
+            if any("invern" in t for t in tags):
+                trait_parts.append("Autunno / Inverno")
+            elif any("estiv" in t or "estate" in t for t in tags):
+                trait_parts.append("Primavera / Estate")
+            else:
+                trait_parts.append("Scia persistente")
+
+            traits = " • ".join(trait_parts)
+
+        else:
+            # Fallback se non presente in catalog.json
+            key_notes = [f.strip() for f in p_family.split(",") if f.strip()][:4]
+            story = f"Creazione d'alta profumeria che fonde eleganza classica e note olfattive di grande carattere."
+            traits = f"{p_ptype} • {p_family or 'Profumeria Artistica'}"
+
+        return {
+            "name": p_name,
+            "brand": p_brand,
+            "price": p_price,
+            "family": p_family,
+            "ptype": p_ptype,
+            "add_to_cart_url": p_cart,
+            "image_url": p_img,
+            "card_type": card_type,
+            "story": story,
+            "key_notes": key_notes,
+            "traits": traits,
+            "description": story
+        }
 
     def _extract_price_constraints(self, query: str, active_perfume: dict | None) -> tuple[float | None, float | None, str]:
         min_p = None
@@ -361,7 +454,6 @@ class FragranceAdvisor:
             n_results=3
         )
 
-        context_items = []
         structured_products = []
 
         if results["ids"] and len(results["ids"][0]) > 0:
@@ -378,51 +470,32 @@ class FragranceAdvisor:
                     "add_to_cart_url": meta.get("add_to_cart_url", ""),
                     "product_page_url": meta.get("product_page_url", ""),
                     "image_url": meta.get("image_url", ""),
-                    "description": meta.get("family", "Profumeria Artistica"),
                     "document": doc
                 }
 
-                structured_products.append({
-                    "name": prod_data["name"],
-                    "brand": prod_data["brand"],
-                    "price": prod_data["price"],
-                    "family": prod_data["family"],
-                    "ptype": prod_data["ptype"],
-                    "add_to_cart_url": prod_data["add_to_cart_url"],
-                    "image_url": prod_data["image_url"],
-                    "description": f"Creazione {prod_data['family']} ({prod_data['ptype']}). Ideale per {occasion}."
-                })
+                # Arricchimento secondo la Soluzione 2 (Micro-Storytelling + Note a Pillola)
+                enriched = self._enrich_product_payload(prod_data, card_type="slideover")
+                structured_products.append(enriched)
 
                 if i == 0:
                     self.active_perfumes[session_id] = prod_data
 
-                context_items.append(
-                    f"PROPOSTA {i+1}: {prod_data['name']} ({prod_data['brand']})\n"
-                    f"Profilo e note: {doc}"
-                )
-
         if not structured_products:
             return {
-                "reply": f"Non ho trovato fragranze a catalogo che rientrino esattamente nella categoria '{macro_label}' per {gender} nella fascia di prezzo selezionata. Prova a scegliere un'altra fascia o un'altra macro-categoria!",
+                "reply": f"Non ho trovato fragranze a catalogo che rientrino esattamente nella categoria '{macro_label}' per {gender} nella fascia di prezzo selezionata. Prova a scegliere un'altra combinazione!",
                 "options": ["🎯 Ricomincia percorso guidato", "💬 Fai una domanda libera"],
                 "products": [],
                 "step": None,
                 "mode": "free"
             }
 
-        context_str = "\n\n".join(context_items)
-
+        # Micro-frase introduttiva d'autore (senza dettagli ridondanti)
         prompt = (
-            f"L'utente ha completato il percorso guidato con queste preferenze:\n"
-            f"- Macro-categoria olfattiva: {macro_label} ({sub_fams_str})\n"
-            f"- Destinatario: {gender}\n"
-            f"- Occasione/Uso: {occasion}\n"
-            f"- Budget: {budget_str}\n\n"
-            f"CREAZIONI SELEZIONATE DAL CATALOGO:\n{context_str}\n\n"
-            "COMPITO:\n"
-            "Presenta brevemente con tono raffinato ed esperto da Maitre Parfumeur queste creazioni selezionate, "
-            "spiegando in 1-2 frasi per ciascuna il motivo per cui rispecchia la richiesta olfattiva.\n"
-            "NON inserire link o URL nel testo (verranno mostrati automaticamente dal nostro sistema visivo)."
+            f"L'utente ha completato il percorso per un profumo {clean_macro} per {gender}, contesto '{occasion}'.\n"
+            "Formula ESCLUSIVAMENTE una singola micro-frase introduttiva (massimo 15-20 parole) da Maître Parfumeur "
+            "per presentare con garbo ed eleganza la selezione olfattiva.\n"
+            "ESEMPIO: 'Ecco le creazioni d'autore selezionate dal nostro archivio per rispecchiare i tuoi desideri:'\n"
+            "NON nominare i profumi e NON inserire link o prezzi."
         )
 
         response = self.client.chat.completions.create(
@@ -430,7 +503,7 @@ class FragranceAdvisor:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0
         )
-        reply = response.choices[0].message.content
+        reply = response.choices[0].message.content.strip()
 
         self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato: {macro_label}, {gender}, {occasion}, {budget_str}"})
         self.sessions[session_id].append({"role": "assistant", "content": reply})
@@ -454,59 +527,24 @@ class FragranceAdvisor:
             if not active_before or active_before.get("name") != mentioned_product.get("name"):
                 is_new_product_switch = True
             self.active_perfumes[session_id] = mentioned_product
-            print(f"[ENTITY MATCH] '{mentioned_product['name']}' (Nuovo switch: {is_new_product_switch})")
 
         # RAMO 1: Profumo citato esplicitamente per la prima volta
         if is_new_product_switch and mentioned_product:
-            context_str = (
-                f"[PRODOTTO RICHIESTO DAL CLIENTE]\n"
-                f"- Nome: {mentioned_product['name']}\n"
-                f"- Brand: {mentioned_product.get('brand', 'Profumeria Artistica')}\n"
-                f"- Tipologia: {mentioned_product.get('ptype', '')} | Famiglia: {mentioned_product.get('family', '')}\n"
-                f"- Prezzo: {mentioned_product['price']}€\n"
-                f"- Profilo olfattivo, note ed evoluzione: {mentioned_product['document']}"
-            )
+            intro_reply = f"Ecco i dettagli della creazione **{mentioned_product['name']}** firmata {mentioned_product.get('brand', 'Profumeria Artistica')}:"
 
-            system_prompt = (
-                "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n"
-                "L'utente ha chiesto espressamente informazioni su questo specifico profumo presente a catalogo.\n"
-                "Rispondi alla richiesta dell'utente con eleganza, autorevolezza e precisione descrivendo la fragranza e le sue note salienti in 2 o 3 frasi concise.\n"
-                "NON inserire link, URL o immagini nel testo (verranno mostrati automaticamente dalla UI)."
-            )
-
-            messages = [{"role": "system", "content": system_prompt}]
-            messages.extend(history[-2:])
-            messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
-
-            response = self.client.chat.completions.create(
-                model="openai/gpt-oss-120b",
-                messages=messages,
-                temperature=0.0
-            )
-            reply = response.choices[0].message.content
-
-            product_payload = [{
-                "name": mentioned_product["name"],
-                "brand": mentioned_product["brand"],
-                "price": mentioned_product["price"],
-                "family": mentioned_product.get("family", ""),
-                "ptype": mentioned_product.get("ptype", ""),
-                "add_to_cart_url": mentioned_product["add_to_cart_url"],
-                "image_url": mentioned_product.get("image_url", ""),
-                "description": mentioned_product.get("description", "")
-            }]
+            enriched = self._enrich_product_payload(mentioned_product, card_type="standard")
 
             self.sessions[session_id].append({"role": "user", "content": user_query})
-            self.sessions[session_id].append({"role": "assistant", "content": reply})
+            self.sessions[session_id].append({"role": "assistant", "content": intro_reply})
 
-            return {"reply": reply, "options": [], "products": product_payload, "step": None, "mode": "free"}
+            return {"reply": intro_reply, "options": [], "products": [enriched], "step": None, "mode": "free"}
 
         else:
             active = self.active_perfumes.get(session_id)
             intent = self._determine_intent(user_query, active)
             is_follow_up = (intent == "VALUTA" and active is not None)
 
-            # RAMO 2: Chiarimento o approfondimento sullo stesso profumo -> NESSUNA CARD
+            # RAMO 2: Chiarimento sullo stesso profumo -> RISPOSTA TESTUALE PURA
             if is_follow_up:
                 context_str = (
                     f"[PRODOTTO ATTUALMENTE DISCUSSO]\n"
@@ -514,18 +552,14 @@ class FragranceAdvisor:
                     f"- Brand: {active.get('brand', 'Profumeria Artistica')}\n"
                     f"- Famiglia: {active.get('family', '')} | Tipologia: {active.get('ptype', '')}\n"
                     f"- Prezzo: {active['price']}€\n"
-                    f"- Profilo olfattivo, note ed occasioni d'uso: {active['document']}"
+                    f"- Note e carattere: {active['document']}"
                 )
 
                 system_prompt = (
-                    "Sei un Maitre Parfumeur e critico olfattivo di altissimo livello in una boutique di profumeria artistica.\n"
-                    "Il tuo dovere principale è l'ONESTÀ e l'AUTOREVOLEZZA PROFESSIONALE: NON fare il compiacente e NON dire di sì a tutto.\n\n"
-                    "REGOLE CRITICHE:\n"
-                    "1. Se l'utente chiede spiegazioni sulle note o sulla piramide, descrivile con eleganza evidenziando testa, cuore e fondo.\n"
-                    "2. Se la richiesta dell'utente è inadatta o non compatibile col profumo discusso, sconsiglialo con fermezza ed eleganza.\n"
-                    "3. DIVIETO ASSOLUTO DI RACCOMANDARE ALTRI PROFUMI A MEMORIA.\n"
-                    "4. NON inserire link o URL al carrello.\n"
-                    "5. SINTESI TOTALE: Massimo 3 o 4 frasi concise."
+                    "Sei un Maître Parfumeur e critico olfattivo di altissimo livello.\n"
+                    "Rispondi al chiarimento dell'utente con autorevolezza ed eleganza in massimo 2 o 3 frasi concise.\n"
+                    "Se chiede delle note, descrivi l'evoluzione olfattiva.\n"
+                    "NON inserire link o formattazioni di vendita."
                 )
 
                 messages = [{"role": "system", "content": system_prompt}]
@@ -537,14 +571,14 @@ class FragranceAdvisor:
                     messages=messages,
                     temperature=0.0
                 )
-                reply = response.choices[0].message.content
+                reply = response.choices[0].message.content.strip()
 
                 self.sessions[session_id].append({"role": "user", "content": user_query})
                 self.sessions[session_id].append({"role": "assistant", "content": reply})
 
                 return {"reply": reply, "options": [], "products": [], "step": None, "mode": "free"}
 
-            # RAMO 3: Ricerca di un nuovo profumo su ChromaDB con filtri di prezzo
+            # RAMO 3: Nuova ricerca da catalogo -> CARD CLASSICA STANDARD (senza slideover)
             else:
                 parsed_min_p, parsed_max_p, search_query_clean = self._extract_price_constraints(user_query, active)
 
@@ -561,86 +595,33 @@ class FragranceAdvisor:
                 if not results["ids"] or len(results["ids"][0]) == 0:
                     filtro_desc = f"sotto i {effective_max_p}€" if effective_max_p else f"sopra i {effective_min_p}€" if effective_min_p else ""
                     fallback_reply = (
-                        f"Non ho trovato a catalogo una fragranza che corrisponda a queste caratteristiche {filtro_desc}. "
-                        "Puoi provare a indicare una famiglia olfattiva differente oppure iniziare il nostro percorso guidato."
+                        f"Non ho trovato a catalogo una creazione che corrisponda a queste specifiche caratteristiche {filtro_desc}. "
+                        "Puoi provare a indicare una nota differente oppure avviare il percorso guidato."
                     )
                     self.sessions[session_id].append({"role": "user", "content": user_query})
                     self.sessions[session_id].append({"role": "assistant", "content": fallback_reply})
                     return {"reply": fallback_reply, "options": ["🎯 Guidami nella scelta"], "products": [], "step": None, "mode": "free"}
 
-                candidates_text = []
-                candidates_map = {}
-                for i in range(len(results["ids"][0])):
-                    meta = results["metadatas"][0][i]
-                    doc = results["documents"][0][i]
-                    pid = f"PRODOTTO_{i+1}"
-                    candidates_map[pid] = {
-                        "name": meta.get("name", ""),
-                        "brand": meta.get("brand", "Profumeria Artistica"),
-                        "price": float(meta.get("price", 0.0)),
-                        "family": meta.get("family", ""),
-                        "ptype": meta.get("ptype", ""),
-                        "add_to_cart_url": meta.get("add_to_cart_url", ""),
-                        "product_page_url": meta.get("product_page_url", ""),
-                        "image_url": meta.get("image_url", ""),
-                        "description": meta.get("family", "Profumeria Artistica"),
-                        "document": doc
-                    }
-                    candidates_text.append(
-                        f"[{pid}] {meta['name']} di {meta.get('brand', 'Profumeria Artistica')} - {meta['price']}€\n"
-                        f"Note e carattere: {doc}"
-                    )
+                meta = results["metadatas"][0][0]
+                doc = results["documents"][0][0]
 
-                context_str = "\n\n".join(candidates_text)
+                selected_product = {
+                    "name": meta.get("name", ""),
+                    "brand": meta.get("brand", "Profumeria Artistica"),
+                    "price": float(meta.get("price", 0.0)),
+                    "family": meta.get("family", ""),
+                    "ptype": meta.get("ptype", ""),
+                    "add_to_cart_url": meta.get("add_to_cart_url", ""),
+                    "product_page_url": meta.get("product_page_url", ""),
+                    "image_url": meta.get("image_url", ""),
+                    "document": doc
+                }
+                self.active_perfumes[session_id] = selected_product
 
-                system_prompt = (
-                    "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n"
-                    "Hai a disposizione una lista di CANDIDATI estratti dal catalogo.\n"
-                    "1. Analizza la richiesta dell'utente.\n"
-                    "2. Scegli TRA I CANDIDATI ESATTAMENTE UN SOLO PRODOTTO che rispecchia REALMENTE la richiesta.\n"
-                    "3. FORMATO RISPOSTA:\n"
-                    "   [ID: PRODOTTO_X]\n"
-                    "   Spiega con eleganza e precisione (2-3 frasi) perché questa creazione è la scelta perfetta per le sue note e sensazioni.\n"
-                    "   NON inserire link, URL o immagini nel testo.\n"
-                    "4. SCARTO: Se nessun candidato è adatto, scrivi '[ID: NESSUNO]' all'inizio e spiega gentilmente la situazione."
-                )
-
-                messages = [{"role": "system", "content": system_prompt}]
-                messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCANDIDATI CATALOGO DISPONIBILI:\n{context_str}"})
-
-                response = self.client.chat.completions.create(
-                    model="openai/gpt-oss-120b",
-                    messages=messages,
-                    temperature=0.0
-                )
-                reply = response.choices[0].message.content
-
-                selected_product = None
-                match = re.search(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]", reply, re.IGNORECASE)
-                if match:
-                    selected_id = match.group(1).upper()
-                    if selected_id in candidates_map:
-                        selected_product = candidates_map[selected_id]
-                        self.active_perfumes[session_id] = selected_product
-                    reply = re.sub(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]\s*", "", reply).strip()
-                else:
-                    selected_product = candidates_map["PRODOTTO_1"]
-                    self.active_perfumes[session_id] = selected_product
-
-                product_payload = []
-                if selected_product:
-                    product_payload.append({
-                        "name": selected_product["name"],
-                        "brand": selected_product["brand"],
-                        "price": selected_product["price"],
-                        "family": selected_product.get("family", ""),
-                        "ptype": selected_product.get("ptype", ""),
-                        "add_to_cart_url": selected_product["add_to_cart_url"],
-                        "image_url": selected_product.get("image_url", ""),
-                        "description": selected_product.get("description", "")
-                    })
+                enriched = self._enrich_product_payload(selected_product, card_type="standard")
+                intro_reply = "In base alla tua richiesta, ho selezionato questa creazione d'autore:"
 
                 self.sessions[session_id].append({"role": "user", "content": user_query})
-                self.sessions[session_id].append({"role": "assistant", "content": reply})
+                self.sessions[session_id].append({"role": "assistant", "content": intro_reply})
 
-                return {"reply": reply, "options": [], "products": product_payload, "step": None, "mode": "free"}
+                return {"reply": intro_reply, "options": [], "products": [enriched], "step": None, "mode": "free"}

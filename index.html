@@ -3,31 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Consulente Olfattivo d'Élite</title>
+  <title>Etualy | Maître Parfumeur AI</title>
   
+  <!-- Font Luxury: Cormorant Garamond & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
+    /* ==========================================================================
+       ETUALY DESIGN SYSTEM
+       ========================================================================== */
     :root {
-      --oa-bg-page: #F4F1EA;
-      --oa-bg-widget: #FAF8F5;
+      --oa-bg-page: #F7F7F7;
+      --oa-bg-widget: #FFFFFF;
+      --oa-bg-chat: #FAFAF9;
       --oa-bg-card: #FFFFFF;
-      --oa-text-main: #1C1B1A;
-      --oa-text-muted: #6E6B67;
-      --oa-accent-gold: #C2A26F;
-      --oa-accent-gold-hover: #AA8B56;
-      --oa-accent-gold-light: #F7F3EC;
-      --oa-border: #E8E3DA;
-      --oa-border-light: #F0ECE4;
-      --oa-user-bubble: #1C1B1A;
+      --oa-text-primary: #111111;
+      --oa-text-secondary: #555555;
+      --oa-text-muted: #888888;
+      --oa-accent-gold: #BFA27E;
+      --oa-accent-gold-light: #F6F3EE;
+      --oa-border: #E8E8E8;
+      --oa-border-subtle: #F0F0F0;
+      --oa-black: #111111;
+      --oa-white: #FFFFFF;
+      --oa-user-bubble: #181818;
       --oa-user-text: #FFFFFF;
-      --oa-bot-bubble: #FFFFFF;
-      --oa-shadow-luxury: 0 16px 40px -8px rgba(28, 27, 26, 0.12), 0 4px 12px rgba(28, 27, 26, 0.04);
-      --oa-radius-lg: 20px;
-      --oa-radius-md: 12px;
-      --oa-radius-sm: 8px;
+      --oa-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+      --oa-radius-sm: 2px;
+      --oa-radius-md: 4px;
+      --oa-radius-bubble: 6px;
     }
 
     * {
@@ -39,71 +45,74 @@
     body {
       background-color: var(--oa-bg-page);
       font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      color: var(--oa-text-main);
+      color: var(--oa-text-primary);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
+      -webkit-font-smoothing: antialiased;
     }
 
+    /* Launcher Fluttuante */
     .oa-launcher-btn {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      height: 56px;
-      padding: 0 24px;
-      background: var(--oa-text-main);
-      color: #FFF;
-      border: 1px solid var(--oa-accent-gold);
-      border-radius: 28px;
+      bottom: 28px;
+      right: 28px;
+      height: 52px;
+      padding: 0 22px;
+      background: var(--oa-black);
+      color: var(--oa-white);
+      border: 1px solid #222222;
+      border-radius: var(--oa-radius-md);
       display: flex;
       align-items: center;
       gap: 12px;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       z-index: 999998;
     }
 
     .oa-launcher-btn:hover {
+      background: #222222;
       transform: translateY(-2px);
-      box-shadow: 0 12px 28px rgba(0,0,0,0.24);
-      background: #000;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
     }
 
-    .oa-launcher-btn svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--oa-accent-gold);
+    .oa-launcher-icon {
+      width: 18px;
+      height: 18px;
+      stroke: var(--oa-accent-gold);
     }
 
     .oa-launcher-text {
-      font-size: 13px;
+      font-size: 11.5px;
       font-weight: 600;
-      letter-spacing: 0.5px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
     }
 
+    /* Finestra Widget */
     .oa-widget-container {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 390px;
-      height: 620px;
-      max-height: calc(100vh - 48px);
+      bottom: 28px;
+      right: 28px;
+      width: 400px;
+      height: 640px;
+      max-height: calc(100vh - 56px);
       background: var(--oa-bg-widget);
-      border-radius: var(--oa-radius-lg);
+      border-radius: var(--oa-radius-md);
       border: 1px solid var(--oa-border);
-      box-shadow: var(--oa-shadow-luxury);
+      box-shadow: var(--oa-shadow);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       z-index: 999999;
       opacity: 0;
       pointer-events: none;
-      transform: translateY(20px) scale(0.98);
-      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(16px) scale(0.98);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .oa-widget-container.is-active {
@@ -112,100 +121,90 @@
       transform: translateY(0) scale(1);
     }
 
+    /* Header */
     .oa-header {
-      padding: 16px 20px;
-      background: #FFFFFF;
+      padding: 18px 22px;
+      background: var(--oa-white);
       border-bottom: 1px solid var(--oa-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: relative;
     }
 
     .oa-header-brand {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      gap: 3px;
     }
 
-    .oa-header-avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: var(--oa-accent-gold-light);
-      border: 1px solid var(--oa-accent-gold);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--oa-accent-gold-hover);
-    }
-
-    .oa-header-avatar svg {
-      width: 18px;
-      height: 18px;
-      stroke: var(--oa-accent-gold-hover);
+    .oa-header-store {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 2.2px;
+      text-transform: uppercase;
+      color: var(--oa-text-muted);
     }
 
     .oa-header-title {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      color: var(--oa-text-main);
-      line-height: 1.1;
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      color: var(--oa-text-primary);
+      line-height: 1;
     }
 
     .oa-header-status {
-      font-size: 11px;
+      font-size: 10.5px;
       color: var(--oa-text-muted);
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-top: 2px;
       font-weight: 500;
+      margin-top: 2px;
     }
 
     .oa-status-dot {
-      width: 6px;
-      height: 6px;
-      background-color: #2ECC71;
+      width: 5px;
+      height: 5px;
+      background-color: var(--oa-accent-gold);
       border-radius: 50%;
-      box-shadow: 0 0 6px rgba(46, 204, 113, 0.6);
     }
 
     .oa-header-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .oa-icon-btn {
       background: none;
       border: none;
       padding: 8px;
-      border-radius: 50%;
       cursor: pointer;
-      color: var(--oa-text-muted);
+      color: var(--oa-text-secondary);
+      border-radius: var(--oa-radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, color 0.2s;
+      transition: color 0.2s, background 0.2s;
     }
 
     .oa-icon-btn:hover {
-      background: var(--oa-border-light);
-      color: var(--oa-text-main);
+      color: var(--oa-black);
+      background: var(--oa-border-subtle);
     }
 
     .oa-icon-btn svg {
-      width: 18px;
-      height: 18px;
+      width: 17px;
+      height: 17px;
     }
 
+    /* Stepper Bar */
     .oa-stepper-bar {
-      height: 3px;
+      height: 2px;
       width: 100%;
-      background: var(--oa-border-light);
+      background: var(--oa-border-subtle);
       display: none;
       position: relative;
     }
@@ -217,14 +216,16 @@
     .oa-stepper-progress {
       height: 100%;
       width: 25%;
-      background: linear-gradient(90deg, var(--oa-accent-gold), #dfc393);
-      transition: width 0.4s ease;
+      background: var(--oa-accent-gold);
+      transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
+    /* Area Messaggi */
     .oa-messages-container {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 16px;
+      padding: 22px 18px;
+      background: var(--oa-bg-chat);
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -236,18 +237,18 @@
     }
     .oa-messages-container::-webkit-scrollbar-thumb {
       background: var(--oa-border);
-      border-radius: 4px;
+      border-radius: 2px;
     }
 
     .oa-msg {
-      max-width: 92%;
-      line-height: 1.5;
+      max-width: 90%;
+      line-height: 1.55;
       font-size: 13.5px;
-      animation: oaFadeIn 0.3s ease forwards;
+      animation: oaFadeIn 0.25s ease forwards;
     }
 
     @keyframes oaFadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -256,19 +257,18 @@
       background: var(--oa-user-bubble);
       color: var(--oa-user-text);
       padding: 12px 16px;
-      border-radius: 16px 16px 4px 16px;
+      border-radius: var(--oa-radius-bubble);
       font-weight: 400;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     }
 
     .oa-msg-bot {
       align-self: flex-start;
-      background: var(--oa-bot-bubble);
-      color: var(--oa-text-main);
-      padding: 14px 18px;
-      border-radius: 16px 16px 16px 4px;
+      background: var(--oa-white);
+      color: var(--oa-text-primary);
+      padding: 16px 18px;
+      border-radius: var(--oa-radius-bubble);
       border: 1px solid var(--oa-border);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
       width: 100%;
     }
 
@@ -279,53 +279,74 @@
       margin-bottom: 0;
     }
 
-    /* PRODUCT CARD DETERMINISTICA */
+    /* ==========================================================================
+       PRODUCT CARDS (STANDARD & SLIDE-OVER)
+       ========================================================================== */
     .oa-product-card {
-      background: #FFFFFF;
+      position: relative;
+      overflow: hidden;
+      background: var(--oa-white);
       border: 1px solid var(--oa-border);
       border-radius: var(--oa-radius-md);
-      padding: 14px;
-      margin: 12px 0 6px 0;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      margin: 10px 0 4px 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
+    .oa-product-card.oa-has-slideover {
+      min-height: 185px; /* Assicura respiro e spazio per il retro slideover */
+    }
+
     .oa-product-card:hover {
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    }
+
+    .oa-card-front {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .oa-card-header {
       display: flex;
       gap: 14px;
       align-items: center;
+      position: relative;
     }
 
-    .oa-card-image {
-      width: 72px;
-      height: 72px;
+    .oa-card-image-box {
+      width: 74px;
+      height: 74px;
+      border: 1px solid var(--oa-border-subtle);
       border-radius: var(--oa-radius-sm);
       background: #FFFFFF;
-      border: 1px solid var(--oa-border-light);
-      object-fit: contain;
-      padding: 4px;
-      flex-shrink: 0;
-    }
-
-    .oa-card-image-placeholder {
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 4px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .oa-card-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .oa-card-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--oa-accent-gold);
       background: var(--oa-accent-gold-light);
     }
 
-    .oa-card-image-placeholder svg {
+    .oa-card-placeholder svg {
       width: 26px;
       height: 26px;
-      stroke: var(--oa-accent-gold-hover);
+      stroke: var(--oa-accent-gold);
     }
 
     .oa-card-meta {
@@ -333,119 +354,336 @@
       min-width: 0;
     }
 
+    .oa-has-slideover .oa-card-meta {
+      padding-right: 28px;
+    }
+
     .oa-card-vendor {
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.8px;
       text-transform: uppercase;
-      color: var(--oa-accent-gold-hover);
+      color: var(--oa-text-secondary);
       margin-bottom: 2px;
     }
 
     .oa-card-title {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--oa-text-main);
-      line-height: 1.2;
+      font-size: 18.5px;
+      font-weight: 600;
+      color: var(--oa-text-primary);
+      line-height: 1.15;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
+    .oa-card-badge {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 9.5px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--oa-accent-gold);
+      font-weight: 600;
+    }
+
     .oa-card-desc {
       font-size: 12px;
-      color: var(--oa-text-muted);
+      color: var(--oa-text-secondary);
       line-height: 1.45;
+    }
+
+    .oa-card-info-btn {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--oa-border);
+      background: #FFFFFF;
+      color: var(--oa-text-secondary);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+
+    .oa-card-info-btn:hover {
+      border-color: var(--oa-black);
+      color: var(--oa-black);
+      background: var(--oa-border-subtle);
     }
 
     .oa-card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-top: 1px solid var(--oa-border-light);
-      padding-top: 10px;
+      border-top: 1px solid var(--oa-border-subtle);
+      padding-top: 12px;
       margin-top: 2px;
     }
 
     .oa-card-price {
       font-size: 15px;
       font-weight: 700;
-      color: var(--oa-text-main);
+      color: var(--oa-text-primary);
       letter-spacing: -0.2px;
     }
 
     .oa-card-cart-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: var(--oa-text-main);
-      color: #FFFFFF !important;
+      gap: 8px;
+      padding: 9px 16px;
+      background: var(--oa-black);
+      color: var(--oa-white) !important;
       text-decoration: none;
-      border-radius: 20px;
-      font-size: 11.5px;
+      border-radius: var(--oa-radius-sm);
+      font-size: 10.5px;
       font-weight: 600;
-      letter-spacing: 0.4px;
-      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      transition: background 0.2s;
     }
 
     .oa-card-cart-btn:hover {
-      background: var(--oa-accent-gold-hover);
-      transform: scale(1.02);
+      background: #333333;
     }
 
     .oa-card-cart-btn svg {
-      width: 14px;
-      height: 14px;
-      stroke: #FFFFFF;
+      width: 13px;
+      height: 13px;
+      stroke: var(--oa-white);
     }
 
-    .oa-chips-container {
-      padding: 8px 16px 12px;
+    /* ==========================================================================
+       PANNELLO SLIDE-OVER (SOLUZIONE 2: STORY + PILLS + TRAITS)
+       ========================================================================== */
+    .oa-card-slideover {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #FFFFFF;
+      padding: 14px 16px;
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 10;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+    }
+
+    .oa-product-card.is-open .oa-card-slideover {
+      transform: translateY(0);
+    }
+
+    .oa-slide-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--oa-border-subtle);
+      padding-bottom: 7px;
+    }
+
+    .oa-slide-meta {
+      flex: 1;
+      padding-right: 10px;
+    }
+
+    .oa-slide-subtitle {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--oa-accent-gold);
+      margin-bottom: 1px;
+    }
+
+    .oa-slide-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 16.5px;
+      font-weight: 600;
+      color: var(--oa-text-primary);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .oa-slide-close-btn {
+      width: 22px;
+      height: 22px;
+      background: none;
+      border: 1px solid var(--oa-border);
+      border-radius: 50%;
+      color: var(--oa-text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .oa-slide-close-btn:hover {
+      border-color: var(--oa-black);
+      color: var(--oa-black);
+      background: var(--oa-border-subtle);
+    }
+
+    .oa-slide-close-btn svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    .oa-slide-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+      display: flex;
+      flex-direction: column;
       gap: 8px;
     }
 
-    .oa-chip {
-      background: #FFFFFF;
+    .oa-slide-body::-webkit-scrollbar {
+      width: 3px;
+    }
+    .oa-slide-body::-webkit-scrollbar-thumb {
+      background: var(--oa-border);
+    }
+
+    .oa-slide-story {
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: var(--oa-text-secondary);
+      font-style: italic;
+    }
+
+    /* Note Olfattive a Pillola / Chips */
+    .oa-slide-notes-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .oa-slide-notes-label {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--oa-accent-gold);
+    }
+
+    .oa-notes-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .oa-note-pill {
+      background: #F8F7F4;
       border: 1px solid var(--oa-border);
-      color: var(--oa-text-main);
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-size: 12px;
+      border-radius: var(--oa-radius-sm);
+      padding: 3px 8px;
+      font-size: 10.5px;
+      color: var(--oa-text-primary);
       font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    .oa-slide-traits {
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--oa-text-muted);
+      border-top: 1px dashed var(--oa-border-subtle);
+      padding-top: 6px;
+      margin-top: auto;
+    }
+
+    .oa-slide-footer {
+      border-top: 1px solid var(--oa-border-subtle);
+      padding-top: 6px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .oa-slide-back-btn {
+      background: none;
+      border: none;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--oa-text-muted);
       cursor: pointer;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.2s;
+      padding: 2px 0;
+    }
+
+    .oa-slide-back-btn:hover {
+      color: var(--oa-black);
+    }
+
+    /* Quick Chips */
+    .oa-chips-container {
+      padding: 10px 18px 14px;
+      background: var(--oa-bg-chat);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .oa-chip {
+      background: var(--oa-white);
+      border: 1px solid var(--oa-border);
+      color: var(--oa-text-primary);
+      padding: 7px 13px;
+      border-radius: var(--oa-radius-sm);
+      font-size: 11.5px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      cursor: pointer;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .oa-chip:hover {
-      border-color: var(--oa-accent-gold);
-      background: var(--oa-accent-gold-light);
-      color: var(--oa-accent-gold-hover);
+      border-color: var(--oa-black);
+      background: var(--oa-black);
+      color: var(--oa-white);
       transform: translateY(-1px);
     }
 
+    /* Typing Indicator */
     .oa-typing {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 10px 14px;
-      background: #FFFFFF;
+      gap: 5px;
+      padding: 12px 16px;
+      background: var(--oa-white);
       border: 1px solid var(--oa-border);
-      border-radius: 16px;
+      border-radius: var(--oa-radius-bubble);
       width: fit-content;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
 
     .oa-typing-dot {
-      width: 6px;
-      height: 6px;
-      background: var(--oa-accent-gold);
+      width: 5px;
+      height: 5px;
+      background: var(--oa-text-secondary);
       border-radius: 50%;
-      opacity: 0.4;
+      opacity: 0.3;
       animation: oaBlink 1.4s infinite both;
     }
 
@@ -453,13 +691,14 @@
     .oa-typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
     @keyframes oaBlink {
-      0%, 80%, 100% { opacity: 0.3; transform: scale(0.9); }
+      0%, 80%, 100% { opacity: 0.25; transform: scale(0.9); }
       40% { opacity: 1; transform: scale(1.15); }
     }
 
+    /* Input Form */
     .oa-input-container {
-      padding: 12px 16px;
-      background: #FFFFFF;
+      padding: 14px 18px;
+      background: var(--oa-white);
       border-top: 1px solid var(--oa-border);
       display: flex;
       align-items: center;
@@ -470,45 +709,44 @@
       flex: 1;
       height: 42px;
       border: 1px solid var(--oa-border);
-      background: var(--oa-bg-widget);
-      border-radius: 21px;
-      padding: 0 16px;
+      background: #FAFAFA;
+      border-radius: var(--oa-radius-sm);
+      padding: 0 14px;
       font-size: 13px;
-      color: var(--oa-text-main);
+      color: var(--oa-text-primary);
       font-family: inherit;
       outline: none;
       transition: border-color 0.2s, background 0.2s;
     }
 
     .oa-input-field:focus {
-      border-color: var(--oa-accent-gold);
+      border-color: var(--oa-black);
       background: #FFFFFF;
     }
 
     .oa-send-btn {
       width: 42px;
       height: 42px;
-      border-radius: 50%;
-      background: var(--oa-text-main);
+      border-radius: var(--oa-radius-sm);
+      background: var(--oa-black);
       border: none;
-      color: #FFFFFF;
+      color: var(--oa-white);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.2s;
       flex-shrink: 0;
     }
 
     .oa-send-btn:hover {
-      background: var(--oa-accent-gold-hover);
-      transform: scale(1.05);
+      background: #333333;
     }
 
     .oa-send-btn svg {
-      width: 16px;
-      height: 16px;
-      stroke: #FFFFFF;
+      width: 15px;
+      height: 15px;
+      stroke: var(--oa-white);
       transform: translateX(1px);
     }
 
@@ -526,48 +764,44 @@
       .oa-launcher-btn {
         bottom: 16px;
         right: 16px;
-        height: 50px;
-        padding: 0 20px;
+        height: 48px;
+        padding: 0 18px;
       }
     }
   </style>
 </head>
 <body>
 
-  <button class="oa-launcher-btn" id="oaLauncher" aria-label="Apri consulente olfattivo">
-    <svg viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z"/>
+  <!-- Launcher Fluttuante -->
+  <button class="oa-launcher-btn" id="oaLauncher" aria-label="Apri Maître Parfumeur">
+    <svg class="oa-launcher-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 3h12l1 7H5l1-7z"></path>
+      <path d="M9 3V1h6v2"></path>
+      <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
     </svg>
-    <span class="oa-launcher-text">Maitre Parfumeur</span>
+    <span class="oa-launcher-text">Etualy • Maître Parfumeur</span>
   </button>
 
+  <!-- Finestra Widget -->
   <div class="oa-widget-container is-active" id="oaWidget">
     <header class="oa-header">
       <div class="oa-header-brand">
-        <div class="oa-header-avatar">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 3h12l1 7H5l1-7z"></path>
-            <path d="M9 3V1h6v2"></path>
-            <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
-          </svg>
-        </div>
-        <div>
-          <h2 class="oa-header-title">Maitre Parfumeur</h2>
-          <div class="oa-header-status">
-            <span class="oa-status-dot"></span>
-            <span>Consulente di Nicchia</span>
-          </div>
+        <span class="oa-header-store">Etualy • The Art of Essence</span>
+        <h2 class="oa-header-title">Maître Parfumeur</h2>
+        <div class="oa-header-status">
+          <span class="oa-status-dot"></span>
+          <span>Consulenza Olfattiva d'Élite</span>
         </div>
       </div>
       <div class="oa-header-actions">
         <button class="oa-icon-btn" id="oaRestartBtn" title="Ricomincia consulenza">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"></polyline>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
         </button>
         <button class="oa-icon-btn" id="oaCloseBtn" title="Riduci a icona">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -579,22 +813,25 @@
       <div class="oa-stepper-progress" id="oaProgress"></div>
     </div>
 
+    <!-- Lista Messaggi -->
     <div class="oa-messages-container" id="oaMessages">
       <div class="oa-msg oa-msg-bot">
-        <p>Benvenuto nella nostra boutique olfattiva d'élite.</p>
-        <p>Sono il tuo Maitre Parfumeur: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
+        <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
+        <p>Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
       </div>
     </div>
 
+    <!-- Quick Chips -->
     <div class="oa-chips-container" id="oaChips">
       <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
       <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
     </div>
 
+    <!-- Form Input -->
     <form class="oa-input-container" id="oaForm">
-      <input type="text" class="oa-input-field" id="oaInput" placeholder="Chiedi note, consigli o un profumo..." autocomplete="off">
+      <input type="text" class="oa-input-field" id="oaInput" placeholder="Chiedi una nota, un profumo o un consiglio..." autocomplete="off">
       <button type="submit" class="oa-send-btn" aria-label="Invia">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
         </svg>
@@ -688,94 +925,173 @@
       return div.innerHTML;
     }
 
+    function toggleCardSlide(btn) {
+      const card = btn.closest(".oa-product-card");
+      if (card) {
+        card.classList.toggle("is-open");
+      }
+    }
+
     // ==========================================================================
-    // RENDERING DETERMINISTICO DELLA PRODUCT CARD
+    // RENDERING CARD (SOLUZIONE 2: SLIDEOVER CON STORY, PILLS E TRAITS)
     // ==========================================================================
     function createProductCardHtml(prod) {
       const name = prod.name || "Profumo Artistico";
       const brand = prod.brand || "Profumeria Artistica";
-      const price = typeof prod.price === "number" ? prod.price.toFixed(2) : prod.price || "0.00";
+      
+      let priceFormatted = "0,00 €";
+      if (typeof prod.price === "number") {
+        priceFormatted = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(prod.price);
+      } else if (prod.price) {
+        priceFormatted = `${prod.price} €`;
+      }
+
       const cartUrl = prod.add_to_cart_url || "#";
       const imageUrl = prod.image_url || "";
-      const desc = prod.description || "";
+      const familyBadge = prod.family || prod.ptype || "Profumo Artistico";
+
+      const story = prod.story || prod.description || "";
+      const keyNotes = prod.key_notes || [];
+      const traits = prod.traits || (prod.ptype ? `${prod.ptype} • ${prod.family}` : prod.family);
+
+      const isSlideover = (prod.card_type === "slideover");
 
       let imageHtml = "";
       if (imageUrl && imageUrl.startsWith("http") && !imageUrl.includes("NESSUNA")) {
-        imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.onerror=null; this.src=''; this.classList.add('oa-card-image-placeholder');">`;
+        imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.onerror=null; this.src=''; this.classList.add('oa-card-placeholder');">`;
       } else {
         imageHtml = `
-          <div class="oa-card-image oa-card-image-placeholder">
+          <div class="oa-card-image oa-card-placeholder">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M9 3h6v3H9zM7 6h10v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6z"></path>
-              <rect x="5" y="10" width="14" height="12" rx="3"></rect>
+              <path d="M6 3h12l1 7H5l1-7z"></path>
+              <path d="M9 3V1h6v2"></path>
+              <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
             </svg>
           </div>
         `;
       }
 
-      return `
-        <div class="oa-product-card">
-          <div class="oa-card-header">
-            ${imageHtml}
-            <div class="oa-card-meta">
-              <div class="oa-card-vendor">${escapeHtml(brand)}</div>
-              <div class="oa-card-title">${escapeHtml(name)}</div>
+      // 1. CASO SLIDE-OVER (PERCORSO GUIDATO)
+      if (isSlideover) {
+        return `
+          <div class="oa-product-card oa-has-slideover">
+            <div class="oa-card-front">
+              <div class="oa-card-header">
+                <div class="oa-card-image-box">
+                  ${imageHtml}
+                </div>
+                <div class="oa-card-meta">
+                  <div class="oa-card-vendor">${escapeHtml(brand)}</div>
+                  <div class="oa-card-title">${escapeHtml(name)}</div>
+                  <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
+                </div>
+                <button class="oa-card-info-btn" onclick="toggleCardSlide(this)" title="Note e atmosfera">
+                  ⓘ
+                </button>
+              </div>
+              <div class="oa-card-footer">
+                <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
+                <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                  <span>Aggiungi al Carrello</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- RETRO SLIDE-OVER CON SOLUZIONE 2 (STORY + PILLS + TRAITS) -->
+            <div class="oa-card-slideover">
+              <div class="oa-slide-header">
+                <div class="oa-slide-meta">
+                  <div class="oa-slide-subtitle">Profilo & Note Olfattive</div>
+                  <div class="oa-slide-title">${escapeHtml(name)}</div>
+                </div>
+                <button class="oa-slide-close-btn" onclick="toggleCardSlide(this)" title="Chiudi note">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div class="oa-slide-body">
+                ${story ? `<div class="oa-slide-story">"${escapeHtml(story)}"</div>` : ''}
+                ${keyNotes.length > 0 ? `
+                  <div class="oa-slide-notes-box">
+                    <div class="oa-slide-notes-label">Accordi Salienti</div>
+                    <div class="oa-notes-chips">
+                      ${keyNotes.map(n => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join('')}
+                    </div>
+                  </div>
+                ` : ''}
+                ${traits ? `<div class="oa-slide-traits">${escapeHtml(traits)}</div>` : ''}
+              </div>
+              <div class="oa-slide-footer">
+                <button class="oa-slide-back-btn" onclick="toggleCardSlide(this)">
+                  ← Torna alla scheda
+                </button>
+              </div>
             </div>
           </div>
-          ${desc ? `<div class="oa-card-desc">${escapeHtml(desc)}</div>` : ''}
-          <div class="oa-card-footer">
-            <div class="oa-card-price">${escapeHtml(price)}€</div>
-            <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-              </svg>
-              <span>Aggiungi al Carrello</span>
-            </a>
+        `;
+      }
+
+      // 2. CASO STANDARD (CHAT LIBERA: DIRETTA SUL FRONTE)
+      return `
+        <div class="oa-product-card">
+          <div class="oa-card-front">
+            <div class="oa-card-header">
+              <div class="oa-card-image-box">
+                ${imageHtml}
+              </div>
+              <div class="oa-card-meta">
+                <div class="oa-card-vendor">${escapeHtml(brand)}</div>
+                <div class="oa-card-title">${escapeHtml(name)}</div>
+                <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
+              </div>
+            </div>
+            ${story ? `<div class="oa-card-desc">${escapeHtml(story)}</div>` : ''}
+            ${keyNotes.length > 0 ? `
+              <div class="oa-notes-chips" style="margin-top: 2px;">
+                ${keyNotes.slice(0, 4).map(n => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join('')}
+              </div>
+            ` : ''}
+            <div class="oa-card-footer">
+              <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
+              <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+                <span>Aggiungi al Carrello</span>
+              </a>
+            </div>
           </div>
         </div>
       `;
     }
 
     // ==========================================================================
-    // PARSER MARKDOWN UNIVERSALE PER IL TESTO DELLA CHAT
+    // PARSER MARKDOWN PER IL TESTO DELLA CHAT
     // ==========================================================================
-    function renderMarkdownText(rawText, hasStructuredProducts = false) {
+    function renderMarkdownText(rawText) {
       if (!rawText) return "";
 
       let text = rawText;
-
-      // Se il backend invia già le schede prodotto strutturate, pulisce eventuali stringhe duplicate
-      if (hasStructuredProducts) {
-        text = text.replace(/^\s*(?:Prezzo|Price)\s*:\s*[^\n\r]+/gmi, '');
-        text = text.replace(/^\s*\[(?:Aggiungi al Carrello\vert{}Add to Cart\vert{}Acquista)\]\([^\)]+\)/gmi, '');
-        text = text.replace(/^\s*\[(?:Immagine\vert{}Image\vert{}Foto)\]\([^\)]+\)/gmi, '');
-      }
-
-      // Convertitore universale: trasforma qualsiasi [Immagine](url) o ![alt](url) in vero <img>
-      text = text.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/gi, (m, alt, url) => {
-        return `<img class="oa-card-image" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" style="width:80px;height:80px;margin:8px 0;display:block;" loading="lazy">`;
-      });
-      text = text.replace(/\[(?:Immagine\vert{}Image\vert{}Foto)\]\((https?:\/\/[^\s\)]+)\)/gi, (m, url) => {
-        return `<img class="oa-card-image" src="${escapeHtml(url)}" style="width:80px;height:80px;margin:8px 0;display:block;" loading="lazy">`;
-      });
-
-      // Convertitore universale: trasforma qualsiasi [Testo](url) in vero link cliccabile <a>
       text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi, (m, label, url) => {
-        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-accent-gold-hover);font-weight:600;text-decoration:underline;">${escapeHtml(label)}</a>`;
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-black);font-weight:600;text-decoration:underline;">${escapeHtml(label)}</a>`;
       });
-
-      // Grassetti
       text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
-      // Suddivisione in paragrafi
       const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
       return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
     }
 
     // ==========================================================================
-    // CHIAMATA AL BACKEND
+    // CHIAMATA AL BACKEND FASTAPI
     // ==========================================================================
     async function sendUserMessage(text) {
       appendUserMessage(text);
@@ -793,7 +1109,7 @@
         });
 
         if (!response.ok) {
-          throw new Error("Errore di connessione col server");
+          throw new Error("Errore di risposta dalla boutique");
         }
 
         const data = await response.json();
@@ -804,10 +1120,12 @@
 
         const hasProducts = Boolean(data.products && data.products.length > 0);
 
-        // 1. Rendering del testo del Maitre Parfumeur
-        botMsgDiv.innerHTML = renderMarkdownText(data.reply, hasProducts);
+        // 1. Testo/intro del Maître Parfumeur
+        if (data.reply) {
+          botMsgDiv.innerHTML = renderMarkdownText(data.reply);
+        }
 
-        // 2. Rendering delle Product Card reali (se presenti nella risposta)
+        // 2. Product Cards visive
         if (hasProducts) {
           data.products.forEach(prod => {
             const cardHtml = createProductCardHtml(prod);
@@ -820,6 +1138,7 @@
 
         updateStepper(data.step);
 
+        // 3. Quick Chips
         if (data.options && data.options.length > 0) {
           chipsContainer.innerHTML = "";
           data.options.forEach(opt => {
@@ -835,7 +1154,7 @@
         removeTyping();
         const errDiv = document.createElement("div");
         errDiv.className = "oa-msg oa-msg-bot";
-        errDiv.innerHTML = `<p style="color: #C0392B;">Mi scuso, si è verificato un errore di connessione con la boutique. Riprova tra poco.</p>`;
+        errDiv.innerHTML = `<p style="color: #C0392B;">Si è verificata un'interruzione di rete con la boutique. Riprova tra un istante.</p>`;
         messagesContainer.appendChild(errDiv);
         scrollToBottom();
       }
