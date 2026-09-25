@@ -2,183 +2,827 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Profumeria Artistica - Consulente AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Consulente Olfattivo d'Élite</title>
+  
+  <!-- Google Fonts: Cormorant Garamond (Serif di Lusso) & Plus Jakarta Sans (UI moderna) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; margin: 0; padding: 40px; }
-    h1 { color: #111; font-weight: 600; }
-    p { color: #555; max-width: 600px; line-height: 1.5; }
-
-    /* Bottone Galleggiante */
-    .chat-toggle { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: #111; color: white; border: none; font-size: 22px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 999; transition: transform 0.2s; }
-    .chat-toggle:hover { transform: scale(1.05); }
-
-    /* Finestra Chat */
-    .chat-widget { position: fixed; bottom: 90px; right: 24px; width: 400px; height: 560px; background: white; border-radius: 16px; box-shadow: 0 10px 35px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; border: 1px solid #eaeaea; z-index: 999; }
-    .chat-header { background: #111; color: white; padding: 14px 18px; font-size: 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-    .chat-close { background: transparent; border: none; color: #aaa; font-size: 18px; cursor: pointer; }
-
-    /* Messaggi */
-    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-    .msg { max-width: 86%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; word-wrap: break-word; }
-    .user { background: #111; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-    .bot { background: #f3f3f5; color: #222; align-self: flex-start; border-bottom-left-radius: 2px; white-space: pre-wrap; }
-    .bot a { 
-      display: inline-block; 
-      margin-top: 4px; 
-      color: #0969da; 
-      font-weight: 600; 
-      text-decoration: underline; 
+    /* ==========================================================================
+       DESIGN SYSTEM "HAUTE PARFUMERIE" (CSS Scoped con prefisso oa-)
+       ========================================================================== */
+    :root {
+      --oa-bg-page: #F4F1EA;
+      --oa-bg-widget: #FAF8F5;
+      --oa-bg-card: #FFFFFF;
+      --oa-text-main: #1C1B1A;
+      --oa-text-muted: #6E6B67;
+      --oa-accent-gold: #C2A26F;
+      --oa-accent-gold-hover: #AA8B56;
+      --oa-accent-gold-light: #F7F3EC;
+      --oa-border: #E8E3DA;
+      --oa-border-light: #F0ECE4;
+      --oa-user-bubble: #1C1B1A;
+      --oa-user-text: #FFFFFF;
+      --oa-bot-bubble: #FFFFFF;
+      --oa-shadow-luxury: 0 16px 40px -8px rgba(28, 27, 26, 0.12), 0 4px 12px rgba(28, 27, 26, 0.04);
+      --oa-radius-lg: 20px;
+      --oa-radius-md: 12px;
+      --oa-radius-sm: 8px;
     }
 
-    /* Opzioni e Chip Rapidi */
-    .options-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .option-chip { 
-      background: white; 
-      border: 1px solid #111; 
-      color: #111; 
-      padding: 6px 12px; 
-      border-radius: 16px; 
-      font-size: 12px; 
-      font-weight: 500; 
-      cursor: pointer; 
-      transition: all 0.15s ease; 
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    .option-chip:hover { background: #111; color: white; }
-    .option-chip.selected { background: #111; color: white; }
 
-    /* Input Bar */
-    .chat-input-bar { display: flex; border-top: 1px solid #eee; padding: 8px 12px; background: #fff; }
-    .chat-input-bar input { flex: 1; border: none; padding: 8px; outline: none; font-size: 13.5px; }
-    .chat-input-bar button { background: #111; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; }
+    body {
+      background-color: var(--oa-bg-page);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      color: var(--oa-text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Launcher Fluttuante (Bottone in basso a destra per aprire il widget) */
+    .oa-launcher-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      height: 56px;
+      padding: 0 24px;
+      background: var(--oa-text-main);
+      color: #FFF;
+      border: 1px solid var(--oa-accent-gold);
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999998;
+    }
+
+    .oa-launcher-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.24);
+      background: #000;
+    }
+
+    .oa-launcher-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--oa-accent-gold);
+    }
+
+    .oa-launcher-text {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Contenitore Principale Chat */
+    .oa-widget-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 390px;
+      height: 620px;
+      max-height: calc(100vh - 48px);
+      background: var(--oa-bg-widget);
+      border-radius: var(--oa-radius-lg);
+      border: 1px solid var(--oa-border);
+      box-shadow: var(--oa-shadow-luxury);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 999999;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px) scale(0.98);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .oa-widget-container.is-active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Header del Widget */
+    .oa-header {
+      padding: 16px 20px;
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--oa-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .oa-header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .oa-header-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--oa-accent-gold-light);
+      border: 1px solid var(--oa-accent-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--oa-accent-gold-hover);
+    }
+
+    .oa-header-avatar svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--oa-accent-gold-hover);
+    }
+
+    .oa-header-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--oa-text-main);
+      line-height: 1.1;
+    }
+
+    .oa-header-status {
+      font-size: 11px;
+      color: var(--oa-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .oa-status-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #2ECC71;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(46, 204, 113, 0.6);
+    }
+
+    .oa-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .oa-icon-btn {
+      background: none;
+      border: none;
+      padding: 8px;
+      border-radius: 50%;
+      cursor: pointer;
+      color: var(--oa-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .oa-icon-btn:hover {
+      background: var(--oa-border-light);
+      color: var(--oa-text-main);
+    }
+
+    .oa-icon-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Barra di Avanzamento Percorso Guidato (Stepper) */
+    .oa-stepper-bar {
+      height: 3px;
+      width: 100%;
+      background: var(--oa-border-light);
+      display: none;
+      position: relative;
+    }
+
+    .oa-stepper-bar.is-visible {
+      display: block;
+    }
+
+    .oa-stepper-progress {
+      height: 100%;
+      width: 25%;
+      background: linear-gradient(90deg, var(--oa-accent-gold), #dfc393);
+      transition: width 0.4s ease;
+    }
+
+    /* Area Messaggi */
+    .oa-messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .oa-messages-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .oa-messages-container::-webkit-scrollbar-thumb {
+      background: var(--oa-border);
+      border-radius: 4px;
+    }
+
+    /* Singolo Messaggio */
+    .oa-msg {
+      max-width: 88%;
+      line-height: 1.5;
+      font-size: 13.5px;
+      animation: oaFadeIn 0.3s ease forwards;
+    }
+
+    @keyframes oaFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Messaggio Utente */
+    .oa-msg-user {
+      align-self: flex-end;
+      background: var(--oa-user-bubble);
+      color: var(--oa-user-text);
+      padding: 12px 16px;
+      border-radius: 16px 16px 4px 16px;
+      font-weight: 400;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    /* Messaggio Consulente / Bot */
+    .oa-msg-bot {
+      align-self: flex-start;
+      background: var(--oa-bot-bubble);
+      color: var(--oa-text-main);
+      padding: 14px 18px;
+      border-radius: 16px 16px 16px 4px;
+      border: 1px solid var(--oa-border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+
+    .oa-msg-bot p {
+      margin-bottom: 8px;
+    }
+    .oa-msg-bot p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ==========================================================================
+       SCHEDA PRODOTTO (PRODUCT CARD) GRAFICA
+       ========================================================================== */
+    .oa-product-card {
+      background: #FFFFFF;
+      border: 1px solid var(--oa-border);
+      border-radius: var(--oa-radius-md);
+      padding: 16px;
+      margin: 12px 0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .oa-product-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .oa-card-header {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .oa-card-image {
+      width: 68px;
+      height: 68px;
+      border-radius: var(--oa-radius-sm);
+      background: #F9F8F6;
+      border: 1px solid var(--oa-border-light);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .oa-card-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .oa-card-vendor {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--oa-accent-gold-hover);
+      margin-bottom: 2px;
+    }
+
+    .oa-card-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--oa-text-main);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .oa-card-desc {
+      font-size: 12.5px;
+      color: var(--oa-text-muted);
+      line-height: 1.45;
+    }
+
+    .oa-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--oa-border-light);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    .oa-card-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--oa-text-main);
+      letter-spacing: -0.2px;
+    }
+
+    .oa-card-cart-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--oa-text-main);
+      color: #FFFFFF !important;
+      text-decoration: none;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .oa-card-cart-btn:hover {
+      background: var(--oa-accent-gold-hover);
+      transform: scale(1.02);
+    }
+
+    .oa-card-cart-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: #FFFFFF;
+    }
+
+    /* ==========================================================================
+       PULSANTI OPZIONI (QUICK CHIPS)
+       ========================================================================== */
+    .oa-chips-container {
+      padding: 8px 16px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .oa-chip {
+      background: #FFFFFF;
+      border: 1px solid var(--oa-border);
+      color: var(--oa-text-main);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .oa-chip:hover {
+      border-color: var(--oa-accent-gold);
+      background: var(--oa-accent-gold-light);
+      color: var(--oa-accent-gold-hover);
+      transform: translateY(-1px);
+    }
+
+    /* Typing Indicator (3 puntini raffinati) */
+    .oa-typing {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 14px;
+      background: #FFFFFF;
+      border: 1px solid var(--oa-border);
+      border-radius: 16px;
+      width: fit-content;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .oa-typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--oa-accent-gold);
+      border-radius: 50%;
+      opacity: 0.4;
+      animation: oaBlink 1.4s infinite both;
+    }
+
+    .oa-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .oa-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes oaBlink {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.9); }
+      40% { opacity: 1; transform: scale(1.15); }
+    }
+
+    /* Input Area */
+    .oa-input-container {
+      padding: 12px 16px;
+      background: #FFFFFF;
+      border-top: 1px solid var(--oa-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .oa-input-field {
+      flex: 1;
+      height: 42px;
+      border: 1px solid var(--oa-border);
+      background: var(--oa-bg-widget);
+      border-radius: 21px;
+      padding: 0 16px;
+      font-size: 13px;
+      color: var(--oa-text-main);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .oa-input-field:focus {
+      border-color: var(--oa-accent-gold);
+      background: #FFFFFF;
+    }
+
+    .oa-send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--oa-text-main);
+      border: none;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    .oa-send-btn:hover {
+      background: var(--oa-accent-gold-hover);
+      transform: scale(1.05);
+    }
+
+    .oa-send-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: #FFFFFF;
+      transform: translateX(1px);
+    }
+
+    /* ==========================================================================
+       RESPONSIVE MOBILE (< 600px) - BOTTOM SHEET A TUTTO SCHERMO
+       ========================================================================== */
+    @media (max-width: 600px) {
+      .oa-widget-container {
+        bottom: 0;
+        right: 0;
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+      }
+
+      .oa-launcher-btn {
+        bottom: 16px;
+        right: 16px;
+        height: 50px;
+        padding: 0 20px;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <h1>Profumeria Demo</h1>
-  <p>Clicca sul pulsante in basso a destra per aprire il consulente olfattivo.</p>
+  <!-- Launcher Fluttuante (Apri Consulente) -->
+  <button class="oa-launcher-btn" id="oaLauncher" aria-label="Apri consulente olfattivo">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z"/>
+    </svg>
+    <span class="oa-launcher-text">Maitre Parfumeur</span>
+  </button>
 
-  <button class="chat-toggle" onclick="toggleChat()">✨</button>
-
-  <div class="chat-widget" id="chatWindow">
-    <div class="chat-header">
-      <span>Consulente Olfattivo</span>
-      <button class="chat-close" onclick="toggleChat()">✕</button>
-    </div>
-    <div class="chat-messages" id="messages">
-      <div class="msg bot">
-        Benvenuto! Sono il tuo consulente olfattivo. Come preferisci procedere?
-        <div class="options-container" data-step="0">
-          <button class="option-chip" onclick="handleOptionClick(this, '🎯 Guidami nella scelta', null)">🎯 Guidami nella scelta</button>
-          <button class="option-chip" onclick="handleOptionClick(this, '💬 Fai una domanda libera', null)">💬 Fai una domanda libera</button>
+  <!-- Finestra Widget -->
+  <div class="oa-widget-container is-active" id="oaWidget">
+    <!-- Header -->
+    <header class="oa-header">
+      <div class="oa-header-brand">
+        <div class="oa-header-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h12l1 7H5l1-7z"></path>
+            <path d="M9 3V1h6v2"></path>
+            <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
+          </svg>
+        </div>
+        <div>
+          <h2 class="oa-header-title">Maitre Parfumeur</h2>
+          <div class="oa-header-status">
+            <span class="oa-status-dot"></span>
+            <span>Consulente di Nicchia</span>
+          </div>
         </div>
       </div>
+      <div class="oa-header-actions">
+        <button class="oa-icon-btn" id="oaRestartBtn" title="Ricomincia consulenza">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+        <button class="oa-icon-btn" id="oaCloseBtn" title="Riduci a icona">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Indicatore di progresso a 4 step -->
+    <div class="oa-stepper-bar" id="oaStepper">
+      <div class="oa-stepper-progress" id="oaProgress"></div>
     </div>
-    <div class="chat-input-bar">
-      <input type="text" id="userInput" placeholder="Scrivi qui..." onkeydown="if(event.key==='Enter') sendMessage()" />
-      <button onclick="sendMessage()">Invia</button>
+
+    <!-- Lista Messaggi -->
+    <div class="oa-messages-container" id="oaMessages">
+      <!-- Messaggio di Benvenuto Iniziale -->
+      <div class="oa-msg oa-msg-bot">
+        <p>Benvenuto nella nostra boutique olfattiva d'élite.</p>
+        <p>Sono il tuo Maitre Parfumeur: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
+      </div>
     </div>
+
+    <!-- Pulsanti di Scelta Rapida (Chips) -->
+    <div class="oa-chips-container" id="oaChips">
+      <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
+      <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
+    </div>
+
+    <!-- Barra di Digitazione -->
+    <form class="oa-input-container" id="oaForm">
+      <input type="text" class="oa-input-field" id="oaInput" placeholder="Chiedi note, consigli o un profumo..." autocomplete="off">
+      <button type="submit" class="oa-send-btn" aria-label="Invia">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </form>
   </div>
 
+  <!-- ==========================================================================
+       LOGICA JAVASCRIPT MODERNA
+       ========================================================================== -->
   <script>
-    let currentSessionId = sessionStorage.getItem("advisor_session_id");
-    if (!currentSessionId) {
-      currentSessionId = "sess_" + Date.now();
-      sessionStorage.setItem("advisor_session_id", currentSessionId);
+    const BACKEND_URL = "http://127.0.0.1:8000/chat";
+
+    // Gestione Session ID persistente nel browser
+    let sessionId = sessionStorage.getItem("oa_session_id");
+    if (!sessionId) {
+      sessionId = "sess_" + Math.random().toString(36).substring(2, 11);
+      sessionStorage.setItem("oa_session_id", sessionId);
     }
 
-    function toggleChat() {
-      const win = document.getElementById('chatWindow');
-      win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
-      if (win.style.display === 'flex') {
-        document.getElementById('userInput').focus();
-      }
-    }
+    // Elementi DOM
+    const widget = document.getElementById("oaWidget");
+    const launcher = document.getElementById("oaLauncher");
+    const closeBtn = document.getElementById("oaCloseBtn");
+    const restartBtn = document.getElementById("oaRestartBtn");
+    const messagesContainer = document.getElementById("oaMessages");
+    const chipsContainer = document.getElementById("oaChips");
+    const form = document.getElementById("oaForm");
+    const input = document.getElementById("oaInput");
+    const stepper = document.getElementById("oaStepper");
+    const progress = document.getElementById("oaProgress");
 
-    function formatLinks(text) {
-      // Converte i link markdown assicurando che l'etichetta del carrello sia sempre in italiano
-      return text.replace(/\[(.*?)\]\((.*?)\)/g, (match, label, url) => {
-        const lowerLabel = label.toLowerCase();
-        if (lowerLabel.includes("cart") || lowerLabel.includes("carrello") || url.includes("add-to-cart")) {
-          label = "Aggiungi al Carrello";
-        }
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-      });
-    }
+    // Toggle Apertura / Chiusura
+    launcher.addEventListener("click", () => widget.classList.add("is-active"));
+    closeBtn.addEventListener("click", () => widget.classList.remove("is-active"));
 
-    function appendMessage(text, sender, options = [], step = null) {
-      const box = document.getElementById('messages');
-      const el = document.createElement('div');
-      el.className = `msg ${sender}`;
-      el.innerHTML = formatLinks(text);
+    // Tasto Ricomincia
+    restartBtn.addEventListener("click", () => {
+      handleChipClick("ricomincia percorso");
+    });
 
-      if (options && options.length > 0) {
-        const optContainer = document.createElement('div');
-        optContainer.className = 'options-container';
-        if (step !== null) optContainer.setAttribute('data-step', step);
-
-        options.forEach(opt => {
-          const btn = document.createElement('button');
-          btn.className = 'option-chip';
-          btn.innerText = opt;
-          btn.onclick = () => handleOptionClick(btn, opt, step);
-          optContainer.appendChild(btn);
-        });
-        el.appendChild(optContainer);
-      }
-
-      box.appendChild(el);
-      box.scrollTop = box.scrollHeight;
-      return el;
-    }
-
-    function handleOptionClick(btnElement, text, step) {
-      const parentMsg = btnElement.closest('.msg');
-
-      // Rimuove visivamente tutti i messaggi successivi per consentire il riavvolgimento
-      let nextNode = parentMsg.nextElementSibling;
-      while (nextNode) {
-        const toRemove = nextNode;
-        nextNode = nextNode.nextElementSibling;
-        toRemove.remove();
-      }
-
-      // Evidenzia visivamente la scelta attiva
-      const container = btnElement.closest('.options-container');
-      container.querySelectorAll('.option-chip').forEach(b => b.classList.remove('selected'));
-      btnElement.classList.add('selected');
-
-      // Invia la richiesta passando lo step esatto al backend
-      sendMessage(text, step);
-    }
-
-    async function sendMessage(manualText = null, stepOverride = null) {
-      const input = document.getElementById('userInput');
-      const text = manualText !== null ? manualText : input.value.trim();
+    // Invio da Form
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
       if (!text) return;
+      input.value = "";
+      sendUserMessage(text);
+    });
 
-      appendMessage(text, 'user');
-      if (manualText === null) input.value = '';
+    // Invio da Chip
+    function handleChipClick(text) {
+      sendUserMessage(text);
+    }
 
-      const loading = appendMessage("Sto consultando il catalogo...", "bot");
+    // Aggiungi Messaggio Utente a Schermo
+    function appendUserMessage(text) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "oa-msg oa-msg-user";
+      msgDiv.textContent = text;
+      messagesContainer.appendChild(msgDiv);
+      scrollToBottom();
+    }
+
+    // Indicatore di Digitazione (Typing)
+    function showTyping() {
+      const typingDiv = document.createElement("div");
+      typingDiv.className = "oa-typing";
+      typingDiv.id = "oaTypingIndicator";
+      typingDiv.innerHTML = `
+        <span class="oa-typing-dot"></span>
+        <span class="oa-typing-dot"></span>
+        <span class="oa-typing-dot"></span>
+      `;
+      messagesContainer.appendChild(typingDiv);
+      scrollToBottom();
+    }
+
+    function removeTyping() {
+      const typing = document.getElementById("oaTypingIndicator");
+      if (typing) typing.remove();
+    }
+
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Aggiornamento Stepper a 4 step
+    function updateStepper(step) {
+      if (!step) {
+        stepper.classList.remove("is-visible");
+        return;
+      }
+      stepper.classList.add("is-visible");
+      const percentage = (step / 4) * 100;
+      progress.style.width = percentage + "%";
+    }
+
+    // ==========================================================================
+    // PARSER MARKDOWN & GENERATORE PRODUCT CARD VISIVE
+    // ==========================================================================
+    function parseBotReplyToHtml(rawText) {
+      // Regex per catturare una proposta profumo strutturata:
+      // Gruppo 1: Nome del profumo (**Nome**)
+      // Gruppo 2: Brand
+      // Gruppo 3: Descrizione
+      // Gruppo 4: Prezzo
+      // Gruppo 5: URL Carrello Shopify
+      const productRegex = /\*\*([^*]+)\*\*\s+(?:di|by)\s+([^\n\r]+)[\r\n]+([\s\S]*?)[\r\n]+\*\*Prezzo:\*\*\s*([0-9.,]+)\s*EUR[\r\n]+\[Aggiungi al Carrello\]\((https?:\/\/[^\s\)]+)\)/gi;
+
+      let html = rawText;
+      let hasProduct = false;
+
+      html = html.replace(productRegex, (match, name, brand, desc, price, cartUrl) => {
+        hasProduct = true;
+        const cleanDesc = desc.trim();
+        
+        return `
+          <div class="oa-product-card">
+            <div class="oa-card-header">
+              <div class="oa-card-meta">
+                <div class="oa-card-vendor">${escapeHtml(brand.trim())}</div>
+                <div class="oa-card-title">${escapeHtml(name.trim())}</div>
+              </div>
+            </div>
+            <div class="oa-card-desc">${escapeHtml(cleanDesc)}</div>
+            <div class="oa-card-footer">
+              <div class="oa-card-price">€ ${escapeHtml(price.trim())}</div>
+              <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+                <span>Aggiungi al Carrello</span>
+              </a>
+            </div>
+          </div>
+        `;
+      });
+
+      // Se non è una product card, normalizza i paragrafi e i grassetti normali
+      if (!hasProduct) {
+        // Converte **grassetto** in <strong>
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        // Converte a capo doppi in paragrafi
+        const paragraphs = html.split(/\n\n+/).filter(p => p.trim().length > 0);
+        html = paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+      }
+
+      return html;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ==========================================================================
+    // CHIAMATA AL BACKEND FASTAPI
+    // ==========================================================================
+    async function sendUserMessage(text) {
+      appendUserMessage(text);
+      chipsContainer.innerHTML = ""; // Rimuove opzioni precedenti
+      showTyping();
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/chat", {
+        const response = await fetch(BACKEND_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: text,
-            session_id: currentSessionId,
-            step_override: stepOverride
+            session_id: sessionId
           })
         });
 
-        const data = await res.json();
-        loading.remove();
-        appendMessage(data.reply, "bot", data.options, data.step);
+        if (!response.ok) {
+          throw new Error("Errore di connessione col server");
+        }
 
-      } catch (e) {
-        loading.remove();
-        appendMessage("Errore di connessione con il server. Verifica che Uvicorn sia attivo.", "bot");
+        const data = await response.json();
+        removeTyping();
+
+        // 1. Rendering del messaggio bot con Product Card grafica
+        const botMsgDiv = document.createElement("div");
+        botMsgDiv.className = "oa-msg oa-msg-bot";
+        botMsgDiv.innerHTML = parseBotReplyToHtml(data.reply);
+        messagesContainer.appendChild(botMsgDiv);
+        scrollToBottom();
+
+        // 2. Aggiorna lo stepper se siamo in percorso guidato
+        updateStepper(data.step);
+
+        // 3. Rendering dei nuovi pulsanti di risposta rapida (Chips)
+        if (data.options && data.options.length > 0) {
+          chipsContainer.innerHTML = "";
+          data.options.forEach(opt => {
+            const btn = document.createElement("button");
+            btn.className = "oa-chip";
+            btn.textContent = opt;
+            btn.onclick = () => handleChipClick(opt);
+            chipsContainer.appendChild(btn);
+          });
+        }
+
+      } catch (err) {
+        removeTyping();
+        const errDiv = document.createElement("div");
+        errDiv.className = "oa-msg oa-msg-bot";
+        errDiv.innerHTML = `<p style="color: #C0392B;">Mi scuso, si è verificato un errore di connessione con la boutique. Riprova tra poco.</p>`;
+        messagesContainer.appendChild(errDiv);
+        scrollToBottom();
       }
     }
   </script>

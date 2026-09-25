@@ -1,15 +1,17 @@
+"""
+main.py - FastAPI Server per il Consulente Olfattivo
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
-try:
-    from src.advisor import FragranceAdvisor
-except ModuleNotFoundError:
-    from advisor import FragranceAdvisor
+from src.advisor import FragranceAdvisor
 
-app = FastAPI(title="Perfume Advisor API")
+app = FastAPI(title="Consulente Olfattivo AI")
 
+# Configurazione CORS (consente chiamate da file locali o domini esterni)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Inizializzazione del motore advisor
 advisor = FragranceAdvisor()
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -26,30 +30,25 @@ class ChatRequest(BaseModel):
     max_price: Optional[float] = None
     step_override: Optional[int] = None
 
-@app.post("/api/chat")
-async def chat_endpoint(req: ChatRequest):
-    sid = req.session_id if req.session_id else "default"
-    result = advisor.advise(
+
+@app.get("/")
+def health_check():
+    return {"status": "ok", "service": "Olfactive Advisor API"}
+
+
+# Endpoint principale per la chat (gestisce sia /chat che /chat/)
+@app.post("/chat")
+@app.post("/chat/")
+def chat_endpoint(req: ChatRequest):
+    response = advisor.advise(
         user_query=req.message,
-        session_id=sid,
+        session_id=req.session_id,
         max_price=req.max_price,
         step_override=req.step_override
     )
-    return {
-        "reply": result["reply"],
-        "options": result.get("options", []),
-        "step": result.get("step"),
-        "mode": result.get("mode", "free"),
-        "session_id": sid
-    }
+    return response
 
-@app.post("/api/reset")
-async def reset_endpoint(req: ChatRequest):
-    sid = req.session_id if req.session_id else "default"
-    if sid in advisor.sessions:
-        del advisor.sessions[sid]
-    if sid in advisor.active_perfumes:
-        del advisor.active_perfumes[sid]
-    if sid in advisor.guided_states:
-        del advisor.guided_states[sid]
-    return {"status": "reset", "session_id": sid}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("src.main:app", host="127.0.0.1", port=8000, reload=True)
