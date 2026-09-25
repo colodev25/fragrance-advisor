@@ -129,10 +129,8 @@ class FragranceAdvisor:
 
     def _enrich_product_payload(self, prod_dict: dict, card_type: str = "slideover") -> dict:
         """
-        Estrae e organizza gli attributi puliti per il retro della card (Soluzione 2):
-        - story: micro-frase d'atmosfera senza ridondanze su nome o brand
-        - key_notes: elenco di 4-6 note salienti da mostrare come pillole grafiche
-        - traits: stringa compatta di metadati (es. 'Extrait de Parfum • Unisex • Primavera/Estate')
+        Estrae e organizza gli attributi per il retro della card senza MAI troncare con '...'.
+        Genera frasi complete, sintetiche e immediatamente fruibili.
         """
         p_name = prod_dict.get("name", "").strip()
         p_brand = prod_dict.get("brand", "Profumeria Artistica").strip()
@@ -142,7 +140,6 @@ class FragranceAdvisor:
         p_cart = prod_dict.get("add_to_cart_url", "")
         p_img = prod_dict.get("image_url", "")
 
-        # Cerca il record originale completo da catalog.json
         cat_match = None
         for cp in self.catalog_products:
             if cp.get("name", "").strip().lower() == p_name.lower():
@@ -154,35 +151,17 @@ class FragranceAdvisor:
         traits = ""
 
         if cat_match:
-            # 1. Estrazione Note Chiave
+            # 1. Piramide Olfattiva pulita per i Chips
             pyr = cat_match.get("olfactory_pyramid", {})
             top = [n.strip() for n in pyr.get("top", []) if n.strip()][:2]
             heart = [n.strip() for n in pyr.get("heart", []) if n.strip()][:2]
             base = [n.strip() for n in pyr.get("base", []) if n.strip()][:2]
             key_notes = list(dict.fromkeys(top + heart + base))[:6]
 
-            # Fallback note se piramide assente: estrae dai tag o dalla famiglia
             if not key_notes and cat_match.get("family"):
                 key_notes = [f.strip() for f in cat_match["family"].split(",") if f.strip()][:4]
 
-            # 2. Micro-Storytelling depurato
-            raw_text = cat_match.get("description", "") or cat_match.get("usage_profile", "")
-            # Rimuove l'intestazione standard di catalogazione
-            cleaned = re.sub(rf"^Profumo\s+{re.escape(p_name)}.*?\.\s*", "", raw_text, flags=re.I)
-            cleaned = re.sub(r"\bformato\s*:\s*[^\.\n]+", "", cleaned, flags=re.I)
-            cleaned = re.sub(r"\s+", " ", cleaned).strip()
-
-            # Estrae la prima frase significativa
-            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', cleaned) if len(s.strip()) > 15]
-            if sentences:
-                story = sentences[0]
-                if len(story) > 150:
-                    story = story[:147].rsplit(" ", 1)[0] + "..."
-            else:
-                fam_label = p_family or "raffinata"
-                story = f"Una composizione olfattiva di caratura artistica incentrata su armonie {fam_label.lower()} di grande persistenza."
-
-            # 3. Metadati / Traits
+            # 2. Metadati sintetici
             trait_parts = [p_ptype]
             tags = [t.lower() for t in cat_match.get("tags", [])]
             if "unisex" in tags:
@@ -203,10 +182,41 @@ class FragranceAdvisor:
 
             traits = " • ".join(trait_parts)
 
+            # 3. Micro-Storytelling: SELEZIONE O COSTRUZIONE DI UNA FRASE COMPLETA (ZERO TRONCAMENTI)
+            raw_text = cat_match.get("description", "")
+            cleaned = re.sub(rf"^Profumo\s+{re.escape(p_name)}.*?\.\s*", "", raw_text, flags=re.I)
+            cleaned = re.sub(r"\bformato\s*:\s*[^\.\n]+", "", cleaned, flags=re.I)
+            cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', cleaned) if len(s.strip()) > 15]
+
+            # Cerchiamo una frase originale che sia già completa e di lunghezza ideale (tra 30 e 125 caratteri)
+            candidate = None
+            for s in sentences:
+                s_clean = s.strip()
+                if 30 <= len(s_clean) <= 125:
+                    candidate = s_clean.rstrip(".!?") + "."
+                    break
+
+            if candidate:
+                story = candidate
+            else:
+                # Verifichiamo se usage_profile ha una frase completa adatta
+                u_prof = cat_match.get("usage_profile", "").strip()
+                if u_prof and 30 <= len(u_prof) <= 125:
+                    story = u_prof.rstrip(".!?") + "."
+                else:
+                    # Generazione dinamica sartoriale: frase completa al 100%, chiusa ed elegante
+                    notes_preview = ", ".join(key_notes[:3]) if key_notes else ""
+                    fam_clean = p_family.lower() if p_family else "artistica"
+                    if notes_preview:
+                        story = f"Un'armonia {fam_clean} costruita attorno a note di {notes_preview}, per una scia elegante e distintiva."
+                    else:
+                        story = f"Una raffinata creazione {fam_clean} dall'accordo avvolgente, concepita per lasciare una presenza memorabile."
+
         else:
-            # Fallback se non presente in catalog.json
             key_notes = [f.strip() for f in p_family.split(",") if f.strip()][:4]
-            story = f"Creazione d'alta profumeria che fonde eleganza classica e note olfattive di grande carattere."
+            story = f"Una creazione {p_family.lower() or 'artistica'} d'eccellenza, equilibrata ed elegante sulla pelle."
             traits = f"{p_ptype} • {p_family or 'Profumeria Artistica'}"
 
         return {
@@ -473,7 +483,6 @@ class FragranceAdvisor:
                     "document": doc
                 }
 
-                # Arricchimento secondo la Soluzione 2 (Micro-Storytelling + Note a Pillola)
                 enriched = self._enrich_product_payload(prod_data, card_type="slideover")
                 structured_products.append(enriched)
 
@@ -489,7 +498,6 @@ class FragranceAdvisor:
                 "mode": "free"
             }
 
-        # Micro-frase introduttiva d'autore (senza dettagli ridondanti)
         prompt = (
             f"L'utente ha completato il percorso per un profumo {clean_macro} per {gender}, contesto '{occasion}'.\n"
             "Formula ESCLUSIVAMENTE una singola micro-frase introduttiva (massimo 15-20 parole) da Maître Parfumeur "

@@ -293,8 +293,9 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
+    /* Altezza armonizzata per garantire visualizzazione completa senza tagli */
     .oa-product-card.oa-has-slideover {
-      min-height: 185px; /* Assicura respiro e spazio per il retro slideover */
+      min-height: 195px;
     }
 
     .oa-product-card:hover {
@@ -461,7 +462,7 @@
     }
 
     /* ==========================================================================
-       PANNELLO SLIDE-OVER (SOLUZIONE 2: STORY + PILLS + TRAITS)
+       PANNELLO SLIDE-OVER (TESTO COMPLETO SENZA TRONCAMENTI)
        ========================================================================== */
     .oa-card-slideover {
       position: absolute;
@@ -561,12 +562,12 @@
 
     .oa-slide-story {
       font-size: 11.5px;
-      line-height: 1.45;
+      line-height: 1.5;
       color: var(--oa-text-secondary);
       font-style: italic;
     }
 
-    /* Note Olfattive a Pillola / Chips */
+    /* Accordi Olfattivi Salienti (Chips) */
     .oa-slide-notes-box {
       display: flex;
       flex-direction: column;
@@ -933,7 +934,7 @@
     }
 
     // ==========================================================================
-    // RENDERING CARD (SOLUZIONE 2: SLIDEOVER CON STORY, PILLS E TRAITS)
+    // RENDERING CARD (TESTO INTEGRALE GARANTITO SENZA TAGLI)
     // ==========================================================================
     function createProductCardHtml(prod) {
       const name = prod.name || "Profumo Artistico";
@@ -951,6 +952,7 @@
       const familyBadge = prod.family || prod.ptype || "Profumo Artistico";
 
       const story = prod.story || prod.description || "";
+      const cleanStory = story.replace(/^["“”']+|["“”']+$/g, '').trim();
       const keyNotes = prod.key_notes || [];
       const traits = prod.traits || (prod.ptype ? `${prod.ptype} • ${prod.family}` : prod.family);
 
@@ -1002,7 +1004,7 @@
               </div>
             </div>
 
-            <!-- RETRO SLIDE-OVER CON SOLUZIONE 2 (STORY + PILLS + TRAITS) -->
+            <!-- RETRO SLIDE-OVER (FRASE COMPLETA + ACCORDI SALIENTI + TRAITS) -->
             <div class="oa-card-slideover">
               <div class="oa-slide-header">
                 <div class="oa-slide-meta">
@@ -1017,7 +1019,7 @@
                 </button>
               </div>
               <div class="oa-slide-body">
-                ${story ? `<div class="oa-slide-story">"${escapeHtml(story)}"</div>` : ''}
+                ${cleanStory ? `<div class="oa-slide-story">"${escapeHtml(cleanStory)}"</div>` : ''}
                 ${keyNotes.length > 0 ? `
                   <div class="oa-slide-notes-box">
                     <div class="oa-slide-notes-label">Accordi Salienti</div>
@@ -1038,7 +1040,7 @@
         `;
       }
 
-      // 2. CASO STANDARD (CHAT LIBERA: DIRETTA SUL FRONTE)
+      // 2. CASO STANDARD (CHAT LIBERA: FRONTE DIRETTO)
       return `
         <div class="oa-product-card">
           <div class="oa-card-front">
@@ -1052,7 +1054,7 @@
                 <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
               </div>
             </div>
-            ${story ? `<div class="oa-card-desc">${escapeHtml(story)}</div>` : ''}
+            ${cleanStory ? `<div class="oa-card-desc">${escapeHtml(cleanStory)}</div>` : ''}
             ${keyNotes.length > 0 ? `
               <div class="oa-notes-chips" style="margin-top: 2px;">
                 ${keyNotes.slice(0, 4).map(n => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join('')}
