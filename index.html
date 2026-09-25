@@ -294,7 +294,7 @@
     }
 
     .oa-product-card.oa-has-slideover {
-      min-height: 195px;
+      min-height: 200px;
     }
 
     .oa-product-card:hover {
@@ -311,7 +311,7 @@
     .oa-card-header {
       display: flex;
       gap: 14px;
-      align-items: center;
+      align-items: flex-start;
       position: relative;
     }
 
@@ -367,48 +367,39 @@
       margin-bottom: 2px;
     }
 
+    /* TITOLO SU 2 RIGHE (SOLUZIONE A) */
     .oa-card-title {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 18.5px;
+      font-size: 16.5px;
       font-weight: 600;
       color: var(--oa-text-primary);
-      line-height: 1.35;
-      white-space: nowrap;
+      line-height: 1.25;
+      display: -webkit-box;
+      line-clamp: 2;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
-      padding-bottom: 3px;
+      padding-bottom: 2px;
+      max-height: 2.6em;
     }
 
-    /* ==========================================================================
-       HOVER EFFECT ETUALY: LINEA A SCORRIMENTO ORIZZONTALE
-       ========================================================================== */
+    /* HOVER EFFECT LINEA A SCORRIMENTO (COMPATIBILE MULTI-RIGA) */
     .oa-card-title-link {
       color: inherit;
       text-decoration: none;
-      position: relative;
-      display: inline-block;
-      max-width: 100%;
       cursor: pointer;
-      vertical-align: bottom;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      background-image: linear-gradient(var(--oa-black), var(--oa-black));
+      background-position: 0 100%;
+      background-repeat: no-repeat;
+      background-size: 0% 1.5px;
+      transition: background-size 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      padding-bottom: 1px;
     }
 
-    .oa-card-title-link::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      bottom: 0px;
-      width: 0%;
-      height: 1.5px;
-      background-color: var(--oa-black);
-      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .oa-card-title:hover .oa-card-title-link::after,
-    .oa-card-title-link:hover::after {
-      width: 100%;
+    .oa-card-title:hover .oa-card-title-link,
+    .oa-card-title-link:hover {
+      background-size: 100% 1.5px;
     }
 
     .oa-card-badge {
@@ -456,31 +447,33 @@
       align-items: center;
       justify-content: space-between;
       border-top: 1px solid var(--oa-border-subtle);
-      padding-top: 12px;
+      padding-top: 10px;
       margin-top: 2px;
     }
 
     .oa-card-price {
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 700;
       color: var(--oa-text-primary);
       letter-spacing: -0.2px;
     }
 
+    /* BOTTONE "AGGIUNGI AL CARRELLO" COMPATTO E SOTTILE */
     .oa-card-cart-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 9px 16px;
+      gap: 6px;
+      padding: 6px 12px;
       background: var(--oa-black);
       color: var(--oa-white) !important;
       text-decoration: none;
       border-radius: var(--oa-radius-sm);
-      font-size: 10.5px;
+      font-size: 9.5px;
       font-weight: 600;
-      letter-spacing: 1.2px;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
+      flex-shrink: 0;
     }
 
     .oa-card-cart-btn:hover {
@@ -488,8 +481,8 @@
     }
 
     .oa-card-cart-btn svg {
-      width: 13px;
-      height: 13px;
+      width: 11px;
+      height: 11px;
       stroke: var(--oa-white);
     }
 
@@ -541,18 +534,23 @@
 
     .oa-slide-title {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 16.5px;
+      font-size: 15.5px;
       font-weight: 600;
       color: var(--oa-text-primary);
-      line-height: 1.35;
-      white-space: nowrap;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
-      padding-bottom: 3px;
+      padding-bottom: 2px;
+      max-height: 2.6em;
     }
 
-    .oa-slide-title:hover .oa-card-title-link::after {
-      width: 100%;
+    .oa-slide-title:hover .oa-card-title-link,
+    .oa-slide-title .oa-card-title-link:hover {
+      background-size: 100% 1.5px;
     }
 
     .oa-slide-close-btn {
@@ -976,7 +974,6 @@
         scrollToBottom();
         return;
       }
-      // Il timeout garantisce che il ricalcolo delle altezze (dovuto ai bottoni chips) sia terminato
       setTimeout(() => {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 50);
@@ -1008,7 +1005,7 @@
     }
 
     // ==========================================================================
-    // RENDERING CARD CON COLLEGAMENTO IPERTESTUALE AL NOME DEL PROFUMO
+    // RENDERING CARD CON NOME SU 2 RIGHE E BOTTONE COMPATTO
     // ==========================================================================
     function createProductCardHtml(prod) {
       const name = prod.name || "Profumo Artistico";
@@ -1242,8 +1239,7 @@
           chipsContainer.innerHTML = "";
         }
 
-        // 5. SCORRIMENTO VERSO L'ALTO SULLA DOMANDA/PROPOSTA DEL BOT
-        // Colloca la domanda del bot direttamente in cima alla vista, impedendo che finisca sotto le opzioni
+        // 5. Scorrimento mirato verso l'alto sulla domanda del bot
         scrollToElementTop(botMsgDiv);
 
       } catch (err) {

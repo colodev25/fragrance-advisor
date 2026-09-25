@@ -148,13 +148,101 @@ class FragranceAdvisor:
         q_lower = query.lower()
         return any(term in q_lower for term in scent_terms)
 
+    def _detect_gender(self, name: str, tags: list, usage_profile: str = "", description: str = "") -> str:
+        """Determina il genere del profumo senza allucinazioni da sottostringa né priorità errate."""
+        name_lower = name.lower()
+        tags_lower = [t.strip().lower() for t in tags]
+        u_prof_lower = (usage_profile or "").lower()
+        desc_lower = (description or "").lower()
+        combined_text = f"{u_prof_lower} {desc_lower}"
+
+        # 1. Segnali espliciti prioritari nel nome proprio
+        if re.search(r"\b(for\s+her|pour\s+femme|woman|women)\b", name_lower):
+            return "Per Lei"
+        if re.search(r"\b(for\s+him|pour\s+homme|for\s+men)\b", name_lower) or (
+            re.search(r"\b(man|homme|uomo)\b", name_lower) and not re.search(r"\b(woman|women|mandorla)\b", name_lower)
+        ):
+            return "Per Lui"
+
+        # 2. Segnali nei tag con confini di parola precisi (\b)
+        has_unisex_tag = any(re.search(r"\bunisex\b", t, re.I) for t in tags_lower)
+        has_lui_tag = any(re.search(r"\b(per\s+lui|uomo|maschile|pour\s+homme|for\s+men)\b", t, re.I) for t in tags_lower)
+        has_lei_tag = any(re.search(r"\b(per\s+lei|donna|femminile|pour\s+femme|for\s+women|for\s+her)\b", t, re.I) for t in tags_lower)
+
+        # 3. Segnali nel profilo d'uso e nella descrizione narrativa
+        has_unisex_text = bool(re.search(r"\b(unisex|sia per uomo che per donna|uomo e donna)\b", combined_text, re.I))
+        has_lui_text = bool(re.search(r"\b(maschile|per lui|da uomo|all[' ]uomo|per l[' ]uomo)\b", combined_text, re.I))
+        has_lei_text = bool(re.search(r"\b(femminile|per lei|da donna|alla donna|per la donna)\b", combined_text, re.I))
+
+        # 4. Sintesi coerente
+        if has_unisex_tag or has_unisex_text or (has_lui_tag and has_lei_tag) or (has_lui_text and has_lei_text):
+            return "Unisex"
+        if (has_lui_tag or has_lui_text) and not (has_lei_tag or has_lei_text):
+            return "Per Lui"
+        if (has_lei_tag or has_lei_text) and not (has_lui_tag or has_lui_text):
+            return "Per Lei"
+
+        return "Unisex"
+
+    def _detect_season(self, family: str, tags: list, usage_profile: str = "", description: str = "") -> str:
+        """Determina la stagionalità o contesto ideale senza sovrascritture casuali."""
+        tags_lower = [t.strip().lower() for t in tags]
+        u_prof_lower = (usage_profile or "").lower()
+        desc_lower = (description or "").lower()
+        combined_text = f"{' '.join(tags_lower)} {u_prof_lower} {desc_lower}"
+
+        has_inverno = bool(re.search(r"\b(invern\w*|autunn\w*|fredd\w*)\b", combined_text, re.I))
+        has_estate = bool(re.search(r"\b(estiv\w*|estate|primaver\w*|cald\w*)\b", combined_text, re.I))
+        has_4stagioni = bool(re.search(r"\b(quattro\s+stagioni|tutte\s+le\s+stagioni|tutto\s+l[' ]anno|versatile|ogni\s+stagione)\b", combined_text, re.I))
+
+        if has_4stagioni or (has_inverno and has_estate):
+            return "Quattro Stagioni"
+        if has_inverno and not has_estate:
+            return "Autunno / Inverno"
+        if has_estate and not has_inverno:
+            return "Primavera / Estate"
+
+        fam_lower = (family or "").lower()
+        if any(f in fam_lower for f in ["acquat", "agrum", "marin", "verd", "ozonat"]):
+            return "Primavera / Estate"
+        if any(f in fam_lower for f in ["cuoi", "tabacc", "ambrat", "gourmand", "oriental", "speziat", "vanigli"]):
+            return "Autunno / Inverno"
+
+        return "Quattro Stagioni"
+
+    def _is_compatible_with_guided(self, prod_enriched: dict, gender_req: str, occasion_req: str) -> bool:
+        """Valida deterministicamente la compatibilità con le scelte dell'utente nel percorso guidato (Opzione A)."""
+        traits = prod_enriched.get("traits", "")
+        parts = [p.strip() for p in traits.split("•")]
+        prod_gender = parts[1] if len(parts) > 1 else "Unisex"
+        prod_season = parts[2] if len(parts) > 2 else "Quattro Stagioni"
+
+        # 1. Filtro Genere
+        if "lui" in gender_req.lower():
+            if prod_gender == "Per Lei":
+                return False
+        elif "lei" in gender_req.lower():
+            if prod_gender == "Per Lui":
+                return False
+
+        # 2. Filtro Stagione / Contesto
+        occ_lower = occasion_req.lower()
+        if "primaver" in occ_lower or "estat" in occ_lower:
+            if prod_season == "Autunno / Inverno":
+                return False
+        elif "invern" in occ_lower or "autunn" in occ_lower:
+            if prod_season == "Primavera / Estate":
+                return False
+
+        return True
+
     def _enrich_product_payload(self, prod_dict: dict, card_type: str = "slideover") -> dict:
         """
-        Estrae gli attributi per la Product Card:
+        Estrae e organizza gli attributi per la Product Card:
         - product_page_url: link diretto per la navigazione
         - story: descrizione completa senza tagli '...'
         - key_notes: accordi salienti per le pills
-        - traits: riga compatta di metadati
+        - traits: tipologia, genere verificato e stagionalità coerente
         """
         p_name = prod_dict.get("name", "").strip()
         p_brand = prod_dict.get("brand", "Profumeria Artistica").strip()
@@ -187,25 +275,29 @@ class FragranceAdvisor:
             if not key_notes and cat_match.get("family"):
                 key_notes = [f.strip() for f in cat_match["family"].split(",") if f.strip()][:4]
 
-            trait_parts = [p_ptype]
-            tags = [t.lower() for t in cat_match.get("tags", [])]
-            if "unisex" in tags:
-                trait_parts.append("Unisex")
-            elif any("lei" in t or "donna" in t for t in tags):
-                trait_parts.append("Per Lei")
-            elif any("lui" in t or "uomo" in t for t in tags):
-                trait_parts.append("Per Lui")
-            else:
-                trait_parts.append("Unisex")
+            clean_ptype = cat_match.get("ptype") or p_ptype
+            if not clean_ptype or clean_ptype.lower() in ["profumo artistico", "profumo", "fragranza"]:
+                n_low = p_name.lower()
+                if "extrait" in n_low:
+                    clean_ptype = "Extrait de Parfum"
+                elif "eau de parfum" in n_low or "edp" in n_low:
+                    clean_ptype = "Eau de Parfum"
+                elif "eau de toilette" in n_low or "edt" in n_low:
+                    clean_ptype = "Eau de Toilette"
+                elif "cologne" in n_low:
+                    clean_ptype = "Eau de Cologne"
+                else:
+                    clean_ptype = "Profumo Artistico"
 
-            if any("invern" in t for t in tags):
-                trait_parts.append("Autunno / Inverno")
-            elif any("estiv" in t or "estate" in t for t in tags):
-                trait_parts.append("Primavera / Estate")
-            else:
-                trait_parts.append("Scia persistente")
+            tags = cat_match.get("tags", [])
+            u_prof = cat_match.get("usage_profile", "")
+            desc = cat_match.get("description", "")
+            fam = cat_match.get("family", "") or p_family
 
-            traits = " • ".join(trait_parts)
+            gender_trait = self._detect_gender(p_name, tags, u_prof, desc)
+            season_trait = self._detect_season(fam, tags, u_prof, desc)
+
+            traits = f"{clean_ptype} • {gender_trait} • {season_trait}"
 
             raw_text = cat_match.get("description", "")
             cleaned = re.sub(rf"^Profumo\s+{re.escape(p_name)}.*?\.\s*", "", raw_text, flags=re.I)
@@ -224,7 +316,6 @@ class FragranceAdvisor:
             if candidate:
                 story = candidate
             else:
-                u_prof = cat_match.get("usage_profile", "").strip()
                 if u_prof and 30 <= len(u_prof) <= 130:
                     story = u_prof.rstrip(".!?") + "."
                 else:
@@ -238,7 +329,9 @@ class FragranceAdvisor:
         else:
             key_notes = [f.strip() for f in p_family.split(",") if f.strip()][:4]
             story = f"Una creazione {p_family.lower() or 'artistica'} d'eccellenza, equilibrata ed elegante sulla pelle."
-            traits = f"{p_ptype} • {p_family or 'Profumeria Artistica'}"
+            gender_trait = self._detect_gender(p_name, [], "", prod_dict.get("document", ""))
+            season_trait = self._detect_season(p_family, [], "", prod_dict.get("document", ""))
+            traits = f"{p_ptype} • {gender_trait} • {season_trait}"
 
         return {
             "name": p_name,
@@ -492,16 +585,18 @@ class FragranceAdvisor:
             f"Fragranza destinata a {gender}. Ideale per contesto {occasion}."
         )
 
+        # OVER-FETCHING: Chiediamo 12 candidati a ChromaDB per poter applicare il filtro deterministico
         results = self.search_engine.search(
             query=search_prompt,
             min_price=min_p,
             max_price=max_p,
-            n_results=3
+            n_results=12
         )
 
         structured_products = []
         first_product = None
 
+        # PASSO 1: FILTRO DETERMINISTICO OPZIONE A (STAGIONE E GENERE)
         if results["ids"] and len(results["ids"][0]) > 0:
             for i in range(len(results["ids"][0])):
                 meta = results["metadatas"][0][i]
@@ -519,11 +614,56 @@ class FragranceAdvisor:
                     "document": doc
                 }
 
-                if i == 0:
-                    first_product = prod_data
-
                 enriched = self._enrich_product_payload(prod_data, card_type="slideover")
-                structured_products.append(enriched)
+
+                # Validazione euristica
+                is_compat = self._is_compatible_with_guided(enriched, gender, occasion)
+                traits_parts = [p.strip() for p in enriched.get("traits", "").split("•")]
+                p_gen = traits_parts[1] if len(traits_parts) > 1 else "Unisex"
+                p_sea = traits_parts[2] if len(traits_parts) > 2 else "Quattro Stagioni"
+
+                print(f"[GUIDED FILTER] '{enriched['name']}' ({p_gen} | {p_sea}) vs ({gender} | {occasion}) -> {'ACCETTATO' if is_compat else 'SCARTATO'}")
+
+                if is_compat:
+                    structured_products.append(enriched)
+                    if len(structured_products) == 1:
+                        first_product = prod_data
+                    if len(structured_products) == 3:
+                        break
+
+            # PASSO 2: FALLBACK SE MENO DI 3 CANDIDATI (Rispetta almeno il vincolo forte del genere)
+            if len(structured_products) < 3:
+                for i in range(len(results["ids"][0])):
+                    meta = results["metadatas"][0][i]
+                    p_name = meta.get("name", "")
+                    if any(p["name"].lower() == p_name.lower() for p in structured_products):
+                        continue
+
+                    doc = results["documents"][0][i]
+                    prod_data = {
+                        "name": meta.get("name", ""),
+                        "brand": meta.get("brand", "Profumeria Artistica"),
+                        "price": float(meta.get("price", 0.0)),
+                        "family": meta.get("family", ""),
+                        "ptype": meta.get("ptype", ""),
+                        "add_to_cart_url": meta.get("add_to_cart_url", ""),
+                        "product_page_url": meta.get("product_page_url", ""),
+                        "image_url": meta.get("image_url", ""),
+                        "document": doc
+                    }
+                    enriched = self._enrich_product_payload(prod_data, card_type="slideover")
+                    traits_parts = [p.strip() for p in enriched.get("traits", "").split("•")]
+                    p_gen = traits_parts[1] if len(traits_parts) > 1 else "Unisex"
+
+                    # Esclusione categorica del genere opposto
+                    if ("lui" in gender.lower() and p_gen == "Per Lei") or ("lei" in gender.lower() and p_gen == "Per Lui"):
+                        continue
+
+                    structured_products.append(enriched)
+                    if len(structured_products) == 1:
+                        first_product = prod_data
+                    if len(structured_products) == 3:
+                        break
 
         if not structured_products:
             return {
@@ -679,9 +819,7 @@ class FragranceAdvisor:
                 effective_max_p = parsed_max_p if parsed_max_p is not None else max_price
                 effective_min_p = parsed_min_p
 
-                # LOGICA DI PRESERVAZIONE ALTERNATIVA:
-                # Se c'è un profumo attivo e l'utente NON ha specificato una famiglia o note opposte/nuove,
-                # cerca fragranze affini per famiglia e accordi al profumo attivo
+                # Se c'è un profumo attivo e l'utente NON ha specificato note opposte, cerca affinità
                 is_seeking_similar_alternative = (active is not None and not self._has_explicit_olfactory_redirect(search_query_clean))
 
                 if is_seeking_similar_alternative and active:
@@ -716,7 +854,7 @@ class FragranceAdvisor:
                         meta = results["metadatas"][0][i]
                         doc = results["documents"][0][i]
 
-                        # Se stiamo cercando un'alternativa all'attivo, escludiamo l'attivo stesso
+                        # Esclude l'attivo stesso se si cerca un'alternativa
                         if is_seeking_similar_alternative and active and meta.get("name", "").strip().lower() == active.get("name", "").strip().lower():
                             continue
 
@@ -762,7 +900,6 @@ class FragranceAdvisor:
 
                 context_str = "\n\n".join(candidates_text)
 
-                # Prompt personalizzato per proporre una VERA ALTERNATIVA affine
                 if is_seeking_similar_alternative and active:
                     active_info = (
                         f"[FRAGRANZA ATTUALE DI PARTENZA: '{active['name']}' ({active.get('brand', 'Profumeria Artistica')})]\n"
