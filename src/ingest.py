@@ -29,6 +29,7 @@ SITE = os.getenv("SHOPIFY_STORE_URL", "").rstrip("/")
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 OUTPUT_FILE = DATA_DIR / "catalog.json"
+OUT_OF_STOCK_FILE = DATA_DIR / "out_of_stock.json"
 DROPPED_FILE = DATA_DIR / "scartati.json"
 
 PER_PAGE = 250
@@ -131,7 +132,6 @@ def extract_family_from_tags(tags: list[str]) -> str:
         t_clean = tag.strip().lower()
         for fam in KNOWN_FAMILIES:
             fam_clean = fam.strip().lower()
-            # Confronto esatto o inclusione precisa di parola
             if re.search(rf"\b{re.escape(fam_clean)}\b", t_clean, re.I):
                 if fam not in found:
                     found.append(fam)
@@ -180,7 +180,6 @@ def build_usage_profile_from_tags(tags: list[str], description: str = "") -> str
     if parts:
         return " ".join(parts)
 
-    # Se non c'erano tag specifici ma abbiamo una descrizione narrativa, usiamo un estratto
     if description and len(description) > 30:
         return description[:250].strip() + "..."
 
@@ -535,6 +534,7 @@ def main():
 
     print(f"[*] Elaborazione semantica avanzata di {len(kept_products)} profumi...")
     catalog = []
+    out_of_stock = []
     pyramids_found = 0
     families_found = 0
     ptypes_found = 0
@@ -542,7 +542,11 @@ def main():
 
     for i, p in enumerate(kept_products, 1):
         item = transform_product(p)
-        catalog.append(item)
+
+        if item.get("in_stock", True):
+            catalog.append(item)
+        else:
+            out_of_stock.append(item)
 
         total_notes = len(item["olfactory_pyramid"]["top"]) + len(item["olfactory_pyramid"]["heart"]) + len(item["olfactory_pyramid"]["base"])
         if total_notes > 0:
@@ -562,15 +566,19 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(catalog, f, ensure_ascii=False, indent=2)
 
+    with open(OUT_OF_STOCK_FILE, "w", encoding="utf-8") as f:
+        json.dump(out_of_stock, f, ensure_ascii=False, indent=2)
+
     with open(DROPPED_FILE, "w", encoding="utf-8") as f:
         json.dump(dropped_products, f, ensure_ascii=False, indent=2)
 
     print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
-    print(f"Profumi salvati in {OUTPUT_FILE}: {len(catalog)}")
-    print(f"  - Piramidi olfattive estratte:  {pyramids_found}/{len(catalog)}")
-    print(f"  - Famiglie olfattive presenti:  {families_found}/{len(catalog)} (da HTML o Tags)")
-    print(f"  - Tipologie (ptype) presenti:   {ptypes_found}/{len(catalog)}")
-    print(f"  - Profili d'uso presenti:       {usage_found}/{len(catalog)} (da HTML o Tags)")
+    print(f"Profumi disponibili salvati in {OUTPUT_FILE}: {len(catalog)}")
+    print(f"Profumi esauriti salvati in {OUT_OF_STOCK_FILE}: {len(out_of_stock)}")
+    print(f"  - Piramidi olfattive estratte:  {pyramids_found}/{len(kept_products)}")
+    print(f"  - Famiglie olfattive presenti:  {families_found}/{len(kept_products)} (da HTML o Tags)")
+    print(f"  - Tipologie (ptype) presenti:   {ptypes_found}/{len(kept_products)}")
+    print(f"  - Profili d'uso presenti:       {usage_found}/{len(kept_products)} (da HTML o Tags)")
     print(f"Articoli scartati in {DROPPED_FILE}: {len(dropped_products)}")
 
 
