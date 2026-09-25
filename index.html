@@ -293,7 +293,6 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    /* Altezza armonizzata per garantire visualizzazione completa senza tagli */
     .oa-product-card.oa-has-slideover {
       min-height: 195px;
     }
@@ -368,15 +367,46 @@
       margin-bottom: 2px;
     }
 
+    /* Contenitore Titolo con spazio verticale sufficiente per non tagliare l'underline */
     .oa-card-title {
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-size: 18.5px;
       font-weight: 600;
       color: var(--oa-text-primary);
-      line-height: 1.15;
+      line-height: 1.3;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      padding-bottom: 2px;
+    }
+
+    /* ==========================================================================
+       HOVER EFFECT ETUALY: LINEA A SCORRIMENTO (RISOLTO CON ::AFTER)
+       ========================================================================== */
+    .oa-card-title-link {
+      color: inherit;
+      text-decoration: none;
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      vertical-align: bottom;
+      cursor: pointer;
+    }
+
+    .oa-card-title-link::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0px;
+      width: 0%;
+      height: 1.5px;
+      background-color: var(--oa-black);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .oa-card-title:hover .oa-card-title-link::after,
+    .oa-card-title-link:hover::after {
+      width: 100%;
     }
 
     .oa-card-badge {
@@ -462,7 +492,7 @@
     }
 
     /* ==========================================================================
-       PANNELLO SLIDE-OVER (TESTO COMPLETO SENZA TRONCAMENTI)
+       PANNELLO SLIDE-OVER (SOLUZIONE 2: STORY COMPLETA + PILLS + TRAITS)
        ========================================================================== */
     .oa-card-slideover {
       position: absolute;
@@ -512,10 +542,15 @@
       font-size: 16.5px;
       font-weight: 600;
       color: var(--oa-text-primary);
-      line-height: 1.1;
+      line-height: 1.3;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      padding-bottom: 2px;
+    }
+
+    .oa-slide-title:hover .oa-card-title-link::after {
+      width: 100%;
     }
 
     .oa-slide-close-btn {
@@ -567,7 +602,6 @@
       font-style: italic;
     }
 
-    /* Accordi Olfattivi Salienti (Chips) */
     .oa-slide-notes-box {
       display: flex;
       flex-direction: column;
@@ -934,7 +968,7 @@
     }
 
     // ==========================================================================
-    // RENDERING CARD (TESTO INTEGRALE GARANTITO SENZA TAGLI)
+    // RENDERING CARD CON COLLEGAMENTO IPERTESTUALE AL NOME DEL PROFUMO
     // ==========================================================================
     function createProductCardHtml(prod) {
       const name = prod.name || "Profumo Artistico";
@@ -948,6 +982,7 @@
       }
 
       const cartUrl = prod.add_to_cart_url || "#";
+      const productPageUrl = prod.product_page_url || "#";
       const imageUrl = prod.image_url || "";
       const familyBadge = prod.family || prod.ptype || "Profumo Artistico";
 
@@ -973,6 +1008,13 @@
         `;
       }
 
+      // Markup del titolo con link cliccabile ed effetto hover a scorrimento
+      const titleLinkHtml = `
+        <a href="${escapeHtml(productPageUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-title-link" title="Visualizza ${escapeHtml(name)} su Etualy">
+          ${escapeHtml(name)}
+        </a>
+      `;
+
       // 1. CASO SLIDE-OVER (PERCORSO GUIDATO)
       if (isSlideover) {
         return `
@@ -984,7 +1026,7 @@
                 </div>
                 <div class="oa-card-meta">
                   <div class="oa-card-vendor">${escapeHtml(brand)}</div>
-                  <div class="oa-card-title">${escapeHtml(name)}</div>
+                  <div class="oa-card-title">${titleLinkHtml}</div>
                   <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
                 </div>
                 <button class="oa-card-info-btn" onclick="toggleCardSlide(this)" title="Note e atmosfera">
@@ -1004,12 +1046,12 @@
               </div>
             </div>
 
-            <!-- RETRO SLIDE-OVER (FRASE COMPLETA + ACCORDI SALIENTI + TRAITS) -->
+            <!-- RETRO SLIDE-OVER (FRASE COMPLETA SENZA TAGLI + PILLS NOTE + TRAITS) -->
             <div class="oa-card-slideover">
               <div class="oa-slide-header">
                 <div class="oa-slide-meta">
                   <div class="oa-slide-subtitle">Profilo & Note Olfattive</div>
-                  <div class="oa-slide-title">${escapeHtml(name)}</div>
+                  <div class="oa-slide-title">${titleLinkHtml}</div>
                 </div>
                 <button class="oa-slide-close-btn" onclick="toggleCardSlide(this)" title="Chiudi note">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1050,7 +1092,7 @@
               </div>
               <div class="oa-card-meta">
                 <div class="oa-card-vendor">${escapeHtml(brand)}</div>
-                <div class="oa-card-title">${escapeHtml(name)}</div>
+                <div class="oa-card-title">${titleLinkHtml}</div>
                 <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
               </div>
             </div>
@@ -1079,10 +1121,18 @@
     // ==========================================================================
     // PARSER MARKDOWN PER IL TESTO DELLA CHAT
     // ==========================================================================
-    function renderMarkdownText(rawText) {
+    function renderMarkdownText(rawText, hasStructuredProducts = false) {
       if (!rawText) return "";
 
       let text = rawText;
+
+      // Pulisce eventuali righe residue di prezzo e link dal testo discorsivo quando sono già presenti nelle card
+      if (hasStructuredProducts) {
+        text = text.replace(/^\s*\*{0,2}(?:Prezzo|Price)\*{0,2}\s*:\s*[^\n\r]+/gmi, '');
+        text = text.replace(/^\s*\*{0,2}\[(?:Aggiungi al Carrello\vert{}Add to Cart\vert{}Acquista)\]\([^\)]+\)\*{0,2}/gmi, '');
+        text = text.replace(/^\s*\[(?:Immagine\vert{}Image\vert{}Foto)\]\([^\)]+\)/gmi, '');
+      }
+
       text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi, (m, label, url) => {
         return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-black);font-weight:600;text-decoration:underline;">${escapeHtml(label)}</a>`;
       });
@@ -1122,9 +1172,9 @@
 
         const hasProducts = Boolean(data.products && data.products.length > 0);
 
-        // 1. Testo/intro del Maître Parfumeur
+        // 1. Risposta autentica del Maître Parfumeur
         if (data.reply) {
-          botMsgDiv.innerHTML = renderMarkdownText(data.reply);
+          botMsgDiv.innerHTML = renderMarkdownText(data.reply, hasProducts);
         }
 
         // 2. Product Cards visive
