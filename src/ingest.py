@@ -5,6 +5,7 @@ Scarica il catalogo tramite /products.json di Shopify, analizza i blocchi
 collapsible dinamici del tema (Piramide, Famiglia, Tipologia, Usage Profile).
 In assenza di sezioni esplicite, ricorre all'estrazione intelligente dai TAG
 per determinare Famiglie Olfattive, Genere (Per lui/lei/unisex) e Stagionalità.
+Include filtraggio qualitativo delle note olfattive ed estrazione semantica LLM di riserva.
 
 Uso:
     python src/ingest.py
@@ -52,7 +53,42 @@ KNOWN_FAMILIES = [
     "Floreale", "Floreale - sample", "Fruttata", "Gourmand", "Legnosa",
     "Muschiata", "Orientale", "Speziata", "Tabaccosa", "Talcata", "Vanigliata", "Verde"
 ]
+
 # ==============================================================================
+# REGEX PER LA BONIFICA E FILTRAGGIO DELLE NOTE OLFATTIVE
+# ==============================================================================
+NARRATIVE_PREFIXES = [
+    r"^(?:si\s+aprono\s+con\s+|si\s+apre\s+con\s+)",
+    r"^(?:un[' ]esplosione\s+(?:esperidata\s+|fresca\s+|luminosa\s+)?di\s+)",
+    r"^(?:un[' ]apertura\s+(?:brillante\s+|fresca\s+|luminosa\s+)?di\s+)",
+    r"^(?:si\s+sviluppano\s+attorno\s+a(?:l|lla)?\s+)",
+    r"^(?:si\s+sviluppa\s+attorno\s+a(?:l|lla)?\s+)",
+    r"^(?:svelando\s+(?:anche\s+)?un\s+accenno\s+di\s+)",
+    r"^(?:con\s+un\s+accenno\s+di\s+)",
+    r"^(?:con\s+(?:note|sfumature|sentori|tocchi)\s+di\s+)",
+    r"^(?:un\s+tocco\s+di\s+|un\s+accenno\s+di\s+|una\s+scia\s+di\s+|un\s+pizzico\s+di\s+)",
+    r"^(?:(?:una\s+|le\s+|un\s+)?(?:nota|note)\s+(?:frizzante\s+|dolce\s+|fresca\s+|calda\s+)?di\s+)",
+    r"^(?:note\s+di\s+|accordo\s+di\s+|sentori\s+di\s+|sfumature\s+di\s+)",
+    r"^(?:alla\s+|allo\s+|al\s+|ai\s+|agli\s+|alle\s+|del\s+|della\s+|dello\s+|dei\s+|degli\s+|delle\s+)"
+]
+
+VERB_PATTERNS = [
+    r"\b(?:si\s+)?apre\b", r"\b(?:si\s+)?aprono\b",
+    r"\b(?:si\s+)?sviluppa\b", r"\b(?:si\s+)?sviluppano\b",
+    r"\b(?:si\s+)?unisce\b", r"\b(?:si\s+)?uniscono\b",
+    r"\bsvelando\b", r"\bsvela\b", r"\brivela\b", r"\brivelando\b",
+    r"\bevoca\b", r"\bevocano\b", r"\blascia\b", r"\blasciando\b",
+    r"\bavvolge\b", r"\bavvolgono\b", r"\bemerge\b", r"\bemergono\b",
+    r"\btroviamo\b", r"\bpersiste\b", r"\bpersistono\b",
+    r"\bcaratterizzat[oaei]\b", r"\besplosione\b", r"\brotondit[aà]\b"
+]
+
+MARKETING_WORDS = [
+    r"\brinfrescant[ei]\b", r"\bpersistente\b", r"\bsensuale\b",
+    r"\belegant[ei]\b", r"\bluminos[oaei]\b", r"\bavvolgent[ei]\b",
+    r"\bcalde\s+estati\b", r"\bclimi\s+freddi\b", r"\bstraordinari[oaei]\b",
+    r"\barmonios[oaei]\b", r"\birresistibil[ei]\b"
+]
 
 GROQ_KEY = os.getenv("GROQ_API_KEY")
 client = OpenAI(
@@ -77,8 +113,46 @@ def clean_text(raw_text: str) -> str:
     return text.strip()
 
 
+def clean_single_note(raw_part: str) -> str:
+    """Isola la materia prima pura rimuovendo prefissi narrativi, articoli e preposizioni."""
+    p = raw_part.strip()
+    p = re.sub(r"\(.*?\)", "", p).strip()
+
+    for prefix in NARRATIVE_PREFIXES:
+        p = re.sub(prefix, "", p, flags=re.I).strip()
+
+    p = re.sub(r"^(?:a|e|ed|di|da|in|con|su|per|tra|fra)\s+", "", p, flags=re.I).strip()
+    p = re.sub(r"^l[' ]", "", p, flags=re.I).strip()
+    p = re.sub(r"^(?:il|lo|la|i|gli|le|un|uno|una|un')\s+", "", p, flags=re.I).strip()
+    p = re.sub(r"\s+", " ", p).strip()
+
+    if p:
+        if p.isupper():
+            p = p.title()
+        else:
+            p = p[:1].upper() + p[1:]
+    return p
+
+
+def is_valid_note_item(item: str) -> bool:
+    """Verifica che la nota sia una reale materia prima e non una frase descrittiva."""
+    if not item or len(item) < 2 or len(item) > 35:
+        return False
+    words = item.split()
+    if len(words) > 4:
+        return False
+    for vp in VERB_PATTERNS:
+        if re.search(vp, item, re.I):
+            return False
+    if len(words) <= 2:
+        for mw in MARKETING_WORDS:
+            if re.search(mw, item, re.I):
+                return False
+    return True
+
+
 def clean_note_items(raw_text: str) -> list[str]:
-    """Sanitizza le note olfattive eliminando metadati, formati ed entità."""
+    """Sanitizza le note olfattive eliminando metadati, formati, frasi e residui narrativi."""
     if not raw_text:
         return []
 
@@ -109,17 +183,44 @@ def clean_note_items(raw_text: str) -> list[str]:
             continue
         if p.isdigit():
             continue
-        if p.lower() in ["formato", "edp", "edt", "unisex", "donna", "uomo", "parfum"]:
+        if p.lower() in ["formato", "edp", "edt", "unisex", "donna", "uomo", "parfum", "note", "piramide"]:
             continue
 
-        if p.isupper():
-            p = p.title()
-        else:
-            p = p[:1].upper() + p[1:]
+        c = clean_single_note(p)
+        if is_valid_note_item(c):
+            cleaned_list.append(c)
 
-        cleaned_list.append(p)
+    return list(dict.fromkeys(cleaned_list))
 
-    return cleaned_list
+
+def extract_best_section_match(text: str, pattern: str) -> list[str]:
+    """Cerca tutte le occorrenze della sezione e premia la lista con il punteggio di purezza più alto."""
+    matches = re.findall(pattern, text, re.I)
+    if not matches:
+        return []
+
+    candidates = []
+    for raw_match in matches:
+        notes = clean_note_items(raw_match)
+        if not notes:
+            continue
+
+        score = 0
+        for n in notes:
+            w_count = len(n.split())
+            if 1 <= w_count <= 3:
+                score += 10
+            elif w_count == 4:
+                score += 5
+            else:
+                score -= 10
+        candidates.append((score, notes))
+
+    if not candidates:
+        return []
+
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
 
 
 def extract_family_from_tags(tags: list[str]) -> str:
@@ -299,23 +400,17 @@ def parse_shopify_sections(body_html: str) -> dict:
 
 
 def extract_pyramid_regex_fallback(text: str) -> dict:
-    """Fallback Regex globale per schede prive di accordion standard."""
-    pyramid = {"top": [], "heart": [], "base": []}
-    if not text:
-        return pyramid
-
+    """Fallback Regex globale che seleziona il blocco migliore evitando testi narrativi."""
     patterns = {
         "top": r"(?:note\s+di\s+testa|testa|top\s+notes?)\s*[:\-]\s*([^.\n\r]+?)(?=(?:note\s+di|testa|cuore|fondo|top|heart|base|\.|\n|\r|$))",
         "heart": r"(?:note\s+di\s+cuore|cuore|heart\s+notes?|middle\s+notes?)\s*[:\-]\s*([^.\n\r]+?)(?=(?:note\s+di|testa|cuore|fondo|top|heart|base|\.|\n|\r|$))",
         "base": r"(?:note\s+di\s+fondo|fondo|base\s+notes?)\s*[:\-]\s*([^.\n\r]+?)(?=(?:note\s+di|testa|cuore|fondo|top|heart|base|\.|\n|\r|$))",
     }
 
-    for section, pattern in patterns.items():
-        m = re.search(pattern, text, re.I)
-        if m:
-            pyramid[section] = clean_note_items(m.group(1))
-
-    return pyramid
+    return {
+        section: extract_best_section_match(text, pattern)
+        for section, pattern in patterns.items()
+    }
 
 
 def extract_pyramid_llm_fallback(name: str, brand: str, text: str) -> dict:
@@ -327,7 +422,8 @@ def extract_pyramid_llm_fallback(name: str, brand: str, text: str) -> dict:
     prompt = (
         f"Profumo: '{name}' di '{brand}'.\n"
         f"Testo: \"\"\"{text[:1100]}\"\"\"\n\n"
-        "Estrai la piramide olfattiva in JSON escludendo formati, ml e parole di marketing:\n"
+        "Estrai la piramide olfattiva in JSON escludendo formati, ml, verbi e parole di marketing.\n"
+        "Restituisci solo sostantivi di materie prime (1-3 parole):\n"
         "{\"top\": [\"nota1\"], \"heart\": [\"nota2\"], \"base\": [\"nota3\"]}\n"
         "Rispondi ESCLUSIVAMENTE con il JSON."
     )
@@ -441,7 +537,7 @@ def transform_product(prod: dict) -> dict:
         "base": parsed["base"]
     }
 
-    # Fallback piramide olfattiva (Regex globale o LLM)
+    # Fallback piramide olfattiva (Scelta del blocco migliore o fallback semantico LLM)
     total_notes = len(pyramid["top"]) + len(pyramid["heart"]) + len(pyramid["base"])
     if total_notes == 0:
         raw_clean_all = clean_text(prod.get("body_html", ""))
