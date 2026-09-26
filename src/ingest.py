@@ -90,6 +90,12 @@ MARKETING_WORDS = [
     r"\barmonios[oaei]\b", r"\birresistibil[ei]\b"
 ]
 
+MARKETING_PHRASES = [
+    "sensuale ed elegante", "eleganza senza tempo", "calde estati", 
+    "climi freddi", "molto persistente", "straordinariamente persistente",
+    "scia avvolgente", "note floreali luminose"
+]
+
 GROQ_KEY = os.getenv("GROQ_API_KEY")
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
@@ -135,21 +141,32 @@ def clean_single_note(raw_part: str) -> str:
 
 
 def is_valid_note_item(item: str) -> bool:
-    """Verifica che la nota sia una reale materia prima e non una frase descrittiva."""
+    """Verifica che la nota sia una reale materia prima e non una frase descrittiva o marketing."""
     if not item or len(item) < 2 or len(item) > 35:
         return False
+    
+    item_lower = item.lower().strip()
+    
+    # 1. Se l'intera stringa è una frase di marketing nota, scarta
+    if any(phrase in item_lower for phrase in MARKETING_PHRASES):
+        return False
+
     words = item.split()
     if len(words) > 4:
         return False
+        
+    # 2. Controllo verbi narrativi
     for vp in VERB_PATTERNS:
         if re.search(vp, item, re.I):
             return False
+            
+    # 3. Controllo parole singole di marketing se l'item è corto
     if len(words) <= 2:
         for mw in MARKETING_WORDS:
             if re.search(mw, item, re.I):
                 return False
+                
     return True
-
 
 def clean_note_items(raw_text: str) -> list[str]:
     """Sanitizza le note olfattive eliminando metadati, formati, frasi e residui narrativi."""
