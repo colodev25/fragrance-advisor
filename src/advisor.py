@@ -55,6 +55,29 @@ GUIDED_STEPS = {
     }
 }
 
+CANONICAL_NOTES = [
+    "cannella", "vaniglia", "oud", "tabacco", "rosa", "iris", "gelsomino",
+    "ambra", "bergamotto", "limone", "arancia", "cedro", "sandalo", "vetiver",
+    "patchouli", "tonka", "pepe", "incenso", "cacao", "caffè", "caffe",
+    "mandorla", "fico", "sale", "mirra", "lavanda", "neroli", "tuberosa",
+    "pesca", "mela", "pompelmo", "cuoio", "zenzero", "zafferano", "miele",
+    "caramello", "muschio", "musk", "eliotropio", "ribes", "menta", "anice",
+    "cocco", "lampone", "cardamomo", "chiodi di garofano", "noce moscata"
+]
+
+# Blacklist di preposizioni, articoli e termini comuni per evitare falsi positivi
+STOPWORDS_NOTES = {
+    "alla", "allo", "alle", "agli", "dalla", "dallo", "delle", "degli", "della",
+    "nella", "nello", "nelle", "negli", "sulla", "sullo", "sulle", "sugli",
+    "dell", "all", "nell", "sull", "come", "dove", "anche", "sono", "cosa",
+    "molto", "poco", "più", "meno", "profumo", "fragranza", "odore", "aroma",
+    "note", "nota", "testa", "cuore", "fondo", "piramide", "invernale", "estivo",
+    "primaverile", "autunnale", "inverno", "estate", "primavera", "autunno",
+    "per", "lui", "lei", "uomo", "donna", "unisex", "caldo", "freddo", "giorno",
+    "sera", "notte", "giornata", "ufficio", "speciale", "elegante", "tutti",
+    "prezzo", "costo", "euro", "budget", "alta", "bassa", "gamma", "accordo", "accordi"
+}
+
 
 class FragranceAdvisor:
     def __init__(self):
@@ -74,10 +97,24 @@ class FragranceAdvisor:
         self.guided_states = defaultdict(lambda: {"step": None, "answers": []})
 
         self.catalog_products = []
+        self.catalog_notes = set()
+
         if CATALOG_PATH.exists():
             try:
                 with open(CATALOG_PATH, "r", encoding="utf-8") as f:
                     self.catalog_products = json.load(f)
+
+                # Indicizzazione interna delle sole note valide, filtrando le stopword
+                for prod in self.catalog_products:
+                    pyr = prod.get("olfactory_pyramid", {})
+                    for note in pyr.get("top", []) + pyr.get("heart", []) + pyr.get("base", []):
+                        n_clean = note.lower().strip()
+                        if len(n_clean) >= 3 and n_clean not in STOPWORDS_NOTES:
+                            self.catalog_notes.add(n_clean)
+                            for w in re.findall(r"\b[a-zA-Zàèéìòù]+\b", n_clean):
+                                if len(w) >= 4 and w not in STOPWORDS_NOTES:
+                                    self.catalog_notes.add(w)
+
             except Exception as e:
                 print(f"[ADVISOR] Avviso: caricamento catalog.json fallito: {e}")
 
@@ -134,19 +171,101 @@ class FragranceAdvisor:
 
     def _has_explicit_olfactory_redirect(self, query: str) -> bool:
         """Verifica se l'utente ha esplicitamente richiesto una nuova famiglia olfattiva o note specifiche."""
-        scent_terms = [
-            "agrumat", "fresc", "acquat", "marin", "aromat", "verd",
-            "floreal", "fior", "fruttat", "talcat",
-            "dolc", "cald", "gourmand", "vanigli", "ambrat", "oriental",
-            "legnos", "intens", "speziat", "cuoi", "chypre", "tabacc", "muschi",
-            "vaniglia", "oud", "legno", "rosa", "iris", "gelsomino", "ambra",
-            "bergamotto", "limone", "arancia", "cedro", "sandalo", "vetiver",
-            "patchouli", "tonka", "pepe", "cannella", "incenso", "cacao",
-            "caffe", "mandorla", "fico", "sale", "mirra", "lavanda", "neroli",
-            "tuberosa", "pesca", "mela", "pompelmo"
-        ]
         q_lower = query.lower()
+        if any(term in q_lower for term in CANONICAL_NOTES):
+            return True
+        scent_terms = ["agrumat", "fresc", "acquat", "marin", "aromat", "verd", "floreal", "dolc", "cald", "gourmand", "legnos", "speziat", "cuoi"]
         return any(term in q_lower for term in scent_terms)
+
+    def _extract_target_notes(self, query: str) -> list[str]:
+        """Estrae le note olfattive o materie prime richieste esplicitamente nella query, depurate da stopword."""
+        q_lower = f" {query.lower()} "
+        found = []
+
+        for note in CANONICAL_NOTES:
+            if note not in STOPWORDS_NOTES and re.search(rf"\b{re.escape(note)}\b", q_lower):
+                found.append(note)
+
+        for note in self.catalog_notes:
+            if len(note) >= 3 and note not in STOPWORDS_NOTES and re.search(rf"\b{re.escape(note)}\b", q_lower):
+                if note not in found:
+                    found.append(note)
+
+        return found
+
+    def _find_keyword_matches(self, target_notes: list[str], min_price: float | None, max_price: float | None, query: str, limit: int = 4) -> list[dict]:
+        """Ricerca ibrida: individua nel catalogo le fragranze che contengono letteralmente la nota richiesta."""
+        if not target_notes or not self.catalog_products:
+            return []
+
+        scored_candidates = []
+        q_lower = query.lower()
+
+        req_season = None
+        if any(w in q_lower for w in ["invern", "autunn", "fredd"]):
+            req_season = "Autunno / Inverno"
+        elif any(w in q_lower for w in ["estiv", "primaver", "cald"]):
+            req_season = "Primavera / Estate"
+
+        for prod in self.catalog_products:
+            price = float(prod.get("price", 0.0))
+            if min_price is not None and price < min_price:
+                continue
+            if max_price is not None and price > max_price:
+                continue
+
+            score = 0
+            pyr = prod.get("olfactory_pyramid", {})
+            all_notes = [n.lower() for n in pyr.get("top", []) + pyr.get("heart", []) + pyr.get("base", [])]
+            semantic = prod.get("semantic_text", "").lower()
+            name = prod.get("name", "").lower()
+            family = prod.get("family", "").lower()
+
+            matches_count = 0
+            for t_note in target_notes:
+                if any(t_note in n for n in all_notes):
+                    score += 35
+                    matches_count += 1
+                elif t_note in family:
+                    score += 20
+                    matches_count += 1
+                elif t_note in name:
+                    score += 25
+                    matches_count += 1
+                elif t_note in semantic:
+                    score += 10
+                    matches_count += 1
+
+            if matches_count == 0:
+                continue
+
+            if req_season:
+                prod_season = self._detect_season(prod.get("family", ""), prod.get("tags", []), prod.get("usage_profile", ""), prod.get("description", ""))
+                if prod_season == req_season:
+                    score += 15
+                elif prod_season == "Quattro Stagioni":
+                    score += 8
+                else:
+                    score -= 15
+
+            scored_candidates.append((score, prod))
+
+        scored_candidates.sort(key=lambda x: x[0], reverse=True)
+
+        results = []
+        for _, p in scored_candidates[:limit]:
+            results.append({
+                "name": p.get("name", ""),
+                "brand": p.get("brand", "Profumeria Artistica"),
+                "price": float(p.get("price", 0.0)),
+                "family": p.get("family", ""),
+                "ptype": p.get("ptype", ""),
+                "add_to_cart_url": p.get("urls", {}).get("add_to_cart", ""),
+                "product_page_url": p.get("urls", {}).get("product_page", ""),
+                "image_url": p.get("urls", {}).get("image_url", ""),
+                "document": p.get("semantic_text", p.get("description", ""))
+            })
+        return results
 
     def _detect_gender(self, name: str, tags: list, usage_profile: str = "", description: str = "") -> str:
         """Determina il genere del profumo senza allucinazioni da sottostringa né priorità errate."""
@@ -156,7 +275,6 @@ class FragranceAdvisor:
         desc_lower = (description or "").lower()
         combined_text = f"{u_prof_lower} {desc_lower}"
 
-        # 1. Segnali espliciti prioritari nel nome proprio
         if re.search(r"\b(for\s+her|pour\s+femme|woman|women)\b", name_lower):
             return "Per Lei"
         if re.search(r"\b(for\s+him|pour\s+homme|for\s+men)\b", name_lower) or (
@@ -164,17 +282,14 @@ class FragranceAdvisor:
         ):
             return "Per Lui"
 
-        # 2. Segnali nei tag con confini di parola precisi (\b)
         has_unisex_tag = any(re.search(r"\bunisex\b", t, re.I) for t in tags_lower)
         has_lui_tag = any(re.search(r"\b(per\s+lui|uomo|maschile|pour\s+homme|for\s+men)\b", t, re.I) for t in tags_lower)
         has_lei_tag = any(re.search(r"\b(per\s+lei|donna|femminile|pour\s+femme|for\s+women|for\s+her)\b", t, re.I) for t in tags_lower)
 
-        # 3. Segnali nel profilo d'uso e nella descrizione narrativa
         has_unisex_text = bool(re.search(r"\b(unisex|sia per uomo che per donna|uomo e donna)\b", combined_text, re.I))
         has_lui_text = bool(re.search(r"\b(maschile|per lui|da uomo|all[' ]uomo|per l[' ]uomo)\b", combined_text, re.I))
         has_lei_text = bool(re.search(r"\b(femminile|per lei|da donna|alla donna|per la donna)\b", combined_text, re.I))
 
-        # 4. Sintesi coerente
         if has_unisex_tag or has_unisex_text or (has_lui_tag and has_lei_tag) or (has_lui_text and has_lei_text):
             return "Unisex"
         if (has_lui_tag or has_lui_text) and not (has_lei_tag or has_lei_text):
@@ -211,13 +326,12 @@ class FragranceAdvisor:
         return "Quattro Stagioni"
 
     def _is_compatible_with_guided(self, prod_enriched: dict, gender_req: str, occasion_req: str) -> bool:
-        """Valida deterministicamente la compatibilità con le scelte dell'utente nel percorso guidato (Opzione A)."""
+        """Valida deterministicamente la compatibilità con le scelte dell'utente nel percorso guidato."""
         traits = prod_enriched.get("traits", "")
         parts = [p.strip() for p in traits.split("•")]
         prod_gender = parts[1] if len(parts) > 1 else "Unisex"
         prod_season = parts[2] if len(parts) > 2 else "Quattro Stagioni"
 
-        # 1. Filtro Genere
         if "lui" in gender_req.lower():
             if prod_gender == "Per Lei":
                 return False
@@ -225,7 +339,6 @@ class FragranceAdvisor:
             if prod_gender == "Per Lui":
                 return False
 
-        # 2. Filtro Stagione / Contesto
         occ_lower = occasion_req.lower()
         if "primaver" in occ_lower or "estat" in occ_lower:
             if prod_season == "Autunno / Inverno":
@@ -237,13 +350,7 @@ class FragranceAdvisor:
         return True
 
     def _enrich_product_payload(self, prod_dict: dict, card_type: str = "slideover") -> dict:
-        """
-        Estrae e organizza gli attributi per la Product Card:
-        - product_page_url: link diretto per la navigazione
-        - story: descrizione completa senza tagli '...'
-        - key_notes: accordi salienti per le pills
-        - traits: tipologia, genere verificato e stagionalità coerente
-        """
+        """Estrae e organizza gli attributi per la Product Card."""
         p_name = prod_dict.get("name", "").strip()
         p_brand = prod_dict.get("brand", "Profumeria Artistica").strip()
         p_price = float(prod_dict.get("price", 0.0) or 0.0)
@@ -361,12 +468,9 @@ class FragranceAdvisor:
         if is_cheaper and active_perfume and active_perfume.get("price"):
             current_price = float(active_perfume["price"])
             max_p = max(0.0, current_price - 0.5)
-            print(f"[PRICE PARSER] 'più economico': max_price impostato a {max_p}€ (precedente: {current_price}€)")
-
         elif is_expensive and active_perfume and active_perfume.get("price"):
             current_price = float(active_perfume["price"])
             min_p = current_price + 0.5
-            print(f"[PRICE PARSER] 'più costoso': min_price impostato a {min_p}€ (precedente: {current_price}€)")
 
         range_match = re.search(r"\b(?:tra|da)\s+(?:i\s+)?(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\s+(?:e|a)\s+(?:i\s+)?(\d+(?:[.,]\d+)?)\s*(?:€|euro)?\b", q, re.I)
         if range_match:
@@ -585,7 +689,6 @@ class FragranceAdvisor:
             f"Fragranza destinata a {gender}. Ideale per contesto {occasion}."
         )
 
-        # OVER-FETCHING: Chiediamo 12 candidati a ChromaDB per poter applicare il filtro deterministico
         results = self.search_engine.search(
             query=search_prompt,
             min_price=min_p,
@@ -596,7 +699,6 @@ class FragranceAdvisor:
         structured_products = []
         first_product = None
 
-        # PASSO 1: FILTRO DETERMINISTICO OPZIONE A (STAGIONE E GENERE)
         if results["ids"] and len(results["ids"][0]) > 0:
             for i in range(len(results["ids"][0])):
                 meta = results["metadatas"][0][i]
@@ -615,14 +717,7 @@ class FragranceAdvisor:
                 }
 
                 enriched = self._enrich_product_payload(prod_data, card_type="slideover")
-
-                # Validazione euristica
                 is_compat = self._is_compatible_with_guided(enriched, gender, occasion)
-                traits_parts = [p.strip() for p in enriched.get("traits", "").split("•")]
-                p_gen = traits_parts[1] if len(traits_parts) > 1 else "Unisex"
-                p_sea = traits_parts[2] if len(traits_parts) > 2 else "Quattro Stagioni"
-
-                print(f"[GUIDED FILTER] '{enriched['name']}' ({p_gen} | {p_sea}) vs ({gender} | {occasion}) -> {'ACCETTATO' if is_compat else 'SCARTATO'}")
 
                 if is_compat:
                     structured_products.append(enriched)
@@ -631,7 +726,6 @@ class FragranceAdvisor:
                     if len(structured_products) == 3:
                         break
 
-            # PASSO 2: FALLBACK SE MENO DI 3 CANDIDATI (Rispetta almeno il vincolo forte del genere)
             if len(structured_products) < 3:
                 for i in range(len(results["ids"][0])):
                     meta = results["metadatas"][0][i]
@@ -655,7 +749,6 @@ class FragranceAdvisor:
                     traits_parts = [p.strip() for p in enriched.get("traits", "").split("•")]
                     p_gen = traits_parts[1] if len(traits_parts) > 1 else "Unisex"
 
-                    # Esclusione categorica del genere opposto
                     if ("lui" in gender.lower() and p_gen == "Per Lei") or ("lei" in gender.lower() and p_gen == "Per Lui"):
                         continue
 
@@ -767,7 +860,7 @@ class FragranceAdvisor:
             print(f"\n[ROUTER DEBUG] Profumo attivo: '{active.get('name') if active else 'NESSUNO'}'")
             print(f"[ROUTER DEBUG] Domanda: '{user_query}' -> Decisione: {'SEGUI PRODOTTO (VALUTA)' if is_follow_up else 'CERCA NUOVO (CAMBIA)'}")
 
-            # RAMO 2: Chiarimento o approfondimento sullo stesso profumo attivo -> RISPOSTA TESTUALE PURA
+            # RAMO 2: Chiarimento o approfondimento sullo stesso profumo attivo
             if is_follow_up:
                 context_str = (
                     f"[PRODOTTO ATTUALMENTE DISCUSSO]\n"
@@ -812,15 +905,27 @@ class FragranceAdvisor:
 
                 return {"reply": reply, "options": [], "products": [], "step": None, "mode": "free"}
 
-            # RAMO 3: Ricerca di un nuovo profumo su ChromaDB con mantenimento del contesto "Alternativa"
+            # RAMO 3: Ricerca Ibrida di un nuovo profumo su ChromaDB + Keyword-Boost depurato da Stopword
             else:
                 parsed_min_p, parsed_max_p, search_query_clean = self._extract_price_constraints(user_query, active)
 
                 effective_max_p = parsed_max_p if parsed_max_p is not None else max_price
                 effective_min_p = parsed_min_p
 
-                # Se c'è un profumo attivo e l'utente NON ha specificato note opposte, cerca affinità
                 is_seeking_similar_alternative = (active is not None and not self._has_explicit_olfactory_redirect(search_query_clean))
+
+                target_notes = self._extract_target_notes(user_query)
+                keyword_matches = []
+
+                if target_notes:
+                    keyword_matches = self._find_keyword_matches(
+                        target_notes=target_notes,
+                        min_price=effective_min_p,
+                        max_price=effective_max_p,
+                        query=user_query,
+                        limit=3
+                    )
+                    print(f"[HYBRID BOOST] Trovate {len(keyword_matches)} fragranze con note esatte: {target_notes}")
 
                 if is_seeking_similar_alternative and active:
                     active_fam = active.get("family", "")
@@ -832,30 +937,54 @@ class FragranceAdvisor:
 
                     notes_str = ", ".join(key_notes_list[:5]) if key_notes_list else active_fam
                     chroma_query = f"Profumo {active_fam}. Note olfattive: {notes_str}. {active.get('document', '')[:120]}"
-
-                    print(f"[ALTERNATIVE SEARCH] Ricerca alternativa affine a '{active['name']}' ({active_fam}) | Note: {notes_str} | Filtri Prezzo: min={effective_min_p}, max={effective_max_p}")
+                    print(f"[ALTERNATIVE SEARCH] Ricerca alternativa affine a '{active['name']}' ({active_fam}) | Note: {notes_str} | Prezzo: min={effective_min_p}, max={effective_max_p}")
                 else:
                     chroma_query = search_query_clean
-                    print(f"[SEARCH EXEC] Query ChromaDB: '{search_query_clean}' | Filtri Prezzo: min={effective_min_p}, max={effective_max_p}")
+                    print(f"[SEARCH EXEC] Query ChromaDB: '{search_query_clean}' | Prezzo: min={effective_min_p}, max={effective_max_p}")
 
                 results = self.search_engine.search(
                     query=chroma_query,
                     min_price=effective_min_p,
                     max_price=effective_max_p,
-                    n_results=8
+                    n_results=10
                 )
 
                 candidates_text = []
                 candidates_map = {}
                 candidate_idx = 1
+                seen_names = set()
 
+                # 1. Priorità assoluta ai candidati che contengono le note richieste (Keyword-Boost)
+                for km in keyword_matches:
+                    p_name_lower = km["name"].strip().lower()
+                    if is_seeking_similar_alternative and active and p_name_lower == active.get("name", "").strip().lower():
+                        continue
+                    if p_name_lower in seen_names:
+                        continue
+
+                    pid = f"PRODOTTO_{candidate_idx}"
+                    candidates_map[pid] = km
+                    seen_names.add(p_name_lower)
+                    candidates_text.append(
+                        f"[{pid}]\n"
+                        f"Nome: {km['name']}\n"
+                        f"Brand: {km.get('brand', 'Profumeria Artistica')}\n"
+                        f"Tipologia: {km.get('ptype', '')} | Famiglia: {km.get('family', '')}\n"
+                        f"Prezzo: {km['price']} EUR\n"
+                        f"Descrizione e Note: {km['document']}"
+                    )
+                    candidate_idx += 1
+
+                # 2. Integrazione con i risultati semantici di ChromaDB
                 if results["ids"] and len(results["ids"][0]) > 0:
                     for i in range(len(results["ids"][0])):
                         meta = results["metadatas"][0][i]
                         doc = results["documents"][0][i]
+                        p_name_lower = meta.get("name", "").strip().lower()
 
-                        # Esclude l'attivo stesso se si cerca un'alternativa
-                        if is_seeking_similar_alternative and active and meta.get("name", "").strip().lower() == active.get("name", "").strip().lower():
+                        if is_seeking_similar_alternative and active and p_name_lower == active.get("name", "").strip().lower():
+                            continue
+                        if p_name_lower in seen_names:
                             continue
 
                         pid = f"PRODOTTO_{candidate_idx}"
@@ -870,6 +999,7 @@ class FragranceAdvisor:
                             "image_url": meta.get("image_url", ""),
                             "document": doc
                         }
+                        seen_names.add(p_name_lower)
                         candidates_text.append(
                             f"[{pid}]\n"
                             f"Nome: {meta['name']}\n"
@@ -886,13 +1016,13 @@ class FragranceAdvisor:
                     if effective_max_p or effective_min_p:
                         filtro_desc = f"sotto i {effective_max_p}€" if effective_max_p else f"sopra i {effective_min_p}€"
                         fallback_reply = (
-                            f"Non ho trovato a catalogo un'alternativa affine che rispetti questo vincolo di prezzo ({filtro_desc}). "
+                            f"Non ho trovato a catalogo un'opzione che rispetti questo vincolo di prezzo ({filtro_desc}). "
                             "Possiamo provare ad ampliare la fascia di budget o esplorare una famiglia olfattiva differente."
                         )
                     else:
                         fallback_reply = (
                             "Non ho trovato a catalogo una fragranza che corrisponda a queste specifiche caratteristiche. "
-                            "Puoi provare a indicare una famiglia olfattiva più generica oppure iniziare il nostro percorso guidato."
+                            "Puoi provare a indicare una nota più generica oppure iniziare il nostro percorso guidato."
                         )
                     self.sessions[session_id].append({"role": "user", "content": user_query})
                     self.sessions[session_id].append({"role": "assistant", "content": fallback_reply})
@@ -928,7 +1058,7 @@ class FragranceAdvisor:
                         "Hai a disposizione una lista di CANDIDATI estratti dal catalogo che rispettano già i vincoli di budget e note richiesti.\n"
                         "1. Analizza la richiesta dell'utente.\n"
                         "2. Scegli TRA I CANDIDATI ESATTAMENTE UN SOLO PRODOTTO che rispecchia REALMENTE e COERENTEMENTE la richiesta.\n"
-                        "3. Se l'utente ha specificato un budget o una preferenza economica, evidenzia con eleganza come questa creazione offra grande caratura nella fascia desiderata.\n"
+                        "3. Se l'utente ha chiesto una nota specifica o una stagione, dai priorità alla fragranza che la contiene ed evidenzia con eleganza la sua armonia.\n"
                         "4. REGOLA ANTI-CONTRADDIZIONE: Se un candidato è caldo/intenso, NON proporlo per richieste di freschezza marina o leggerezza.\n"
                         "5. FORMATO RISPOSTA:\n"
                         "   [ID: PRODOTTO_X]\n"
@@ -955,7 +1085,7 @@ class FragranceAdvisor:
                     if selected_id in candidates_map:
                         selected_product = candidates_map[selected_id]
                         self.active_perfumes[session_id] = selected_product
-                        print(f"[ADVISOR] Nuovo profumo attivo registrato: {candidates_map[selected_id]['name']}")
+                        print(f"[ADVISOR] Profumo attivo registrato: {candidates_map[selected_id]['name']}")
                     reply = re.sub(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]\s*", "", reply).strip()
                 else:
                     selected_product = candidates_map["PRODOTTO_1"]
