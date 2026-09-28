@@ -985,11 +985,12 @@
       <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
     `;
 
-      let sessionId = sessionStorage.getItem("oa_session_id");
-      if (!sessionId) {
-        sessionId = "sess_" + Math.random().toString(36).substring(2, 11);
-        sessionStorage.setItem("oa_session_id", sessionId);
+      // NUOVO: genera un identificativo volatile a ogni caricamento/refresh della pagina
+      function generateSessionId() {
+        return "sess_" + Math.random().toString(36).substring(2, 11);
       }
+
+      let sessionId = generateSessionId();
 
       const widget = document.getElementById("oaWidget");
       const launcher = document.getElementById("oaLauncher");
@@ -1011,8 +1012,7 @@
 
       // RIPULITURA COMPLETA DELLA CHAT PER RIPARTIRE DA ZERO
       restartBtn.addEventListener("click", () => {
-        sessionId = "sess_" + Math.random().toString(36).substring(2, 11);
-        sessionStorage.setItem("oa_session_id", sessionId);
+        sessionId = generateSessionId();
 
         messagesContainer.innerHTML = INITIAL_WELCOME_HTML;
         updateStepper(null);
