@@ -2,173 +2,205 @@
 
 ## Overview
 
-The data pipeline prepares the perfume catalog used by Fragrance Advisor.
+The data pipeline transforms product information into the structured catalog consumed by the fragrance advisor and the semantic search engine.
 
-The main implementation is contained in:
+The pipeline is divided into two main stages:
+
+```text
+Product Source
+      │
+      ▼
+  ingest.py
+      │
+      ▼
+catalog.json
+      │
+      ▼
+  reindex.py
+      │
+      ▼
+ ChromaDB
+```
+
+The ingestion and indexing stages are intentionally separated.
+
+---
+
+## 1. Product Ingestion
+
+The ingestion process is implemented in:
 
 ```text
 src/ingest.py
 ```
 
-The resulting datasets are stored in:
+It retrieves product information from the configured product source and processes the returned data.
 
-```text
-data/
-├── catalog.json
-├── out_of_stock.json
-└── scartati.json
+The pipeline can handle:
+
+- product information;
+- pricing;
+- availability;
+- tags;
+- descriptions;
+- olfactory pyramid;
+- fragrance family;
+- usage information;
+- product URLs.
+
+---
+
+## 2. Data Cleaning
+
+Raw product data can contain HTML, encoded entities and inconsistent whitespace.
+
+The ingestion pipeline normalizes this information before creating the final product representation.
+
+The resulting data is structured so that it can be consumed consistently by the search and advisor layers.
+
+---
+
+## 3. Olfactory Data Extraction
+
+The ingestion process extracts or constructs the fragrance's olfactory pyramid.
+
+The structure is:
+
+```json
+{
+  "top": [],
+  "heart": [],
+  "base": []
+}
 ```
 
-The pipeline can be summarized as:
+The resulting notes can subsequently be used by:
+
+- semantic search;
+- explicit note matching;
+- recommendation logic.
+
+---
+
+## 4. Catalog Output
+
+The main processed catalog is stored in:
 
 ```text
-Shopify
-   ↓
-Download products
-   ↓
-Clean and normalize data
-   ↓
-Extract product information
-   ↓
-Extract olfactory pyramid
-   ↓
-Generate semantic representation
-   ↓
-Classify product
-   ↓
-Save catalog
+data/catalog.json
 ```
 
-## Source Data
-
-The current ingestion process retrieves products from a Shopify store through its product JSON endpoint.
-
-The process supports pagination so that large catalogs can be processed in multiple requests.
-
-Each Shopify product is transformed into the internal representation used by the application.
-
-## Data Cleaning
-
-Product information can contain HTML markup and formatting artifacts.
-
-The ingestion pipeline cleans textual information before storing it.
-
-The cleaning process includes:
-
-* removal of HTML markup;
-* HTML entity decoding;
-* normalization of whitespace;
-* removal of unnecessary formatting;
-* extraction of meaningful textual content.
-
-This produces cleaner input for both structured extraction and semantic search.
-
-## Olfactory Pyramid
-
-One of the main purposes of the ingestion pipeline is to reconstruct the perfume's olfactory structure.
-
-The internal representation distinguishes:
+Additional datasets are used for products that are unavailable or rejected during processing:
 
 ```text
-Top notes
-Heart notes
-Base notes
+data/out_of_stock.json
+data/scartati.json
 ```
 
-The extraction process attempts to identify these sections from the product information.
+---
 
-When structured information is not available or cannot be extracted reliably, fallback mechanisms are used.
+## 5. Semantic Indexing
 
-The pipeline can use the product description and an LLM-based extraction process to recover olfactory information from narrative descriptions.
+Catalog generation and vector indexing are separate operations.
 
-## Product Enrichment
+After updating `catalog.json`, the semantic index can be rebuilt with:
 
-Products are enriched with additional fields used by the advisor and search engine.
-
-The internal representation may contain information such as:
-
-```text
-id
-name
-brand
-sku
-price
-currency
-in_stock
-tags
-olfactory_pyramid
-family
-ptype
-usage_profile
-description
-urls
-semantic_text
+```bash
+python src/reindex.py
 ```
 
-The exact available fields depend on the information successfully extracted from the source product.
+This produces the ChromaDB representation used by the search engine.
 
-## Semantic Representation
+Therefore, a complete catalog refresh follows:
 
-The `semantic_text` field is particularly important for the semantic search layer.
-
-Instead of searching only individual fields such as product name or notes, the system creates a textual representation of the product that combines relevant information.
-
-This representation is subsequently embedded by the search engine.
-
-Conceptually:
-
-```text
-Product data
-     ↓
-Structured information
-     ↓
-semantic_text
-     ↓
-Embedding
-     ↓
-Vector database
+```bash
+python src/ingest.py
+python src/reindex.py
 ```
 
-## Output Files
+---
 
-### `catalog.json`
+## Data Flow
 
-Contains the structured catalog used by the search engine.
-
-This is the main dataset consumed during normal advisor operation.
-
-### `out_of_stock.json`
-
-Stores products identified as unavailable or out of stock.
-
-These products can be separated from the active catalog so that unavailable items are not treated as normal recommendations.
-
-### `scartati.json`
-
-Stores products that are excluded from the usable catalog during the ingestion process.
-
-This provides a record of products that could not be processed or did not satisfy the requirements of the pipeline.
-
-## Relationship with Search
-
-Once the catalog has been generated, `search.py` loads the products and creates the searchable representation used by ChromaDB.
-
-Therefore, the ingestion pipeline is upstream of the semantic search system:
+The complete process can be summarized as:
 
 ```text
-ingest.py
-    ↓
+External Product Source
+          │
+          ▼
+     Data Retrieval
+          │
+          ▼
+     Data Cleaning
+          │
+          ▼
+  Olfactory Extraction
+          │
+          ▼
+     catalog.json
+          │
+          ▼
+      Reindexing
+          │
+          ▼
+       ChromaDB
+          │
+          ▼
+    Search / Advisor
+```
+
+---
+
+## Data Separation
+
+The pipeline keeps different classes of products separated:
+
+| File                | Purpose                             |
+| ------------------- | ----------------------------------- |
+| `catalog.json`      | Main searchable product catalog     |
+| `out_of_stock.json` | Products currently unavailable      |
+| `scartati.json`     | Products excluded during processing |
+
+This allows the application to distinguish between searchable products and products that should not participate in recommendations.
+
+---
+
+## Updating the Catalog
+
+When product information changes:
+
+1. Run the ingestion pipeline.
+2. Verify the generated catalog.
+3. Rebuild the semantic index.
+4. Restart the application if required.
+
+Example:
+
+```bash
+python src/ingest.py
+python src/reindex.py
+uvicorn src.main:app --reload
+```
+
+---
+
+## Relationship with the Search Engine
+
+The data pipeline is responsible for creating the data consumed by the search layer.
+
+```text
+DATA PIPELINE
+     │
+     ▼
 catalog.json
-    ↓
-search.py
-    ↓
+     │
+     ▼
+SEARCH ENGINE
+     │
+     ▼
 ChromaDB
 ```
 
-Changes to the structure or content of `catalog.json` can therefore affect search quality and advisor behavior.
+The pipeline itself does not perform conversational recommendations.
 
-## Current Status
-
-> 🚧 The ingestion pipeline is part of the current development architecture.
-
-The extraction and enrichment process may evolve as the source website and product data structure are finalized.
+That responsibility belongs to `FragranceAdvisor`.

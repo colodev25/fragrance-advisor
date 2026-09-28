@@ -2,175 +2,237 @@
 
 ## Overview
 
-The semantic search system is implemented in:
+Fragrance Advisor uses semantic search to retrieve fragrance candidates from the product catalog.
+
+The search system combines vector similarity with deterministic processing such as price filtering and lexical relevance.
+
+This allows natural-language requests to be matched against product information even when the exact words used by the customer are not present in the product name.
+
+---
+
+## Components
+
+The search layer is primarily implemented through:
 
 ```text
 src/search.py
+src/reindex.py
 ```
 
-It provides the retrieval layer used by `FragranceAdvisor` to identify perfumes relevant to a user's request.
+The two modules have different responsibilities.
 
-The system combines:
+### `search.py`
 
-* product data from `catalog.json`;
-* multilingual text embeddings;
-* ChromaDB;
-* semantic similarity;
-* additional deterministic filtering.
+Handles product retrieval during application runtime.
 
-## Architecture
+### `reindex.py`
+
+Builds the ChromaDB index from the current `catalog.json`.
+
+---
+
+## Indexing Pipeline
+
+The catalog and vector index are generated through separate steps:
 
 ```text
-User request
-     ↓
-Search query
-     ↓
-Sentence Transformer
-     ↓
-Query embedding
-     ↓
+Product Data
+     │
+     ▼
+ ingest.py
+     │
+     ▼
+catalog.json
+     │
+     ▼
+reindex.py
+     │
+     ▼
 ChromaDB
-     ↓
-Semantic candidates
-     ↓
-Price / availability filtering
-     ↓
-Relevant products
 ```
+
+This separation makes it possible to update product data without coupling ingestion directly to runtime search.
+
+---
 
 ## Embeddings
 
-The current implementation uses:
+The system uses a multilingual Sentence Transformer model:
 
 ```text
 paraphrase-multilingual-MiniLM-L12-v2
 ```
 
-This model produces multilingual embeddings and is therefore suitable for queries and product descriptions written in different languages.
+The model converts semantic product representations into numerical vectors.
 
-The same embedding space is used to compare the user's query with the semantic representations of products.
+This is particularly useful for multilingual natural-language queries and descriptions.
+
+---
+
+## Product Representation
+
+Products are indexed using their semantic representation together with structured metadata.
+
+Relevant information can include:
+
+- product name;
+- brand;
+- price;
+- availability;
+- fragrance family;
+- olfactory pyramid;
+- usage profile;
+- product URL;
+- semantic text.
+
+The semantic representation provides the textual context used by the embedding model.
+
+---
+
+## Runtime Search
+
+A simplified runtime flow is:
+
+```text
+User Query
+    │
+    ▼
+Semantic Embedding
+    │
+    ▼
+ChromaDB Retrieval
+    │
+    ▼
+Candidate Pool
+    │
+    ├──► Price Filtering
+    │
+    └──► Lexical / Note Processing
+    │
+    ▼
+Relevant Candidates
+```
+
+The search layer can retrieve additional candidates before applying deterministic processing.
+
+This over-fetching approach allows the advisor to work with a larger candidate pool rather than immediately limiting the result set.
+
+---
+
+## Semantic Similarity
+
+Semantic retrieval is based on vector similarity rather than exact string matching.
+
+For example, a request such as:
+
+```text
+"Vorrei qualcosa di fresco e marino per l'estate"
+```
+
+can retrieve products whose descriptions or semantic representations express similar characteristics even when they do not contain the exact same sentence.
+
+---
+
+## Deterministic Filtering
+
+Semantic similarity alone is not sufficient for constraints that require exact logic.
+
+The system can therefore apply deterministic filters after retrieval.
+
+Examples include:
+
+- maximum price;
+- availability;
+- explicit note requirements;
+- product metadata.
+
+This creates a hybrid retrieval process:
+
+```text
+Semantic Retrieval
+       +
+Deterministic Filtering
+       +
+Lexical Relevance
+       ↓
+Final Candidate Set
+```
+
+---
+
+## Explicit Note Matching
+
+When a user explicitly requests a fragrance note, the advisor can apply additional note-oriented processing.
+
+This is useful for queries where the presence of a specific ingredient or olfactory characteristic is a strong requirement.
+
+The process can consider information contained in:
+
+- top notes;
+- heart notes;
+- base notes;
+- fragrance family;
+- product name;
+- semantic description.
+
+---
+
+## Reindexing
+
+The semantic index can be rebuilt with:
+
+```bash
+python src/reindex.py
+```
+
+The reindexing process uses the current `data/catalog.json` as its source.
+
+A typical catalog update therefore follows:
+
+```bash
+python src/ingest.py
+python src/reindex.py
+```
+
+The first command updates the catalog, while the second rebuilds the search index.
+
+---
 
 ## ChromaDB
 
-ChromaDB acts as the vector database for the perfume catalog.
+ChromaDB is used as the vector database for fragrance retrieval.
 
-Each indexed product is associated with:
+The application maintains a fragrance collection containing:
 
-* a product identifier;
-* its semantic text;
-* metadata used by the application.
+- product identifiers;
+- semantic documents;
+- product metadata;
+- embeddings.
 
-The collection is configured to use cosine similarity/distance.
+The exact storage configuration is handled by the indexing and search components.
 
-Conceptually:
+---
 
-```text
-catalog.json
-     ↓
-semantic_text
-     ↓
-Embedding
-     ↓
-ChromaDB collection
-```
+## Search and Recommendation
 
-## Semantic Search
+The search engine does not directly generate the final conversational answer.
 
-A search request is performed through the search engine interface.
-
-The main search parameters include:
+Instead:
 
 ```text
-query
-min_price
-max_price
-n_results
+Search Engine
+      │
+      ▼
+Candidate Fragrances
+      │
+      ▼
+FragranceAdvisor
+      │
+      ▼
+LLM
+      │
+      ▼
+Conversational Response
 ```
 
-The query is converted into an embedding and compared with the embeddings stored in ChromaDB.
-
-The result is a set of products ordered according to semantic relevance.
-
-## Candidate Over-Fetching
-
-The advisor does not necessarily use only the first result returned by the vector database.
-
-Instead, the search layer can retrieve a larger candidate set and subsequently apply deterministic filters.
-
-For example:
-
-```text
-User query
-    ↓
-Semantic search
-    ↓
-12 candidates
-    ↓
-Additional filtering
-    ↓
-Final candidates
-```
-
-This approach allows the application to combine semantic similarity with business constraints such as price or availability.
-
-## Price Filtering
-
-Price constraints can be applied independently of semantic similarity.
-
-This allows the system to search for semantically relevant products while respecting a user's budget.
-
-For example:
-
-```text
-Semantic relevance
-        +
-Price constraint
-        ↓
-Filtered candidates
-```
-
-The final filtering strategy is controlled by the advisor layer.
-
-## Role in the Advisor
-
-The search engine does not generate the final conversational response.
-
-Its responsibility is retrieval.
-
-The overall architecture is therefore:
-
-```text
-             ┌─────────────────┐
-             │  User request   │
-             └────────┬────────┘
-                      ↓
-             ┌─────────────────┐
-             │     Advisor     │
-             └────────┬────────┘
-                      ↓
-             ┌─────────────────┐
-             │  Search Engine  │
-             └────────┬────────┘
-                      ↓
-             ┌─────────────────┐
-             │    ChromaDB     │
-             └────────┬────────┘
-                      ↓
-                Candidates
-                      ↓
-             ┌─────────────────┐
-             │     Advisor     │
-             └────────┬────────┘
-                      ↓
-                    LLM
-                      ↓
-                  Response
-```
-
-This separation keeps retrieval and natural-language generation as distinct responsibilities.
-
-## Current Status
-
-> 🚧 The semantic search implementation is currently used by the advisor and may be further refined as the project evolves.
-
-Changes to the embedding model, product representation, filtering strategy or vector database configuration may affect recommendation quality.
+This separation allows retrieval and response generation to evolve independently.

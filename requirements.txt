@@ -2,3 +2,9 @@ pydantic>=2.0
 python-dotenv
 openai
 chromadb
+sentence-transformers
+fastapi
+uvicorn
+requests
+beautifulsoup4
+pytest

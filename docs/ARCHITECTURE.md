@@ -2,229 +2,259 @@
 
 ## Overview
 
-Fragrance Advisor is a conversational AI system designed to assist users in selecting perfumes from an e-commerce catalog.
+Fragrance Advisor is organized as a modular application in which product ingestion, semantic search, conversational logic, persistence and HTTP communication are handled by separate components.
 
-The current architecture is composed of five main layers:
+The main runtime flow is:
 
 ```text
-                    ┌──────────────────────┐
-                    │      Shopify         │
-                    │   Product Catalog    │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │      ingest.py       │
-                    │  Data ingestion and  │
-                    │     enrichment       │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │    catalog.json      │
-                    │   Structured data    │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │      search.py       │
-                    │ Semantic search +    │
-                    │      ChromaDB        │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-┌────────────────┐    ┌──────────────────────┐
-│   index.html   │───►│       main.py        │
-│    Frontend    │HTTP│       FastAPI        │
-└────────────────┘    └──────────┬───────────┘
-                                 │
-                                 ▼
-                      ┌──────────────────────┐
-                      │      advisor.py      │
-                      │ Conversational logic │
-                      └──────────┬───────────┘
-                                 │
-                    ┌────────────┴────────────┐
-                    ▼                         ▼
-             ┌──────────────┐          ┌──────────────┐
-             │   ChromaDB   │          │    Groq LLM  │
-             │ Search engine│          │   AI model   │
-             └──────────────┘          └──────────────┘
+                    ┌──────────────┐
+                    │   Frontend   │
+                    │  index.html  │
+                    └──────┬───────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │   FastAPI    │
+                    │   main.py    │
+                    └──────┬───────┘
+                           │
+                           ▼
+                 ┌────────────────────┐
+                 │ FragranceAdvisor   │
+                 │    advisor.py      │
+                 └───┬──────┬─────┬──┘
+                     │      │     │
+             ┌───────┘      │     └──────────┐
+             ▼              ▼                ▼
+       ┌───────────┐  ┌───────────┐   ┌────────────┐
+       │  Search   │  │    LLM    │   │  Session   │
+       │  Engine   │  │   Groq    │   │   Store    │
+       └─────┬─────┘  └───────────┘   └─────┬──────┘
+             │                              │
+             ▼                              ▼
+        ┌───────────┐                 ┌──────────┐
+        │ ChromaDB  │                 │  SQLite  │
+        └───────────┘                 └──────────┘
 ```
-
-## Components
-
-### `index.html`
-
-The frontend provides the conversational interface used by the customer.
-
-It contains the HTML, CSS and JavaScript required to:
-
-* display the chat interface;
-* send messages to the backend;
-* display assistant responses;
-* manage the conversational session;
-* provide quick interaction options;
-* handle the restart of a conversation;
-* display product-related links.
-
-The frontend communicates with the backend through the `/chat` API endpoint.
-
-The current development version is designed around the new website integration and is therefore located directly in the repository root.
 
 ---
 
+## Project Components
+
 ### `src/main.py`
 
-`main.py` provides the HTTP API through FastAPI.
+Provides the FastAPI application and exposes the HTTP interface used by the frontend.
 
-Its main responsibility is to act as the bridge between the frontend and the `FragranceAdvisor` class.
+Responsibilities include:
 
-The general request flow is:
-
-```text
-Frontend
-   │
-   │ POST /chat
-   ▼
-FastAPI
-   │
-   ▼
-ChatRequest
-   │
-   ▼
-FragranceAdvisor
-   │
-   ▼
-Response
-```
-
-The API receives the user message together with session and optional filtering information, then delegates the actual conversational logic to `advisor.py`.
+- application initialization;
+- CORS configuration;
+- request validation;
+- `/chat` endpoint handling;
+- communication with `FragranceAdvisor`.
 
 ---
 
 ### `src/advisor.py`
 
-`advisor.py` contains the main conversational logic of the application.
-
-The central class is:
-
-```python
-FragranceAdvisor
-```
+Contains the central `FragranceAdvisor` class.
 
 It coordinates:
 
-* conversation state;
-* guided and free conversation modes;
-* interpretation of user requests;
-* semantic search;
-* price constraints;
-* candidate selection;
-* interaction with the language model;
-* generation of the final response.
+- conversation state;
+- guided and free-form interaction;
+- user preferences;
+- product context;
+- semantic retrieval;
+- deterministic filtering;
+- recommendation generation;
+- LLM interaction;
+- session persistence.
 
-This module represents the main orchestration layer of the application.
+The advisor acts as the orchestration layer between the API, search engine, LLM and session store.
 
 ---
 
 ### `src/search.py`
 
-`search.py` implements the semantic search engine.
+Implements the semantic fragrance retrieval layer.
 
-The catalog is transformed into searchable embeddings and stored in ChromaDB.
+It:
 
-The search layer is responsible for finding products that are semantically relevant to a user's request.
+1. loads the product catalog;
+2. creates or accesses the ChromaDB collection;
+3. generates embeddings;
+4. performs semantic retrieval;
+5. applies deterministic filters;
+6. performs additional result processing.
 
-The current embedding model is:
+The search engine is used by the advisor when product candidates are required.
 
-```text
-paraphrase-multilingual-MiniLM-L12-v2
-```
+---
 
-and cosine distance is used for similarity.
+### `src/session_store.py`
+
+Provides persistent storage for conversational sessions using SQLite.
+
+The session store is responsible for saving and retrieving information such as:
+
+- conversation history;
+- currently active perfume;
+- guided-flow state;
+- session timestamps.
+
+The backend can therefore reconstruct a session after the in-memory advisor state is lost or the application is restarted.
 
 ---
 
 ### `src/ingest.py`
 
-`ingest.py` implements the product data ingestion pipeline.
+Implements the product data ingestion pipeline.
 
-Its main responsibilities are:
+It retrieves product information and transforms it into the structured datasets consumed by the rest of the application.
 
-1. retrieve products from the Shopify catalog;
-2. clean product descriptions;
-3. extract product information;
-4. identify olfactory notes;
-5. enrich products with structured information;
-6. generate semantic representations;
-7. produce the local JSON catalog.
+The main output is:
 
-This module is primarily used to prepare or update the dataset rather than during normal chat interactions.
+```text
+data/catalog.json
+```
+
+Additional files contain out-of-stock and rejected products.
+
+---
+
+### `src/reindex.py`
+
+Rebuilds the persistent ChromaDB index from the current catalog.
+
+Its role is intentionally separate from ingestion:
+
+```text
+ingest.py
+    ↓
+catalog.json
+    ↓
+reindex.py
+    ↓
+ChromaDB index
+```
+
+This allows the catalog and the semantic index to be updated independently.
+
+---
+
+### `index.html`
+
+Provides the browser-based chat interface.
+
+The frontend:
+
+- displays the conversation;
+- manages the client-side session identifier;
+- sends messages to the FastAPI backend;
+- displays recommendations and product information;
+- manages chat interaction controls.
 
 ---
 
 ## Data Flow
 
-The complete application can be viewed as two connected pipelines.
-
-### Catalog pipeline
+### Catalog flow
 
 ```text
-Shopify
-   ↓
-ingest.py
-   ↓
-Product cleaning
-   ↓
-Data extraction
-   ↓
-Olfactory information
-   ↓
-Semantic enrichment
-   ↓
+Product Source
+      │
+      ▼
+  ingest.py
+      │
+      ▼
 catalog.json
-   ↓
-search.py
-   ↓
-ChromaDB
+      │
+      ▼
+  reindex.py
+      │
+      ▼
+ ChromaDB
 ```
 
-### User interaction pipeline
+### Conversation flow
 
 ```text
 User
-   ↓
-index.html
-   ↓
-POST /chat
-   ↓
-main.py
-   ↓
+ │
+ ▼
+Frontend
+ │
+ ▼
+FastAPI
+ │
+ ▼
 FragranceAdvisor
-   ↓
-Semantic Search
-   ↓
-Candidate perfumes
-   ↓
-LLM
-   ↓
-Assistant response
-   ↓
-index.html
+ │
+ ├──► SessionStore ──► SQLite
+ │
+ ├──► SearchEngine ──► ChromaDB
+ │
+ └──► LLM ───────────► Groq
+ │
+ ▼
+Response
+ │
+ ▼
+Frontend
 ```
+
+---
+
+## Session Persistence
+
+Sessions use a two-level model.
+
+The frontend stores and sends a `session_id`, while the backend uses that identifier to access persistent session data through `SessionStore`.
+
+```text
+Browser
+   │
+   │ session_id
+   ▼
+FastAPI
+   │
+   ▼
+FragranceAdvisor
+   │
+   ▼
+SessionStore
+   │
+   ▼
+SQLite
+```
+
+The SQLite database stores the state required to reconstruct an ongoing conversation.
+
+---
 
 ## External Services
 
-The current architecture interacts with external services for:
+The application can communicate with external services for:
 
-* product catalog retrieval from Shopify;
-* language-model inference through the Groq API.
+- product data ingestion;
+- LLM inference;
+- embedding generation.
 
-Sensitive credentials such as API keys must be provided through environment variables and must not be committed to the repository.
+API credentials are supplied through environment variables and are not part of the source code.
 
-## Current Status
+---
 
-> 🚧 The project is currently under active development on `feature/new-site`.
+## Design Principles
 
-The architecture described here represents the current implementation and may change as the new website integration is completed.
+The architecture separates responsibilities between:
+
+- **data acquisition**;
+- **data transformation**;
+- **semantic retrieval**;
+- **conversation orchestration**;
+- **LLM generation**;
+- **session persistence**;
+- **HTTP communication**.
+
+This separation allows individual components to evolve without requiring the entire application to be rewritten.

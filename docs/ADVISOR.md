@@ -2,289 +2,289 @@
 
 ## Overview
 
-The main conversational logic of Fragrance Advisor is implemented in:
+`FragranceAdvisor` is the central orchestration component of the application.
 
-```text
-src/advisor.py
-```
+It receives user messages, maintains conversational context, determines the appropriate interaction flow, retrieves relevant fragrances and generates the final response through the configured LLM.
 
-The central component is the `FragranceAdvisor` class.
-
-The advisor acts as the orchestration layer between:
-
-* user messages;
-* conversation state;
-* guided recommendation flow;
-* free conversation;
-* semantic search;
-* product filtering;
-* the language model.
-
-Its main responsibility is to transform a user's request into a set of relevant perfume candidates and an appropriate conversational response.
+The advisor combines deterministic application logic with semantic search and LLM reasoning.
 
 ---
 
-## Main Components
+## Responsibilities
 
-The advisor integrates two main external components:
+The advisor is responsible for:
 
-```text
-FragranceAdvisor
-│
-├── FragranceSearchEngine
-│       └── ChromaDB
-│
-└── LLM client
-        └── Groq API
-```
-
-The search engine is responsible for retrieving relevant products.
-
-The language model is responsible for interpreting conversational input and generating natural-language responses.
+- managing conversation state;
+- handling guided and free-form interactions;
+- interpreting user preferences;
+- identifying relevant products;
+- applying price constraints;
+- handling product references and alternatives;
+- maintaining the active product context;
+- communicating with the LLM;
+- persisting session state.
 
 ---
 
-## Conversation Modes
-
-The current implementation supports two main interaction modes.
+## Interaction Modes
 
 ### Guided Mode
 
-Guided mode progressively collects information from the user before performing a recommendation.
+The guided flow progressively collects relevant information from the customer.
 
-The information gathered can include:
+Typical information includes:
 
-* olfactory preferences;
-* intended recipient;
-* usage occasion;
-* budget;
-* other relevant constraints.
+- olfactory preferences;
+- intended recipient;
+- occasion;
+- budget.
 
-A simplified flow is:
+The advisor uses the collected information to progressively narrow the recommendation space.
+
+---
+
+### Free-form Mode
+
+Users can interact naturally without following a predefined sequence.
+
+Examples include:
 
 ```text
-User
- ↓
-Olfactory preferences
- ↓
-Recipient
- ↓
-Occasion
- ↓
-Budget
- ↓
-Semantic search
- ↓
-Candidate perfumes
- ↓
-Recommendation
+"Vorrei qualcosa di fresco per l'estate."
+
+"Mi consigli qualcosa di simile a questo?"
+
+"Hai qualcosa di più economico?"
+
+"Preferisco qualcosa di legnoso ma non troppo intenso."
 ```
 
-The exact progression is managed by the advisor's conversation state.
+The advisor interprets the request and determines which information or products are relevant.
 
 ---
 
-### Free Mode
+## Conversation State
 
-Free mode allows the user to interact with the advisor using natural language without following a strictly predefined questionnaire.
+The advisor maintains contextual information throughout a session.
 
-The advisor can interpret information contained in the user's message and use it to determine whether a new search is required.
-
-For example, a user may:
-
-* describe the type of perfume they want;
-* mention a specific perfume;
-* ask for alternatives;
-* introduce a budget constraint;
-* continue discussing a previously suggested product.
-
-The advisor maintains conversational context through the session.
-
----
-
-## Session Management
-
-Each conversation is associated with a session identifier.
-
-The session allows the backend to distinguish different conversations and preserve relevant conversational state.
-
-Conceptually:
+Relevant state can include:
 
 ```text
-session_id
-    ↓
-Conversation state
-    ↓
-User messages
-    ↓
-Advisor decisions
-    ↓
-Recommendations
+Session
+├── conversation history
+├── active perfume
+├── guided-flow state
+└── timestamps
 ```
 
-The frontend stores the session identifier in browser `sessionStorage` and sends it with subsequent requests.
+The active perfume allows follow-up requests to refer to a previously discussed product.
 
-A new session can be created when the user restarts the conversation.
-
----
-
-## User Intent and Constraints
-
-The advisor processes information contained in the user's messages and converts relevant information into search constraints.
-
-One of the most explicit constraints is price.
-
-The advisor can translate a budget expressed through the guided flow into numerical limits that can be passed to the search engine.
-
-Conceptually:
-
-```text
-User budget
-     ↓
-Budget interpretation
-     ↓
-min_price / max_price
-     ↓
-Semantic search
-```
-
-This allows semantic relevance and price constraints to be handled together.
-
----
-
-## Candidate Retrieval
-
-The advisor uses the semantic search engine to retrieve candidate products.
-
-The current implementation intentionally retrieves more products than may ultimately be presented to the user.
-
-For example, the advisor can retrieve a larger candidate pool and subsequently perform additional processing.
-
-```text
-User request
-     ↓
-Semantic search
-     ↓
-Candidate pool
-     ↓
-Deterministic filtering
-     ↓
-Relevant products
-```
-
-This separation allows the system to avoid relying exclusively on the vector similarity score.
-
----
-
-## Product Context
-
-When a product is being discussed, the advisor can maintain information about the product within the conversation.
-
-This allows follow-up messages to refer to a previously discussed perfume without necessarily requiring the user to repeat its complete name.
-
-The conversational context can therefore be used for interactions such as:
+For example:
 
 ```text
 User:
-"Qualcosa di simile a questo ma più economico"
+"Parlami di questo profumo."
 
-        ↓
-
-Advisor:
-Current product + "più economico"
-        ↓
-Search with price constraint
-        ↓
-Alternative products
+User:
+"Hai qualcosa di simile ma meno costoso?"
 ```
+
+The second request can be interpreted using the previously established product context.
 
 ---
 
-## Language Model
+## Session Persistence
 
-The advisor uses an OpenAI-compatible client configured to communicate with the Groq API.
-
-The current model configured in the implementation is:
+Session state is persisted through `SessionStore`.
 
 ```text
-openai/gpt-oss-20b
+FragranceAdvisor
+       │
+       ▼
+ SessionStore
+       │
+       ▼
+    SQLite
 ```
 
-The language model is used for tasks such as:
+The store supports saving and retrieving session information by `session_id`.
 
-* interpreting conversational input;
-* extracting information from natural language;
-* assisting with product-data extraction;
-* generating the final assistant response.
+This allows the backend to restore conversational context after the in-memory application state has been lost.
 
-The LLM should therefore be considered a component of the orchestration layer rather than the database or search engine itself.
+Persistent information includes:
 
----
-
-## Search and Generation Separation
-
-A key architectural characteristic is the separation between retrieval and generation.
-
-The system does not simply ask the LLM to invent or select perfumes from its own knowledge.
-
-Instead:
-
-```text
-User request
-     ↓
-Advisor
-     ↓
-Semantic Search
-     ↓
-Real catalog candidates
-     ↓
-Advisor
-     ↓
-LLM
-     ↓
-Natural-language response
-```
-
-This architecture allows the recommendations to be grounded in the available product catalog.
+- conversation history;
+- active product;
+- guided-flow state;
+- last update timestamp.
 
 ---
 
 ## Recommendation Flow
 
-A simplified recommendation cycle is:
+At a high level, recommendation generation follows this process:
 
 ```text
-1. Receive user message
-          ↓
-2. Identify conversational context
-          ↓
-3. Extract relevant constraints
-          ↓
-4. Determine whether a search is required
-          ↓
-5. Query semantic search engine
-          ↓
-6. Retrieve candidate products
-          ↓
-7. Apply additional constraints
-          ↓
-8. Provide product context to the LLM
-          ↓
-9. Generate assistant response
-          ↓
-10. Return response to frontend
+User Message
+     │
+     ▼
+Intent / Context Analysis
+     │
+     ▼
+Requirement Extraction
+     │
+     ▼
+Candidate Retrieval
+     │
+     ▼
+Deterministic Filtering
+     │
+     ▼
+Candidate Context
+     │
+     ▼
+LLM Response Generation
+     │
+     ▼
+User Response
 ```
 
-Not every user message necessarily triggers a new product search.
+The LLM is therefore not used as the sole source of product selection.
 
-Conversational messages can be handled using the existing session context when appropriate.
+Product candidates are retrieved from the catalog and processed before being passed to the generation layer.
 
 ---
 
-## Current Status
+## Semantic Retrieval
 
-> 🚧 `FragranceAdvisor` is under active development.
+When product retrieval is required, the advisor delegates the search operation to the search engine.
 
-The guided flow, free conversation behavior, candidate filtering and prompt strategy may change as the project evolves.
+The search layer can combine:
 
-This document describes the current implementation rather than a final product specification.
+- semantic similarity;
+- price constraints;
+- explicit fragrance-note matching;
+- lexical relevance;
+- product metadata.
+
+The advisor can request more candidates than are ultimately shown to the user, allowing additional deterministic processing before generating the response.
+
+---
+
+## Product Context
+
+The advisor can maintain an active product throughout a conversation.
+
+This enables contextual requests such as:
+
+- asking for additional information;
+- requesting similar products;
+- requesting cheaper alternatives;
+- changing a previously specified constraint;
+- comparing products.
+
+The active product is stored as part of the persistent session state.
+
+---
+
+## Price Constraints
+
+The advisor supports maximum-price requirements.
+
+Price constraints can originate from:
+
+- the guided flow;
+- explicit user messages;
+- API parameters.
+
+Candidates outside the applicable price constraint can be removed before response generation.
+
+---
+
+## LLM Integration
+
+The advisor communicates with an OpenAI-compatible API endpoint configured for Groq.
+
+The LLM receives:
+
+- the user's current request;
+- relevant conversation context;
+- retrieved product candidates;
+- applicable constraints.
+
+The generated response is then returned through the API.
+
+The model is used primarily for:
+
+- natural-language understanding;
+- conversational response generation;
+- contextual explanation of recommendations.
+
+Deterministic application logic remains responsible for structured operations such as filtering and session management.
+
+---
+
+## Error and Edge Cases
+
+The advisor must handle cases such as:
+
+- no suitable products found;
+- invalid or incomplete user requirements;
+- impossible price constraints;
+- references to unavailable products;
+- changes to previously specified requirements;
+- empty or malformed requests.
+
+When the available catalog cannot satisfy a request, the advisor can communicate the limitation instead of fabricating a product recommendation.
+
+---
+
+## Session Lifecycle
+
+A typical session follows this lifecycle:
+
+```text
+New session
+    │
+    ▼
+Receive message
+    │
+    ▼
+Load persistent state
+    │
+    ▼
+Process request
+    │
+    ▼
+Generate response
+    │
+    ▼
+Update state
+    │
+    ▼
+Persist session
+    │
+    ▼
+Return response
+```
+
+Sessions can subsequently be loaded again using the same `session_id`.
+
+---
+
+## Separation of Responsibilities
+
+The advisor does not directly implement every operation required by the application.
+
+Instead:
+
+| Component          | Responsibility             |
+| ------------------ | -------------------------- |
+| `main.py`          | HTTP/API layer             |
+| `advisor.py`       | Conversation orchestration |
+| `search.py`        | Product retrieval          |
+| `session_store.py` | Persistent session storage |
+| Groq               | LLM inference              |
+| ChromaDB           | Vector retrieval           |
+
+This separation keeps conversational logic independent from storage and transport mechanisms.

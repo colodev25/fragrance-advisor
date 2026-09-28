@@ -4,7 +4,7 @@
 
 Fragrance Advisor is an AI-powered assistant designed to help customers discover perfumes based on their preferences, needs and context.
 
-The system combines **natural-language conversation**, **semantic search** and **structured fragrance data** to generate personalized recommendations for an e-commerce environment.
+The system combines **natural-language conversation**, **semantic search**, **structured fragrance data** and **LLM-based reasoning** to generate personalized recommendations for an e-commerce environment.
 
 ---
 
@@ -17,7 +17,9 @@ The system combines **natural-language conversation**, **semantic search** and *
 - 💰 Budget and price constraints
 - 🧴 Product context and alternative suggestions
 - 🌿 Olfactory notes and fragrance families
+- 💾 Persistent conversation sessions
 - 🌐 FastAPI backend for website integration
+- 🧪 Unit, integration and end-to-end testing
 
 ---
 
@@ -37,13 +39,15 @@ FragranceAdvisor
    │
    ├── Semantic Search ──► ChromaDB
    │
-   └── LLM + Conversation Logic
+   ├── LLM ──────────────► Groq
+   │
+   └── Session Store ────► SQLite
    │
    ▼
 Personalized Recommendations
 ```
 
-The advisor interprets the customer's request, retrieves relevant fragrances from the catalog, applies deterministic constraints such as price, and uses the resulting product context to generate the final response.
+The advisor interprets the customer's request, retrieves relevant fragrances, applies deterministic constraints and uses the resulting context to generate the final response.
 
 ---
 
@@ -55,7 +59,9 @@ The advisor interprets the customer's request, retrieves relevant fragrances fro
 | AI              | Groq, OpenAI-compatible API     |
 | Semantic Search | ChromaDB, Sentence Transformers |
 | Frontend        | HTML, CSS, JavaScript           |
+| Persistence     | SQLite                          |
 | Data            | JSON                            |
+| Testing         | pytest                          |
 
 ---
 
@@ -64,26 +70,41 @@ The advisor interprets the customer's request, retrieves relevant fragrances fro
 ```text
 fragrance-advisor/
 │
-├── data/              # Product datasets
+├── data/
+│   ├── catalog.json
+│   ├── out_of_stock.json
+│   └── scartati.json
 │
-├── docs/              # Project documentation
+├── docs/
 │   ├── ADVISOR.md
 │   ├── API.md
 │   ├── ARCHITECTURE.md
 │   ├── DATA_PIPELINE.md
-│   └── SEARCH_ENGINE.md
+│   ├── SEARCH_ENGINE.md
+│   └── TESTING.md
 │
 ├── src/
-│   ├── advisor.py     # Recommendation engine
-│   ├── ingest.py      # Data ingestion
-│   ├── main.py        # FastAPI application
-│   └── search.py      # Semantic search
+│   ├── advisor.py
+│   ├── ingest.py
+│   ├── main.py
+│   ├── reindex.py
+│   ├── search.py
+│   └── session_store.py
 │
-├── index.html         # Web interface
+├── tests/
+│   ├── test_api.py
+│   ├── test_parsers.py
+│   ├── test_scenarios_e2e.py
+│   └── test_session_store.py
+│
+├── index.html
+├── pytest.ini
 ├── requirements.txt
 ├── .gitignore
 └── README.md
 ```
+
+> `sessions.db` is generated locally by the application and should not be committed to version control.
 
 ---
 
@@ -130,7 +151,21 @@ GROQ_API_KEY=your_api_key_here
 
 > ⚠️ Never commit `.env` or API keys to the repository.
 
-### 5. Start the backend
+### 5. Prepare the product catalog
+
+If the catalog needs to be updated, run the ingestion pipeline:
+
+```bash
+python src/ingest.py
+```
+
+Then rebuild the semantic search index:
+
+```bash
+python src/reindex.py
+```
+
+### 6. Start the backend
 
 ```bash
 uvicorn src.main:app --reload
@@ -144,17 +179,32 @@ http://127.0.0.1:8000
 
 ---
 
+## 🧪 Testing
+
+The project includes unit, API, session persistence and end-to-end tests.
+
+Run the test suite with:
+
+```bash
+pytest
+```
+
+For details about the available test categories and scenarios, see the testing documentation.
+
+---
+
 ## 📚 Documentation
 
 The detailed technical documentation is organized by component:
 
-| Document                                   | Description                                  |
-| ------------------------------------------ | -------------------------------------------- |
-| **[Architecture](docs/ARCHITECTURE.md)**   | System structure and component relationships |
-| **[Data Pipeline](docs/DATA_PIPELINE.md)** | Product ingestion and data processing        |
-| **[Search Engine](docs/SEARCH_ENGINE.md)** | Semantic search and vector retrieval         |
-| **[Advisor](docs/ADVISOR.md)**             | Conversation and recommendation logic        |
-| **[API](docs/API.md)**                     | Backend endpoints and API usage              |
+| Document                                   | Description                                    |
+| ------------------------------------------ | ---------------------------------------------- |
+| **[Architecture](docs/ARCHITECTURE.md)**   | System structure and component relationships   |
+| **[Data Pipeline](docs/DATA_PIPELINE.md)** | Product ingestion and data processing          |
+| **[Search Engine](docs/SEARCH_ENGINE.md)** | Semantic retrieval and result processing       |
+| **[Advisor](docs/ADVISOR.md)**             | Conversation, recommendation and session logic |
+| **[API](docs/API.md)**                     | Backend endpoints and API usage                |
+| **[Testing](docs/TESTING.md)**             | Test structure, scenarios and execution        |
 
 The README provides a high-level overview, while the documentation contains the implementation details.
 
@@ -164,19 +214,22 @@ The README provides a high-level overview, while the documentation contains the 
 
 **Development — `feature/new-site`**
 
-The project is currently being adapted for integration with a new website.
+The project is currently being developed and adapted for integration with a new website.
 
-Core components such as the conversational advisor, semantic search and backend API are implemented, while the integration and other project components are still under development and refinement.
+The main conversational, search, persistence and API components are implemented, while the integration and other project components continue to evolve.
+
+The documentation describes the current implementation and may change together with the codebase.
 
 ---
 
 ## 🔮 Future Improvements
 
-- Recommendation quality improvements
-- More advanced preference modeling
-- Expanded product filtering (format, versions...)
-- Frontend integration improvements
-- Automated testing and evaluation
+- Expanded recommendation evaluation
+- More advanced fragrance preference modeling
+- Additional product filtering
+- Improved frontend integration
+- Expanded test coverage
+- Automated CI testing
 - Performance and scalability improvements
 - Production deployment configuration
 
@@ -186,7 +239,9 @@ Core components such as the conversational advisor, semantic search and backend 
 
 API credentials and other secrets must be stored in environment variables and must not be committed to Git.
 
-The `.env` file is excluded from version control through `.gitignore`.
+The `.env` file and local session database are excluded from version control through `.gitignore`.
+
+If a credential is accidentally exposed, it should be revoked and regenerated immediately.
 
 ---
 
