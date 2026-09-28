@@ -67,7 +67,7 @@ The advisor interprets the customer's request, retrieves relevant fragrances, ap
 
 ## 📁 Project Structure
 
-```text
+````text
 fragrance-advisor/
 │
 ├── data/
@@ -102,11 +102,7 @@ fragrance-advisor/
 ├── requirements.txt
 ├── .gitignore
 └── README.md
-```
 
-> `sessions.db` is generated locally by the application and should not be committed to version control.
-
----
 
 ## 🚀 Getting Started
 
@@ -115,7 +111,7 @@ fragrance-advisor/
 ```bash
 git clone https://github.com/colodev25/fragrance-advisor.git
 cd fragrance-advisor
-```
+````
 
 To work on the current development branch:
 
