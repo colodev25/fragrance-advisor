@@ -6,5 +6,5 @@ __pycache__/
 .DS_Store
 chroma_db/
 data/scartati.json
-data/sessions.db*
+data/sessions.db
 data/*.db
