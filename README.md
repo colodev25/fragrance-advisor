@@ -10,14 +10,14 @@ The system combines **natural-language conversation**, **semantic search** and *
 
 ## ✨ Features
 
-* 💬 Conversational fragrance discovery
-* 🌸 Personalized perfume recommendations
-* 🧠 Semantic search over the product catalog
-* 🎯 Guided and free-form conversation modes
-* 💰 Budget and price constraints
-* 🧴 Product context and alternative suggestions
-* 🌿 Olfactory notes and fragrance families
-* 🌐 FastAPI backend for website integration
+- 💬 Conversational fragrance discovery
+- 🌸 Personalized perfume recommendations
+- 🧠 Semantic search over the product catalog
+- 🎯 Guided and free-form conversation modes
+- 💰 Budget and price constraints
+- 🧴 Product context and alternative suggestions
+- 🌿 Olfactory notes and fragrance families
+- 🌐 FastAPI backend for website integration
 
 ---
 
@@ -172,13 +172,13 @@ Core components such as the conversational advisor, semantic search and backend 
 
 ## 🔮 Future Improvements
 
-* Recommendation quality improvements
-* More advanced preference modeling
-* Expanded product filtering
-* Frontend integration improvements
-* Automated testing and evaluation
-* Performance and scalability improvements
-* Production deployment configuration
+- Recommendation quality improvements
+- More advanced preference modeling
+- Expanded product filtering (format, versions...)
+- Frontend integration improvements
+- Automated testing and evaluation
+- Performance and scalability improvements
+- Production deployment configuration
 
 ---
 
