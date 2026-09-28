@@ -11,6 +11,11 @@ try:
 except ModuleNotFoundError:
     from search import FragranceSearchEngine
 
+try:
+    from src.session_store import SessionStore
+except ModuleNotFoundError:
+    from session_store import SessionStore
+
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -80,7 +85,8 @@ STOPWORDS_NOTES = {
 
 
 class FragranceAdvisor:
-    def __init__(self):
+    def __init__(self, session_store: SessionStore = None):
+        self.session_store = session_store or SessionStore()
         self.search_engine = FragranceSearchEngine()
         groq_key = os.getenv("GROQ_API_KEY")
         if not groq_key:
@@ -575,15 +581,24 @@ class FragranceAdvisor:
             return "CAMBIA" if "CAMBIA" in decision else "VALUTA"
         except Exception:
             return "VALUTA"
-
+        
     def advise(self, user_query: str, session_id: str = "default", max_price: float = None, step_override: int = None) -> dict:
         if not session_id:
             session_id = "default"
 
+        # 1. RECUPERO STATO DA SQLITE (Chat libera + Percorso guidato)
+        # Sincronizza lo storico dei messaggi, il profumo attivo (per VALUTA/CAMBIA) e lo step
+        sess_data = self.session_store.get_session(session_id)
+        self.sessions[session_id] = sess_data["history"]
+        self.active_perfumes[session_id] = sess_data["active_perfume"]
+        self.guided_states[session_id] = sess_data["guided_state"]
+
         query_clean = user_query.strip()
         q_lower = query_clean.lower()
         state = self.guided_states[session_id]
+        response = None
 
+        # --- TRIGGER DI RESET / AVVIO ---
         start_guided_triggers = [
             "guidami", "guida", "ricomincia", "riparti",
             "percorso guidato", "ricomincia percorso", "inizia guida"
@@ -592,7 +607,7 @@ class FragranceAdvisor:
             state["step"] = 1
             state["answers"] = []
             self.active_perfumes[session_id] = None
-            return {
+            response = {
                 "reply": "Perfetto! Ripartiamo con 4 brevi domande per selezionare le fragranze ideali per te.\n\n" + GUIDED_STEPS[1]["question"],
                 "options": GUIDED_STEPS[1]["options"],
                 "products": [],
@@ -604,10 +619,10 @@ class FragranceAdvisor:
             "chiedi liberamente", "fai una domanda libera", "domanda libera",
             "chat libera", "parla liberamente"
         ]
-        if any(t in q_lower for t in start_free_triggers):
+        if response is None and any(t in q_lower for t in start_free_triggers):
             state["step"] = None
             state["answers"] = []
-            return {
+            response = {
                 "reply": "Certamente! Dimmi pure: quale fragranza, nota olfattiva o sensazione stai cercando?",
                 "options": [],
                 "products": [],
@@ -615,13 +630,14 @@ class FragranceAdvisor:
                 "mode": "free"
             }
 
+        # --- PERCORSO GUIDATO ---
         effective_step = step_override if step_override is not None else state["step"]
 
-        if effective_step is not None:
+        if response is None and effective_step is not None:
             if effective_step == 1:
                 state["answers"] = [query_clean]
                 state["step"] = 2
-                return {
+                response = {
                     "reply": GUIDED_STEPS[2]["question"],
                     "options": GUIDED_STEPS[2]["options"],
                     "products": [],
@@ -632,7 +648,7 @@ class FragranceAdvisor:
                 ans0 = state["answers"][0] if len(state["answers"]) > 0 else "🍋 Fresco o Agrumato"
                 state["answers"] = [ans0, query_clean]
                 state["step"] = 3
-                return {
+                response = {
                     "reply": GUIDED_STEPS[3]["question"],
                     "options": GUIDED_STEPS[3]["options"],
                     "products": [],
@@ -644,7 +660,7 @@ class FragranceAdvisor:
                 ans1 = state["answers"][1] if len(state["answers"]) > 1 else "Unisex"
                 state["answers"] = [ans0, ans1, query_clean]
                 state["step"] = 4
-                return {
+                response = {
                     "reply": GUIDED_STEPS[4]["question"],
                     "options": GUIDED_STEPS[4]["options"],
                     "products": [],
@@ -657,9 +673,21 @@ class FragranceAdvisor:
                 ans2 = state["answers"][2] if len(state["answers"]) > 2 else "Tutti i giorni"
                 state["answers"] = [ans0, ans1, ans2, query_clean]
                 state["step"] = None
-                return self._generate_guided_recommendations(state["answers"], session_id)
+                response = self._generate_guided_recommendations(state["answers"], session_id)
 
-        return self._handle_free_chat(user_query, session_id, max_price)
+        # --- CHAT LIBERA (Entity match, VALUTA follow-up, CAMBIA ricerca ibrida) ---
+        if response is None:
+            response = self._handle_free_chat(user_query, session_id, max_price)
+
+        # 2. SALVATAGGIO STATO SU SQLITE (Eseguito SEMPRE, sia per free che per guided)
+        self.session_store.save_session(
+            session_id=session_id,
+            history=self.sessions[session_id],
+            active_perfume=self.active_perfumes.get(session_id),
+            guided_state=self.guided_states[session_id]
+        )
+
+        return response
 
     def _generate_guided_recommendations(self, answers: list, session_id: str) -> dict:
         family_raw = answers[0] if len(answers) > 0 else "🍋 Fresco o Agrumato"
@@ -1101,3 +1129,12 @@ class FragranceAdvisor:
                 self.sessions[session_id].append({"role": "assistant", "content": reply})
 
                 return {"reply": reply, "options": [], "products": product_payload, "step": None, "mode": "free"}
+            
+    def reset_session(self, session_id: str):
+        """Cancella la cronologia e lo stato della sessione sia in memoria che su SQLite."""
+        if not session_id:
+            return
+        self.session_store.clear_session(session_id)
+        self.sessions.pop(session_id, None)
+        self.active_perfumes.pop(session_id, None)
+        self.guided_states.pop(session_id, None)
