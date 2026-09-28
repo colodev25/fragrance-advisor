@@ -2,6 +2,8 @@
 main.py - FastAPI Server per il Consulente Olfattivo
 """
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,10 +13,13 @@ from src.advisor import FragranceAdvisor
 
 app = FastAPI(title="Consulente Olfattivo AI")
 
-# Configurazione CORS (consente chiamate da file locali o domini esterni)
+# Legge la variabile o usa "*" come fallback
+raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
