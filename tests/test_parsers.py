@@ -1,15 +1,25 @@
 import pytest
+from collections import defaultdict
+from unittest.mock import MagicMock
 from src.ingest import clean_single_note, is_valid_note_item, clean_note_items
 from src.advisor import FragranceAdvisor, STOPWORDS_NOTES, CANONICAL_NOTES
+from src.session_store import SessionStore
 
 
 @pytest.fixture
-def advisor_mock():
-    """Crea un'istanza leggera di FragranceAdvisor senza caricare ChromaDB."""
-    adv = FragranceAdvisor.__new__(FragranceAdvisor)
-    adv.catalog_notes = {"cannella", "vaniglia", "bergamotto", "lime", "pepe rosa"}
-    adv.catalog_products = []
-    return adv
+def advisor_mock(tmp_path):
+    """Istanzia un vero FragranceAdvisor isolato su database temporaneo,
+    mockando solo le chiamate di rete esterne (Groq) per velocità."""
+    db_file = tmp_path / "parsers_test_sessions.db"
+    store = SessionStore(db_path=str(db_file))
+
+    # Chiamata al VERO costruttore: inizializza catalogo, note, regex e session store
+    advisor = FragranceAdvisor(session_store=store)
+
+    # Si isolano solo le chiamate HTTP di rete per non consumare token nei test dei parser
+    advisor.client = MagicMock()
+
+    return advisor
 
 
 # ==============================================================================

@@ -6,9 +6,9 @@ from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, 
 
 logger = logging.getLogger("fragrance_advisor.llm")
 
-# Modelli 100% gratuiti disponibili sul Developer Free Tier di Groq
-PRIMARY_FREE_MODEL = os.getenv("GROQ_PRIMARY_MODEL", "llama-3.3-70b-versatile")
-FALLBACK_FREE_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.1-8b-instant")
+# Modelli attivi e verificati sull'endpoint Groq
+PRIMARY_FREE_MODEL = os.getenv("GROQ_PRIMARY_MODEL", "openai/gpt-oss-120b")
+FALLBACK_FREE_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b")
 
 
 class ResilientGroqClient:

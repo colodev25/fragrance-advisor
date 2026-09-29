@@ -16,6 +16,11 @@ try:
 except ModuleNotFoundError:
     from session_store import SessionStore
 
+try:
+    from src.llm_resilience import ResilientGroqClient, PRIMARY_FREE_MODEL, FALLBACK_FREE_MODEL
+except ModuleNotFoundError:
+    from llm_resilience import ResilientGroqClient, PRIMARY_FREE_MODEL, FALLBACK_FREE_MODEL
+
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -96,6 +101,7 @@ class FragranceAdvisor:
             base_url="https://api.groq.com/openai/v1",
             api_key=groq_key
         )
+        self._resilient_client = ResilientGroqClient(self.client)
 
         self.sessions = defaultdict(list)
         self.active_perfumes = {}
@@ -123,6 +129,13 @@ class FragranceAdvisor:
 
             except Exception as e:
                 print(f"[ADVISOR] Avviso: caricamento catalog.json fallito: {e}")
+
+    @property
+    def resilient_client(self) -> ResilientGroqClient:
+        """Sincronizza dinamicamente il wrapper se self.client viene sostituito da un mock nei test."""
+        if self._resilient_client.client != self.client:
+            self._resilient_client = ResilientGroqClient(self.client)
+        return self._resilient_client
 
     def _resolve_macro_family(self, family_ans: str) -> tuple[str, list[str]]:
         """Riconosce la macro-categoria scelta e restituisce le relative sotto-famiglie."""
@@ -571,13 +584,14 @@ class FragranceAdvisor:
         )
 
         try:
-            res = self.client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+            decision = self.resilient_client.create_completion(
                 messages=[{"role": "user", "content": prompt}],
+                primary_model=FALLBACK_FREE_MODEL,
+                fallback_model=FALLBACK_FREE_MODEL,
                 temperature=0.0,
-                max_tokens=4
-            )
-            decision = res.choices[0].message.content.strip().upper()
+                max_tokens=100,
+                graceful_fallback_text="VALUTA"
+            ).upper()
             return "CAMBIA" if "CAMBIA" in decision else "VALUTA"
         except Exception:
             return "VALUTA"
@@ -585,6 +599,10 @@ class FragranceAdvisor:
     def advise(self, user_query: str, session_id: str = "default", max_price: float = None, step_override: int = None) -> dict:
         if not session_id:
             session_id = "default"
+
+        # Se l'istanza è stata creata senza passare da __init__ (es. in fixture mock dei test)
+        if not hasattr(self, "session_store") or self.session_store is None:
+            self.session_store = SessionStore()
 
         # 1. RECUPERO STATO DA SQLITE (Chat libera + Percorso guidato)
         # Sincronizza lo storico dei messaggi, il profumo attivo (per VALUTA/CAMBIA) e lo step
@@ -810,12 +828,13 @@ class FragranceAdvisor:
             "NON elencare prezzi o link (saranno visualizzati direttamente nelle schede prodotto sottostanti)."
         )
 
-        response = self.client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+        reply = self.resilient_client.create_completion(
             messages=[{"role": "user", "content": prompt}],
+            primary_model=PRIMARY_FREE_MODEL,
+            fallback_model=FALLBACK_FREE_MODEL,
             temperature=0.0
         )
-        reply = response.choices[0].message.content.strip()
+        
 
         self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato completato: {macro_label}, {gender}, {occasion}, {budget_str}"})
         self.sessions[session_id].append({"role": "assistant", "content": reply})
@@ -866,12 +885,13 @@ class FragranceAdvisor:
             messages.extend(history[-2:])
             messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
-            response = self.client.chat.completions.create(
-                model="openai/gpt-oss-120b",
-                messages=messages,
-                temperature=0.0
-            )
-            reply = response.choices[0].message.content.strip()
+            reply = self.resilient_client.create_completion(
+              messages=messages,
+              primary_model=PRIMARY_FREE_MODEL,
+              fallback_model=FALLBACK_FREE_MODEL,
+              temperature=0.0
+          )
+            
 
             enriched = self._enrich_product_payload(mentioned_product, card_type="standard")
 
@@ -921,12 +941,13 @@ class FragranceAdvisor:
                 messages.extend(history[-2:])
                 messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
-                response = self.client.chat.completions.create(
-                    model="openai/gpt-oss-120b",
-                    messages=messages,
-                    temperature=0.0
-                )
-                reply = response.choices[0].message.content.strip()
+                reply = self.resilient_client.create_completion(
+                  messages=messages,
+                  primary_model=PRIMARY_FREE_MODEL,
+                  fallback_model=FALLBACK_FREE_MODEL,
+                  temperature=0.0
+              )
+                
 
                 self.sessions[session_id].append({"role": "user", "content": user_query})
                 self.sessions[session_id].append({"role": "assistant", "content": reply})
@@ -1099,14 +1120,16 @@ class FragranceAdvisor:
                 messages = [{"role": "system", "content": system_prompt}]
                 messages.append({"role": "user", "content": user_message_content})
 
-                response = self.client.chat.completions.create(
-                    model="openai/gpt-oss-120b",
+                reply = self.resilient_client.create_completion(
                     messages=messages,
+                    primary_model=PRIMARY_FREE_MODEL,
+                    fallback_model=FALLBACK_FREE_MODEL,
                     temperature=0.0
                 )
-                reply = response.choices[0].message.content
 
                 selected_product = None
+                is_emergency = "Maître Parfumeur" in reply and "molte richieste" in reply
+
                 match = re.search(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]", reply, re.IGNORECASE)
                 if match:
                     selected_id = match.group(1).upper()
@@ -1114,11 +1137,29 @@ class FragranceAdvisor:
                         selected_product = candidates_map[selected_id]
                         self.active_perfumes[session_id] = selected_product
                         print(f"[ADVISOR] Profumo attivo registrato: {candidates_map[selected_id]['name']}")
+                    elif selected_id == "NESSUNO":
+                        selected_product = None
+                        print("[ADVISOR] Nessun profumo pertinente identificato dal modello.")
+
+                    # Rimuove il tag tecnico dalla risposta finale destinata all'utente
                     reply = re.sub(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]\s*", "", reply).strip()
+
+                    # Se il modello ha emesso soltanto il tag lasciando il testo vuoto
+                    if not reply:
+                        reply = (
+                            "Nel nostro catalogo di alta profumeria artistica non disponiamo di fragranze "
+                            "con queste note olfattive. Se lo desideri, posso guidarti alla scoperta di accordi "
+                            "più canonici o aiutarti a trovare una composizione raffinata adatta a te."
+                        )
+                elif is_emergency:
+                    # Se l'API è in stato di emergenza, evitiamo di associare profumi a caso
+                    selected_product = None
+                    print("[ADVISOR] Risposta di emergenza LLM: nessun prodotto assegnato.")
                 else:
-                    selected_product = candidates_map["PRODOTTO_1"]
-                    self.active_perfumes[session_id] = selected_product
-                    print(f"[ADVISOR FALLBACK] Profumo attivo registrato (primo candidato): {candidates_map['PRODOTTO_1']['name']}")
+                    selected_product = candidates_map.get("PRODOTTO_1")
+                    if selected_product:
+                        self.active_perfumes[session_id] = selected_product
+                        print(f"[ADVISOR FALLBACK] Profumo attivo registrato (primo candidato): {selected_product['name']}")
 
                 product_payload = []
                 if selected_product:
@@ -1138,3 +1179,5 @@ class FragranceAdvisor:
         self.sessions.pop(session_id, None)
         self.active_perfumes.pop(session_id, None)
         self.guided_states.pop(session_id, None)
+        if hasattr(self, "session_store") and self.session_store:
+            self.session_store.clear_session(session_id)
