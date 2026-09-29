@@ -1,5 +1,5 @@
 """
-ingest.py - Shopify Universal Extractor (Tag-Enriched Edition)
+ingest.py - Shopify Universal Extractor (Tag-Enriched & Modular Edition)
 
 Scarica il catalogo tramite /products.json di Shopify, analizza i blocchi
 collapsible dinamici del tema (Piramide, Famiglia, Tipologia, Usage Profile).
@@ -7,8 +7,12 @@ In assenza di sezioni esplicite, ricorre all'estrazione intelligente dai TAG
 per determinare Famiglie Olfattive, Genere (Per lui/lei/unisex) e Stagionalità.
 Include filtraggio qualitativo delle note olfattive ed estrazione semantica LLM di riserva.
 
-Uso:
+Uso da CLI:
     python src/ingest.py
+
+Uso come modulo Python:
+    from src.ingest import run_ingest
+    count = run_ingest()
 """
 
 import html
@@ -17,6 +21,7 @@ import os
 import re
 import time
 from pathlib import Path
+from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -25,8 +30,7 @@ from openai import OpenAI
 
 load_dotenv()
 
-# ---------------- CONFIGURAZIONE ----------------
-SITE = os.getenv("SHOPIFY_STORE_URL", "").rstrip("/")
+# ---------------- CONFIGURAZIONE PERCORSI ----------------
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 OUTPUT_FILE = DATA_DIR / "catalog.json"
@@ -42,21 +46,16 @@ ALLOWED_TYPES = {"fragranze", "profumi", "profumo", "eau de parfum", "extrait de
 EXCLUDED_KEYWORDS = [
     "crema", "hair", "bagnodoccia", "doccia schiuma", "sapone", "shampoo",
     "balsamo", "olio corpo", "candela", "diffusore", "ambiente",
-    "solare", "siero", "scrub", "lozione", "deodorante", "sample", "Profumo per capelli", "Capelli", 
+    "solare", "siero", "scrub", "lozione", "deodorante", "sample", 
+    "profumo per capelli", "capelli"
 ]
 
-# ==============================================================================
-# ELENCO DELLE FAMIGLIE OLFATTIVE
-# ==============================================================================
 KNOWN_FAMILIES = [
     "Acquatica", "Agrumata", "Ambrata", "Aromatica", "Chypre", "Cuoiata",
     "Floreale", "Floreale - sample", "Fruttata", "Gourmand", "Legnosa",
     "Muschiata", "Orientale", "Speziata", "Tabaccosa", "Talcata", "Vanigliata", "Verde"
 ]
 
-# ==============================================================================
-# REGEX PER LA BONIFICA E FILTRAGGIO DELLE NOTE OLFATTIVE
-# ==============================================================================
 NARRATIVE_PREFIXES = [
     r"^(?:si\s+aprono\s+con\s+|si\s+apre\s+con\s+)",
     r"^(?:un[' ]esplosione\s+(?:esperidata\s+|fresca\s+|luminosa\s+)?di\s+)",
@@ -96,19 +95,17 @@ MARKETING_PHRASES = [
     "scia avvolgente", "note floreali luminose"
 ]
 
-GROQ_KEY = os.getenv("GROQ_API_KEY")
-client = OpenAI(
-    base_url="https://api.groq.com/openai/v1",
-    api_key=GROQ_KEY
-) if GROQ_KEY else None
 
-session = requests.Session()
-session.headers.update(HEADERS)
-# ------------------------------------------------
+def _get_groq_client() -> Optional[OpenAI]:
+    """Istanzia il client OpenAI/Groq in modo dinamico."""
+    key = os.getenv("GROQ_API_KEY")
+    if key:
+        return OpenAI(base_url="https://api.groq.com/openai/v1", api_key=key)
+    return None
 
 
 def clean_text(raw_text: str) -> str:
-    """Rimuove tassativamente tag HTML, entità speciali e spazi multipli."""
+    """Rimuove tag HTML, entità speciali e spazi multipli."""
     if not raw_text:
         return ""
     text = re.sub(r"<\s*br\s*/?>", " ", raw_text, flags=re.I)
@@ -147,7 +144,6 @@ def is_valid_note_item(item: str) -> bool:
     
     item_lower = item.lower().strip()
     
-    # 1. Se l'intera stringa è una frase di marketing nota, scarta
     if any(phrase in item_lower for phrase in MARKETING_PHRASES):
         return False
 
@@ -155,18 +151,17 @@ def is_valid_note_item(item: str) -> bool:
     if len(words) > 4:
         return False
         
-    # 2. Controllo verbi narrativi
     for vp in VERB_PATTERNS:
         if re.search(vp, item, re.I):
             return False
             
-    # 3. Controllo parole singole di marketing se l'item è corto
     if len(words) <= 2:
         for mw in MARKETING_WORDS:
             if re.search(mw, item, re.I):
                 return False
                 
     return True
+
 
 def clean_note_items(raw_text: str) -> list[str]:
     """Sanitizza le note olfattive eliminando metadati, formati, frasi e residui narrativi."""
@@ -178,14 +173,12 @@ def clean_note_items(raw_text: str) -> list[str]:
     text = html.unescape(text)
     text = re.sub(r"&[a-zA-Z0-9#]+;", " ", text)
 
-    # Tronca sezioni estranee come 'Formato:', 'Packaging', ecc.
     text = re.split(
         r"\b(?:formato|formati|concentrazione|tipologia|famiglia|genere|volume|quantit[aà]|confezione|packaging|made\s+in)\s*[:\-]",
         text,
         flags=re.I
     )[0]
 
-    # Rimuove diciture isolate di formati e concentrazioni
     text = re.sub(r"\b\d+\s*(?:x\s*\d+\s*)?(?:ml|cl|g|gr|oz)\b", "", text, flags=re.I)
     text = re.sub(r"\b(?:edp|edt|extrait\s+de\s+parfum|eau\s+de\s+parfum|eau\s+de\s+toilette)\b", "", text, flags=re.I)
 
@@ -196,9 +189,7 @@ def clean_note_items(raw_text: str) -> list[str]:
         p = re.sub(r"[\.()\*•–\-\"\':]", " ", part).strip()
         p = re.sub(r"\s+", " ", p)
 
-        if not p or len(p) < 2:
-            continue
-        if p.isdigit():
+        if not p or len(p) < 2 or p.isdigit():
             continue
         if p.lower() in ["formato", "edp", "edt", "unisex", "donna", "uomo", "parfum", "note", "piramide"]:
             continue
@@ -241,10 +232,7 @@ def extract_best_section_match(text: str, pattern: str) -> list[str]:
 
 
 def extract_family_from_tags(tags: list[str]) -> str:
-    """
-    Scansiona i tag del prodotto confrontandoli con l'elenco KNOWN_FAMILIES.
-    Restituisce una stringa con le famiglie trovate (es. 'Floreale, Legnosa').
-    """
+    """Scansiona i tag confrontandoli con KNOWN_FAMILIES."""
     found = []
     for tag in tags:
         t_clean = tag.strip().lower()
@@ -258,13 +246,9 @@ def extract_family_from_tags(tags: list[str]) -> str:
 
 
 def build_usage_profile_from_tags(tags: list[str], description: str = "") -> str:
-    """
-    Ricostruisce un profilo d'uso coerente ed elegante combinando i tag
-    relativi al genere (Per lui/Per lei/Unisex) e alla stagionalità (Invernali, Estive...).
-    """
+    """Ricostruisce un profilo d'uso elegante combinando i tag di genere e stagionalità."""
     tags_lower = [t.strip().lower() for t in tags]
 
-    # 1. Riconoscimento Genere
     has_lui = any("per lui" in t or t == "uomo" or "maschile" in t for t in tags_lower)
     has_lei = any("per lei" in t or t == "donna" or "femminile" in t for t in tags_lower)
     has_unisex = any("unisex" in t for t in tags_lower)
@@ -277,7 +261,6 @@ def build_usage_profile_from_tags(tags: list[str], description: str = "") -> str
     elif has_lei:
         gender_desc = "Fragranza femminile pensata prevalentemente per lei."
 
-    # 2. Riconoscimento Stagionalità
     seasons = []
     if any("invern" in t for t in tags_lower):
         seasons.append("autunno e inverno (climi freschi o freddi)")
@@ -288,11 +271,7 @@ def build_usage_profile_from_tags(tags: list[str], description: str = "") -> str
     if any("autunn" in t for t in tags_lower) and "autunno e inverno (climi freschi o freddi)" not in seasons:
         seasons.append("autunno")
 
-    season_desc = ""
-    if seasons:
-        season_desc = f"Ideale da indossare durante {' e '.join(seasons)}."
-
-    # 3. Composizione finale
+    season_desc = f"Ideale da indossare durante {' e '.join(seasons)}." if seasons else ""
     parts = [p for p in [gender_desc, season_desc] if p]
 
     if parts:
@@ -314,7 +293,6 @@ def parse_pyramid_from_html(container) -> dict:
 
     for br in container_copy.find_all("br"):
         br.replace_with("\n")
-
     for block in container_copy.find_all(["p", "div", "li"]):
         block.insert_after("\n")
 
@@ -349,13 +327,8 @@ def parse_pyramid_from_html(container) -> dict:
 def parse_shopify_sections(body_html: str) -> dict:
     """Mappa i collapsibles del tema isolando le sezioni tecniche."""
     data = {
-        "top": [],
-        "heart": [],
-        "base": [],
-        "family": "",
-        "ptype": "",
-        "usage_profile": "",
-        "description": ""
+        "top": [], "heart": [], "base": [],
+        "family": "", "ptype": "", "usage_profile": "", "description": ""
     }
 
     if not body_html:
@@ -382,29 +355,24 @@ def parse_shopify_sections(body_html: str) -> dict:
 
         inner = content_div.find(class_=lambda c: c and "collapsible-content__inner" in c) or content_div
 
-        # 1. Piramide Olfattiva
         if "piramid" in btn_title or "pyramid" in btn_title or target_id.lower() in ["piramide", "piramideolfattiva"]:
             pyr = parse_pyramid_from_html(inner)
             data["top"] = pyr["top"]
             data["heart"] = pyr["heart"]
             data["base"] = pyr["base"]
 
-        # 2. Famiglia Olfattiva
         elif "famigli" in btn_title or "family" in btn_title or target_id.lower() in ["famiglia", "famigliaolfattiva"]:
             raw_fam = clean_text(inner.get_text())
             data["family"] = re.sub(r"^famiglia\s*(?:olfattiva)?\s*[:\-]\s*", "", raw_fam, flags=re.I).strip()
 
-        # 3. Tipologia di Profumo
         elif "tipolog" in btn_title or "concentrazion" in btn_title or target_id.lower() in ["tipologia", "tipologia-profumo"]:
             raw_ptype = clean_text(inner.get_text())
             data["ptype"] = re.sub(r"^tipologia\s*(?:di\s*profumo)?\s*[:\-]\s*", "", raw_ptype, flags=re.I).strip()
 
-        # 4. Usage Profile (Per chi è adatto e quando indossarlo)
         elif any(k in btn_title for k in ["per chi", "quando indossar", "adatto"]) or target_id.lower() in ["why", "perchi"]:
             raw_usage = clean_text(inner.get_text())
             data["usage_profile"] = re.sub(r"^(?:per chi|quando indossarlo)\s*[:\-]\s*", "", raw_usage, flags=re.I).strip()
 
-    # Storytelling e introduzione
     soup_intro = BeautifulSoup(body_html, "html.parser")
     for elem in soup_intro.find_all(class_=lambda c: c and ("collapsibles-wrapper" in c or "collapsible-content" in c or "collapsible-trigger" in c)):
         elem.decompose()
@@ -433,7 +401,8 @@ def extract_pyramid_regex_fallback(text: str) -> dict:
 def extract_pyramid_llm_fallback(name: str, brand: str, text: str) -> dict:
     """Fallback tramite Groq per schede puramente narrative."""
     empty = {"top": [], "heart": [], "base": []}
-    if not client or not text or len(text.strip()) < 30:
+    groq_client = _get_groq_client()
+    if not groq_client or not text or len(text.strip()) < 30:
         return empty
 
     prompt = (
@@ -446,7 +415,7 @@ def extract_pyramid_llm_fallback(name: str, brand: str, text: str) -> dict:
     )
 
     try:
-        res = client.chat.completions.create(
+        res = groq_client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
@@ -465,43 +434,46 @@ def extract_pyramid_llm_fallback(name: str, brand: str, text: str) -> dict:
     return empty
 
 
-def fetch_all_shopify_products() -> list:
-    """Scarica i prodotti dallo store Shopify gestendo la paginazione."""
-    if not SITE:
-        print("[!] SHOPIFY_STORE_URL non configurato nel file .env.")
+def fetch_all_shopify_products(store_url: Optional[str] = None) -> list:
+    """Scarica i prodotti dallo store Shopify gestendo la paginazione in modo sicuro."""
+    site = (store_url or os.getenv("SHOPIFY_STORE_URL", "")).rstrip("/")
+    if not site:
+        print("[!] SHOPIFY_STORE_URL non configurato.")
         return []
 
     products = []
     page = 1
-    print(f"[*] Connessione a Shopify Store: {SITE}...")
+    print(f"[*] Connessione a Shopify Store: {site}...")
 
-    while True:
-        url = f"{SITE}/products.json"
-        params = {"limit": PER_PAGE, "page": page}
+    with requests.Session() as sess:
+        sess.headers.update(HEADERS)
+        while True:
+            url = f"{site}/products.json"
+            params = {"limit": PER_PAGE, "page": page}
 
-        try:
-            res = session.get(url, params=params, timeout=TIMEOUT)
-            if res.status_code != 200:
-                print(f"[!] Risposta HTTP {res.status_code} alla pagina {page}: {res.text[:150]}")
+            try:
+                res = sess.get(url, params=params, timeout=TIMEOUT)
+                if res.status_code != 200:
+                    print(f"[!] Risposta HTTP {res.status_code} alla pagina {page}: {res.text[:150]}")
+                    break
+
+                payload = res.json()
+                batch = payload.get("products", [])
+                if not batch:
+                    break
+
+                products.extend(batch)
+                print(f"    Pagina {page}: scaricati {len(batch)} prodotti (Totale parziale: {len(products)})...")
+
+                if len(batch) < PER_PAGE:
+                    break
+
+                page += 1
+                time.sleep(0.3)
+
+            except Exception as e:
+                print(f"[!] Errore di rete alla pagina {page}: {e}")
                 break
-
-            payload = res.json()
-            batch = payload.get("products", [])
-            if not batch:
-                break
-
-            products.extend(batch)
-            print(f"    Pagina {page}: scaricati {len(batch)} prodotti (Totale parziale: {len(products)})...")
-
-            if len(batch) < PER_PAGE:
-                break
-
-            page += 1
-            time.sleep(0.3)
-
-        except Exception as e:
-            print(f"[!] Errore di rete alla pagina {page}: {e}")
-            break
 
     return products
 
@@ -522,8 +494,9 @@ def is_fragrance(prod: dict) -> bool:
     return True if not p_type else False
 
 
-def transform_product(prod: dict) -> dict:
+def transform_product(prod: dict, store_url: Optional[str] = None) -> dict:
     """Mappa il prodotto Shopify completando le informazioni mancanti tramite i Tag."""
+    site = (store_url or os.getenv("SHOPIFY_STORE_URL", "")).rstrip("/")
     prod_id = f"sh_{prod['id']}"
     title = clean_text(prod.get("title", ""))
     brand = clean_text(prod.get("vendor", "Profumeria Artistica"))
@@ -545,7 +518,6 @@ def transform_product(prod: dict) -> dict:
 
     in_stock = any(v.get("available", False) for v in variants) if variants else True
 
-    # 1. Parsing delle sezioni HTML strutturate del tema
     parsed = parse_shopify_sections(prod.get("body_html", ""))
 
     pyramid = {
@@ -554,7 +526,6 @@ def transform_product(prod: dict) -> dict:
         "base": parsed["base"]
     }
 
-    # Fallback piramide olfattiva (Scelta del blocco migliore o fallback semantico LLM)
     total_notes = len(pyramid["top"]) + len(pyramid["heart"]) + len(pyramid["base"])
     if total_notes == 0:
         raw_clean_all = clean_text(prod.get("body_html", ""))
@@ -565,17 +536,12 @@ def transform_product(prod: dict) -> dict:
         desc_sample = parsed["description"] or parsed["usage_profile"] or clean_text(prod.get("body_html", ""))
         pyramid = extract_pyramid_llm_fallback(title, brand, desc_sample)
 
-    # 2. RECUPERO INTELLIGENTE FAMIGLIA OLFATTIVA DAI TAG
-    family = parsed["family"]
-    if not family:
-        family = extract_family_from_tags(tags_list)
+    family = parsed["family"] or extract_family_from_tags(tags_list)
 
-    # 3. RECUPERO INTELLIGENTE USAGE PROFILE DAI TAG
     usage_profile = parsed["usage_profile"]
     if not usage_profile or len(usage_profile.strip()) < 10:
         usage_profile = build_usage_profile_from_tags(tags_list, parsed["description"])
 
-    # 4. Tipologia di profumo
     ptype = parsed["ptype"]
     if not ptype:
         tags_lower = [t.lower() for t in tags_list]
@@ -593,8 +559,8 @@ def transform_product(prod: dict) -> dict:
         image_url = first_var["featured_image"].get("src", "")
 
     urls = {
-        "product_page": f"{SITE}/products/{handle}" if handle else "",
-        "add_to_cart": f"{SITE}/cart/{variant_id}:1" if variant_id else "",
+        "product_page": f"{site}/products/{handle}" if handle and site else "",
+        "add_to_cart": f"{site}/cart/{variant_id}:1" if variant_id and site else "",
         "image_url": image_url
     }
 
@@ -633,34 +599,31 @@ def transform_product(prod: dict) -> dict:
     }
 
 
-def main():
-    print("=== AVVIO PIPELINE DI INGESTIONE SHOPIFY (TAG-ENRICHED) ===")
-    raw_products = fetch_all_shopify_products()
+def run_ingest(store_url: Optional[str] = None) -> int:
+    """
+    Funzione programmatica per eseguire la data ingestion.
+    Scarica i dati, genera data/catalog.json e restituisce il numero di profumi in-stock.
+    """
+    print("=== AVVIO PIPELINE DI INGESTIONE SHOPIFY ===")
+    raw_products = fetch_all_shopify_products(store_url)
     if not raw_products:
-        print("[!] Nessun prodotto recuperato. Verifica SHOPIFY_STORE_URL nel file .env.")
-        return
+        print("[!] Nessun prodotto recuperato.")
+        return 0
 
     kept_products = [p for p in raw_products if is_fragrance(p)]
     dropped_products = [p for p in raw_products if not is_fragrance(p)]
 
     print(f"\nScaricati: {len(raw_products)} | Riconosciuti come Profumi: {len(kept_products)} | Esclusi: {len(dropped_products)}")
 
-    print(f"[*] Elaborazione semantica avanzata di {len(kept_products)} profumi...")
     catalog = []
     out_of_stock = []
-    pyramids_found = 0
-    families_found = 0
-    ptypes_found = 0
-    usage_found = 0
 
     for i, p in enumerate(kept_products, 1):
-        item = transform_product(p)
-
+        item = transform_product(p, store_url)
         if item.get("in_stock", True):
             catalog.append(item)
         else:
             out_of_stock.append(item)
-
         total_notes = len(item["olfactory_pyramid"]["top"]) + len(item["olfactory_pyramid"]["heart"]) + len(item["olfactory_pyramid"]["base"])
         if total_notes > 0:
             pyramids_found += 1
@@ -685,7 +648,7 @@ def main():
     with open(DROPPED_FILE, "w", encoding="utf-8") as f:
         json.dump(dropped_products, f, ensure_ascii=False, indent=2)
 
-    print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
+        print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
     print(f"Profumi disponibili salvati in {OUTPUT_FILE}: {len(catalog)}")
     print(f"Profumi esauriti salvati in {OUT_OF_STOCK_FILE}: {len(out_of_stock)}")
     print(f"  - Piramidi olfattive estratte:  {pyramids_found}/{len(kept_products)}")
@@ -693,6 +656,13 @@ def main():
     print(f"  - Tipologie (ptype) presenti:   {ptypes_found}/{len(kept_products)}")
     print(f"  - Profili d'uso presenti:       {usage_found}/{len(kept_products)} (da HTML o Tags)")
     print(f"Articoli scartati in {DROPPED_FILE}: {len(dropped_products)}")
+
+    print(f"\n[+] Catalogo salvato in {OUTPUT_FILE}: {len(catalog)} prodotti disponibili.")
+    return len(catalog)
+
+
+def main():
+    run_ingest()
 
 
 if __name__ == "__main__":

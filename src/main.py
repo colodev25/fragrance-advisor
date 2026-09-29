@@ -1,5 +1,6 @@
 """
 main.py - FastAPI Server per il Consulente Olfattivo Etualy
+Focalizzato unicamente su chat, reset di sessione e health-check.
 """
 
 import os
@@ -44,7 +45,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Consulente Olfattivo AI - Etualy", lifespan=lifespan)
 
-# Configurazione CORS conforme agli standard browser
+# Configurazione CORS conforme agli standard browser W3C
 raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
 origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 is_wildcard = "*" in origins
@@ -52,7 +53,6 @@ is_wildcard = "*" in origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if is_wildcard else origins,
-    # Standard W3C: allow_credentials deve essere False se l'origin è wildcard (*)
     allow_credentials=not is_wildcard,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -92,7 +92,7 @@ def chat_endpoint(req: ChatRequest):
 @app.post("/reset")
 @app.post("/reset/")
 def reset_endpoint(req: ResetRequest):
-    """Cancella lo stato della sessione per ricominciare da zero."""
+    """Cancella lo stato della sessione su SQLite per ricominciare da zero."""
     if advisor is not None:
         advisor.reset_session(req.session_id)
     return {"status": "ok", "session_id": req.session_id, "message": "Sessione azzerata"}
@@ -100,5 +100,5 @@ def reset_endpoint(req: ResetRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # PRODUZIONE: disattivare reload=True per contenere l'uso di RAM ed evitare OOM
+    # In produzione reload=False contiene l'uso di RAM ed evita OOM
     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=False)
