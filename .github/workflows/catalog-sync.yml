@@ -1,0 +1,55 @@
+name: Sincronizzazione Catalogo Shopify
+
+on:
+  schedule:
+    # Esegue ogni 2 giorni alle 03:00 UTC
+    - cron: "0 3 */2 * *"
+  # Pulsante per esecuzione manuale istantanea su GitHub Actions
+  workflow_dispatch:
+
+# Permessi necessari affinché il workflow possa fare git push sul repository
+permissions:
+  contents: write
+
+jobs:
+  sync-catalog:
+    name: Estrazione Catalogo & Aggiornamento Repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: feature/new-site
+          fetch-depth: 0
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Installazione dipendenze minime per ingest
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 python-dotenv openai
+
+      - name: Esecuzione Ingestion da Shopify
+        env:
+          SHOPIFY_STORE_URL: ${{ secrets.SHOPIFY_STORE_URL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          python src/ingest.py
+
+      - name: Commit su GitHub se ci sono variazioni
+        run: |
+          if [ -n "$(git status --porcelain data/catalog.json)" ]; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/catalog.json data/out_of_stock.json data/scartati.json
+            git commit -m "chore(catalog): sincronizzazione automatica catalogo [skip ci]"
+            git push origin feature/new-site
+          else
+            echo "[*] Nessuna variazione nel catalogo. Nessun commit necessario."
+          fi
