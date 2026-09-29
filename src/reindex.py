@@ -1,8 +1,8 @@
 """
 reindex.py - Rigenerazione e sincronizzazione del Database Vettoriale ChromaDB
 
-Legge il file data/catalog.json (aggiornato e contenente solo prodotti in-stock)
-e ricostruisce da zero la collection 'fragrances' in ChromaDB.
+Legge data/catalog.json e costruisce la collection persistente 'fragrances'
+utilizzando il modello multilingue condiviso con il motore di ricerca.
 
 Uso:
     python src/reindex.py
@@ -17,13 +17,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CATALOG_PATH = BASE_DIR / "data" / "catalog.json"
 CHROMA_DIR = BASE_DIR / "chroma_db"
 COLLECTION_NAME = "fragrances"
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def main():
     print("=== AVVIO RE-INDICIZZAZIONE CHROMADB ===")
 
     if not CATALOG_PATH.exists():
-        print(f"[!] Errore: File {CATALOG_PATH} non trovato. Esegui prima 'python src/ingest.py'.")
+        print(f"[!] Errore: File {CATALOG_PATH} non trovato. Esegui prima l'estrazione catalogo.")
         return
 
     with open(CATALOG_PATH, "r", encoding="utf-8") as f:
@@ -34,19 +35,22 @@ def main():
     CHROMA_DIR.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
 
-    # Reset completo della collection per evitare record obsoleti
+    # Allineamento dell'embedding model con il runtime di ricerca
+    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+        model_name=EMBEDDING_MODEL
+    )
+
     existing_collections = [c.name for c in client.list_collections()]
     if COLLECTION_NAME in existing_collections:
         print(f"[*] Eliminazione vecchia collection '{COLLECTION_NAME}'...")
         client.delete_collection(COLLECTION_NAME)
 
-    embedding_fn = embedding_functions.DefaultEmbeddingFunction()
     collection = client.create_collection(
         name=COLLECTION_NAME,
         embedding_function=embedding_fn,
         metadata={"hnsw:space": "cosine"}
     )
-    print(f"[*] Creata nuova collection '{COLLECTION_NAME}'.")
+    print(f"[*] Creata nuova collection '{COLLECTION_NAME}' (Cosine Distance, Modello: {EMBEDDING_MODEL}).")
 
     ids = []
     documents = []
@@ -54,12 +58,13 @@ def main():
 
     for item in catalog:
         doc_id = str(item.get("id"))
-        semantic_text = item.get("semantic_text") or item.get("description") or item.get("name")
+        semantic_text = item.get("semantic_text") or item.get("description") or item.get("name") or ""
 
         meta = {
             "name": str(item.get("name", "")),
             "brand": str(item.get("brand", "Profumeria Artistica")),
             "price": float(item.get("price", 0.0) or 0.0),
+            "in_stock": bool(item.get("in_stock", True)),
             "family": str(item.get("family", "")),
             "ptype": str(item.get("ptype", "")),
             "add_to_cart_url": str(item.get("urls", {}).get("add_to_cart", "")),
@@ -71,7 +76,6 @@ def main():
         documents.append(semantic_text)
         metadatas.append(meta)
 
-    # Inserimento a blocchi (batch)
     batch_size = 100
     for i in range(0, len(ids), batch_size):
         end = min(i + batch_size, len(ids))
@@ -83,7 +87,7 @@ def main():
         print(f"    Indicizzati {end}/{len(ids)} profumi...")
 
     print("\n=== RE-INDICIZZAZIONE COMPLETATA CON SUCCESSO ===")
-    print(f"Totale documenti indicizzati: {collection.count()}")
+    print(f"Totale documenti memorizzati su disco in '{CHROMA_DIR}': {collection.count()}")
 
 
 if __name__ == "__main__":

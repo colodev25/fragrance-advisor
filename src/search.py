@@ -1,73 +1,50 @@
 """
 search.py - Motore di Ricerca Semantico e Ibrido
 
-Indicizza data/catalog.json su ChromaDB in locale tramite SentenceTransformers,
+Si collega all'indice persistente ChromaDB (chroma_db/),
 applica filtri di budget (min_price, max_price) e reranking lessicale su note olfattive.
 
 Uso per test:
     python src/search.py
 """
 
-import json
 import re
 from pathlib import Path
 import chromadb
 from chromadb.utils import embedding_functions
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-CATALOG_PATH = BASE_DIR / "data" / "catalog.json"
+CHROMA_DIR = BASE_DIR / "chroma_db"
+COLLECTION_NAME = "fragrances"
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
 
 class FragranceSearchEngine:
     def __init__(self):
-        # Client ChromaDB in-memory (veloce, si popola ad ogni avvio da catalog.json)
-        self.chroma_client = chromadb.Client()
+        if not CHROMA_DIR.exists():
+            raise FileNotFoundError(
+                f"[!] Directory ChromaDB non trovata in {CHROMA_DIR}. "
+                "Esegui prima 'python src/reindex.py' per generare l'indice persistente."
+            )
 
-        # Modello multilingue leggero e ad alte prestazioni locale
+        # Connessione al database persistente generato da reindex.py
+        self.chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+
+        # Stesso modello e configurazione usati durante l'indicizzazione
         self.embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="paraphrase-multilingual-MiniLM-L12-v2"
+            model_name=EMBEDDING_MODEL
         )
 
-        self.collection = self.chroma_client.get_or_create_collection(
-            name="fragrances",
-            embedding_function=self.embed_fn,  # type: ignore
-            metadata={"hnsw:space": "cosine"}
-        )
-        self._load_catalog()
-
-    def _load_catalog(self):
-        if not CATALOG_PATH.exists():
-            print(f"[!] File non trovato: {CATALOG_PATH}. Esegui prima 'python src/ingest.py'.")
-            return
-
-        with open(CATALOG_PATH, "r", encoding="utf-8") as f:
-            products = json.load(f)
-
-        ids = []
-        documents = []
-        metadatas = []
-
-        for prod in products:
-            ids.append(prod["id"])
-            documents.append(prod["semantic_text"])
-            metadatas.append({
-                "name": prod["name"],
-                "brand": prod["brand"],
-                "price": float(prod.get("price", 0.0)),
-                "in_stock": bool(prod.get("in_stock", True)),
-                "family": prod.get("family", ""),
-                "ptype": prod.get("ptype", ""),
-                "add_to_cart_url": prod["urls"].get("add_to_cart", ""),
-                "product_page_url": prod["urls"].get("product_page", ""),
-                "image_url": prod["urls"].get("image_url", "")
-            })
-
-        self.collection.upsert(
-            ids=ids,
-            documents=documents,
-            metadatas=metadatas
-        )
-        print(f"[*] Indicizzati {len(products)} profumi Shopify in ChromaDB con modello multilingue.")
+        try:
+            self.collection = self.chroma_client.get_collection(
+                name=COLLECTION_NAME,
+                embedding_function=self.embed_fn
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"[!] Impossibile caricare la collection '{COLLECTION_NAME}': {e}. "
+                "Assicurati di aver eseguito 'python src/reindex.py'."
+            )
 
     def search(
         self,
@@ -94,11 +71,11 @@ class FragranceSearchEngine:
         elif len(conditions) > 1:
             where_clause = {"$and": conditions}
 
-        # 1. Recupero semantico iniziale
         total_items = self.collection.count()
         if total_items == 0:
             return {"ids": [[]], "metadatas": [[]], "documents": [[]], "exact_match_found": False}
 
+        # 1. Recupero semantico iniziale
         raw_results = self.collection.query(
             query_texts=[query],
             n_results=min(10, total_items),
@@ -128,7 +105,7 @@ class FragranceSearchEngine:
                 meta = raw_results["metadatas"][0][i]
                 price = meta.get("price", 0.0)
 
-                # Controllo di sicurezza sul prezzo
+                # Controllo di consistenza sul prezzo
                 if min_price is not None and price < min_price:
                     continue
                 if max_price is not None and price > max_price:
@@ -139,7 +116,7 @@ class FragranceSearchEngine:
                     filtered_metas.append(meta)
                     filtered_docs.append(doc)
 
-        # Fallback se non ci sono keyword strette o match lessicale
+        # Fallback se non ci sono keyword rilevanti o match lessicale
         if not filtered_ids:
             valid_ids = []
             valid_metas = []
@@ -172,25 +149,28 @@ class FragranceSearchEngine:
 
 
 if __name__ == "__main__":
-    print("=== TEST RICERCA CHROMADB (SHOPIFY) ===")
-    engine = FragranceSearchEngine()
+    print("=== TEST RICERCA CHROMADB (PERSISTENTE) ===")
+    try:
+        engine = FragranceSearchEngine()
 
-    test_queries = [
-        ("profumo marino con alghe ed estate", None, None),
-        ("fragranza all'iris elegante e raffinata", None, None),
-        ("profumo da sera economico", None, 150.0),
-        ("alta gamma oltre 200 euro", 200.0, None)
-    ]
+        test_queries = [
+            ("profumo marino con alghe ed estate", None, None),
+            ("fragranza all'iris elegante e raffinata", None, None),
+            ("profumo da sera economico", None, 150.0),
+            ("alta gamma oltre 200 euro", 200.0, None)
+        ]
 
-    for q, min_p, max_p in test_queries:
-        filtro_str = f" [Prezzo: min={min_p}, max={max_p}]" if (min_p or max_p) else ""
-        print(f"\n🔍 Query: '{q}'{filtro_str}")
-        res = engine.search(query=q, min_price=min_p, max_price=max_p, n_results=2)
+        for q, min_p, max_p in test_queries:
+            filtro_str = f" [Prezzo: min={min_p}, max={max_p}]" if (min_p or max_p) else ""
+            print(f"\n🔍 Query: '{q}'{filtro_str}")
+            res = engine.search(query=q, min_price=min_p, max_price=max_p, n_results=2)
 
-        if res["ids"] and len(res["ids"][0]) > 0:
-            for i in range(len(res["ids"][0])):
-                m = res["metadatas"][0][i]
-                print(f"   [{i+1}] {m['name']} ({m['brand']}) - Prezzo: {m['price']}€ | Famiglia: {m.get('family', 'N/D')}")
-                print(f"       Cart URL: {m['add_to_cart_url']}")
-        else:
-            print("   Nessun risultato trovato con questi filtri.")
+            if res["ids"] and len(res["ids"][0]) > 0:
+                for i in range(len(res["ids"][0])):
+                    m = res["metadatas"][0][i]
+                    print(f"   [{i+1}] {m['name']} ({m['brand']}) - Prezzo: {m['price']}€ | Famiglia: {m.get('family', 'N/D')}")
+                    print(f"       Cart URL: {m['add_to_cart_url']}")
+            else:
+                print("   Nessun risultato trovato con questi filtri.")
+    except Exception as e:
+        print(f"Errore durante l'esecuzione del test: {e}")
