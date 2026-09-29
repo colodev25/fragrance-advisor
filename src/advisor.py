@@ -3,6 +3,7 @@ import re
 import json
 from pathlib import Path
 from collections import defaultdict
+from typing import Optional
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -90,18 +91,25 @@ STOPWORDS_NOTES = {
 
 
 class FragranceAdvisor:
-    def __init__(self, session_store: SessionStore = None):
+    def __init__(
+        self,
+        session_store: Optional[SessionStore] = None,
+        client: Optional[OpenAI] = None,
+        resilient_client: Optional[ResilientGroqClient] = None
+    ):
+        # 1. Session store (se non passato, usa il default)
         self.session_store = session_store or SessionStore()
         self.search_engine = FragranceSearchEngine()
         groq_key = os.getenv("GROQ_API_KEY")
         if not groq_key:
             raise ValueError("GROQ_API_KEY mancante nel file .env")
 
-        self.client = OpenAI(
+        # 2. Client API Groq/OpenAI
+        self.client = client or OpenAI(
             base_url="https://api.groq.com/openai/v1",
-            api_key=groq_key
-        )
-        self._resilient_client = ResilientGroqClient(self.client)
+            api_key=os.getenv("GROQ_API_KEY", "")
+        )# 3. Client resiliente (se passato usa quello, altrimenti inizializza con valori standard)
+        self._resilient_client = resilient_client or ResilientGroqClient(self.client)
 
         self.sessions = defaultdict(list)
         self.active_perfumes = {}
@@ -136,6 +144,11 @@ class FragranceAdvisor:
         if self._resilient_client.client != self.client:
             self._resilient_client = ResilientGroqClient(self.client)
         return self._resilient_client
+    
+    @resilient_client.setter
+    def resilient_client(self, client: ResilientGroqClient):
+        """Permette di aggiornare o iniettare una configurazione personalizzata del client resiliente."""
+        self._resilient_client = client
 
     def _resolve_macro_family(self, family_ans: str) -> tuple[str, list[str]]:
         """Riconosce la macro-categoria scelta e restituisce le relative sotto-famiglie."""
@@ -574,13 +587,14 @@ class FragranceAdvisor:
         if any(re.search(p, q) for p in stay_patterns):
             return "VALUTA"
 
+        # 3. FALLBACK CON MODELLO REASONING (Se la query è ambigua)
         prompt = (
-            f"Stiamo parlando del profumo: '{active_perfume['name']}' ({active_perfume.get('brand', '')}).\n"
-            f"Messaggio del cliente: \"{query}\"\n\n"
-            "Regola:\n"
-            "- Rispondi 'CAMBIA' SOLO se il cliente chiede esplicitamente di cercare, mostrare o consigliare un profumo DIVERSO o un'alternativa.\n"
-            "- In tutti gli altri casi (domande su note, pareri, chiarimenti, orari, contesti, o frasi dubbie), rispondi 'VALUTA'.\n"
-            "Rispondi SOLO con la parola 'VALUTA' o 'CAMBIA'."
+            f"Il cliente sta valutando il profumo '{active_perfume.get('name')}'. "
+            f"Ha appena scritto: \"{query}\".\n"
+            f"Determina l'intento:\n"
+            f"- Rispondi 'VALUTA' se sta facendo domande su questo profumo ((domande su note, pareri, chiarimenti, orari, contesti, o frasi dubbie)).\n"
+            f"- Rispondi 'CAMBIA' se desidera vedere un altro profumo chiedendo esplicitamente di cercare, mostrare o trovare un'alternativa.\n"
+            f"Rispondi ESCLUSIVAMENTE con la parola 'VALUTA' o 'CAMBIA'."
         )
 
         try:
@@ -589,7 +603,7 @@ class FragranceAdvisor:
                 primary_model=FALLBACK_FREE_MODEL,
                 fallback_model=FALLBACK_FREE_MODEL,
                 temperature=0.0,
-                max_tokens=100,
+                max_tokens=250,  # Spazio sufficiente per completare il reasoning
                 graceful_fallback_text="VALUTA"
             ).upper()
             return "CAMBIA" if "CAMBIA" in decision else "VALUTA"

@@ -1,10 +1,13 @@
+"""
+test_api.py - Suite di collaudo per l'interfaccia HTTP FastAPI
+Verifica: contratti JSON, routing chat/reset, CORS headers e gestione errori.
+"""
+
+from unittest.mock import MagicMock, patch
 import pytest
-from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.main import app
-
-client = TestClient(app)
 
 MOCK_PRODUCT = {
     "name": "Acqua di Sale",
@@ -23,12 +26,34 @@ MOCK_PRODUCT = {
 }
 
 
+@pytest.fixture
+def api_client():
+    """Client di test con supporto completo al context manager per il lifespan."""
+    with TestClient(app) as client:
+        yield client
+
+
 # ==============================================================================
-# 1. TEST RISPOSTA CHAT LIBERA & CONTRATTO PAYLOAD
+# 1. HEALTH CHECK & ENDPOINT ROOT
 # ==============================================================================
-@patch("src.main.advisor.advise")
-def test_chat_endpoint_free_chat_success(mock_advise):
-    mock_advise.return_value = {
+
+def test_health_check_endpoint(api_client):
+    """Verifica che la root API risponda con status 200 e identità del servizio."""
+    response = api_client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "service" in data
+
+
+# ==============================================================================
+# 2. CHAT ENDPOINT: CONTRATTO CHAT LIBERA & CARDS PRODOTTO
+# ==============================================================================
+
+def test_chat_endpoint_free_chat_contract(api_client):
+    """Verifica la serializzazione completa del payload per la chat libera."""
+    mock_advisor = MagicMock()
+    mock_advisor.advise.return_value = {
         "reply": "Ti suggerisco una creazione marina iconica.",
         "options": [],
         "products": [MOCK_PRODUCT],
@@ -36,43 +61,44 @@ def test_chat_endpoint_free_chat_success(mock_advise):
         "mode": "free"
     }
 
-    response = client.post("/chat", json={
-        "message": "cerco un profumo marino",
-        "session_id": "test_session_api"
-    })
+    with patch("src.main.advisor", mock_advisor):
+        response = api_client.post("/chat", json={
+            "message": "cerco un profumo marino",
+            "session_id": "test_session_api",
+            "max_price": 300.0
+        })
 
     assert response.status_code == 200
     data = response.json()
 
-    # Verifica chiavi di primo livello
-    assert "reply" in data
-    assert "products" in data
-    assert "options" in data
-    assert "mode" in data
-    assert data["mode"] == "free"
+    # Verifica contratto di primo livello
+    assert "reply" in data and len(data["reply"]) > 0
+    assert "products" in data and len(data["products"]) == 1
+    assert "options" in data and isinstance(data["options"], list)
+    assert data.get("mode") == "free"
+    assert data.get("step") is None
 
-    # Verifica integrità della Product Card
-    assert len(data["products"]) == 1
+    # Verifica completezza dei campi della Product Card
     prod = data["products"][0]
-    required_card_keys = [
-        "name", "brand", "price", "story", "key_notes", 
-        "traits", "product_page_url", "add_to_cart_url"
+    required_fields = [
+        "name", "brand", "price", "story", "key_notes",
+        "traits", "product_page_url", "add_to_cart_url", "image_url"
     ]
-    for key in required_card_keys:
-        assert key in prod, f"Chiave mancante nella product card: {key}"
-
+    for field in required_fields:
+        assert field in prod, f"Campo obbligatorio assente nella card: {field}"
     assert isinstance(prod["key_notes"], list)
-    assert len(prod["key_notes"]) > 0
-    assert "•" in prod["traits"]
+    assert len(prod["key_notes"]) >= 1
 
 
 # ==============================================================================
-# 2. TEST PERCORSO GUIDATO (STEP 1)
+# 3. CHAT ENDPOINT: PERCORSO GUIDATO (STEP E OPZIONI)
 # ==============================================================================
-@patch("src.main.advisor.advise")
-def test_chat_endpoint_guided_step(mock_advise):
-    mock_advise.return_value = {
-        "reply": "Che tipo di sensazione o famiglia olfattiva preferisci?",
+
+def test_chat_endpoint_guided_step_contract(api_client):
+    """Verifica il comportamento dell'endpoint durante uno step del quiz guidato."""
+    mock_advisor = MagicMock()
+    mock_advisor.advise.return_value = {
+        "reply": "Che tipo di fragranza preferisci?",
         "options": [
             "🍋 Fresco o Agrumato",
             "🌸 Floreale o Fruttato",
@@ -84,10 +110,12 @@ def test_chat_endpoint_guided_step(mock_advise):
         "mode": "guided"
     }
 
-    response = client.post("/chat", json={
-        "message": "guidami",
-        "session_id": "test_guided_session"
-    })
+    with patch("src.main.advisor", mock_advisor):
+        # Test con rotta alternativa con slash finale (/chat/)
+        response = api_client.post("/chat/", json={
+            "message": "🎯 Guidami nella scelta",
+            "session_id": "test_guided_api"
+        })
 
     assert response.status_code == 200
     data = response.json()
@@ -96,12 +124,58 @@ def test_chat_endpoint_guided_step(mock_advise):
     assert data["mode"] == "guided"
     assert len(data["options"]) == 4
     assert len(data["products"]) == 0
+    assert "🍋 Fresco o Agrumato" in data["options"]
 
 
 # ==============================================================================
-# 3. TEST VALIDAZIONE SCHEMA (BODY NON VALIDO)
+# 4. RESET ENDPOINT: AZZERAMENTO SESSIONE REMOTA
 # ==============================================================================
-def test_chat_endpoint_validation_error():
-    # Invio di un body privo del campo obbligatorio 'message' su /chat
-    response = client.post("/chat", json={})
+
+def test_reset_endpoint_invokes_advisor_cleanup(api_client):
+    """Verifica che la chiamata POST a /reset richiami il metodo reset_session."""
+    mock_advisor = MagicMock()
+
+    with patch("src.main.advisor", mock_advisor):
+        response = api_client.post("/reset", json={"session_id": "user_to_reset_123"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["session_id"] == "user_to_reset_123"
+    mock_advisor.reset_session.assert_called_once_with("user_to_reset_123")
+
+
+# ==============================================================================
+# 5. VALIDAZIONE ERRORI SCHEMA PYDANTIC (422 UNPROCESSABLE ENTITY)
+# ==============================================================================
+
+def test_chat_endpoint_missing_required_fields(api_client):
+    """Invio di un payload privo del campo 'message'."""
+    response = api_client.post("/chat", json={"session_id": "only_session"})
     assert response.status_code == 422
+    assert "detail" in response.json()
+
+
+def test_reset_endpoint_missing_session_id(api_client):
+    """Invio di un body vuoto all'endpoint /reset."""
+    response = api_client.post("/reset", json={})
+    assert response.status_code == 422
+
+
+# ==============================================================================
+# 6. VERIFICA INTEGRAZIONE CORS POLICY
+# ==============================================================================
+
+def test_cors_preflight_headers(api_client):
+    """Verifica che il server risponda alle chiamate preflight OPTIONS del browser."""
+    response = api_client.options(
+        "/chat",
+        headers={
+            "Origin": "https://etualy.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Content-Type"
+        }
+    )
+    assert response.status_code == 200
+    # Deve contenere l'header di autorizzazione per il widget
+    assert "access-control-allow-origin" in response.headers
