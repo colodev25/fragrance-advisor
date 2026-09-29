@@ -8,7 +8,6 @@
     />
     <title>Etualy | Maître Parfumeur AI</title>
 
-    <!-- Font Luxury: Cormorant Garamond & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -17,9 +16,6 @@
     />
 
     <style>
-      /* ==========================================================================
-       ETUALY DESIGN SYSTEM
-       ========================================================================== */
       :root {
         --oa-bg-page: #f7f7f7;
         --oa-bg-widget: #ffffff;
@@ -64,7 +60,6 @@
         -webkit-font-smoothing: antialiased;
       }
 
-      /* Launcher Fluttuante */
       .oa-launcher-btn {
         position: fixed;
         bottom: 28px;
@@ -103,7 +98,6 @@
         text-transform: uppercase;
       }
 
-      /* Finestra Widget */
       .oa-widget-container {
         position: fixed;
         bottom: 28px;
@@ -131,7 +125,6 @@
         transform: translateY(0) scale(1);
       }
 
-      /* Header */
       .oa-header {
         padding: 18px 22px;
         background: var(--oa-white);
@@ -212,7 +205,6 @@
         height: 17px;
       }
 
-      /* Stepper Bar */
       .oa-stepper-bar {
         height: 2px;
         width: 100%;
@@ -232,7 +224,6 @@
         transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
-      /* Area Messaggi */
       .oa-messages-container {
         flex: 1;
         overflow-y: auto;
@@ -297,9 +288,6 @@
         margin-bottom: 0;
       }
 
-      /* ==========================================================================
-       PRODUCT CARDS (STANDARD & SLIDE-OVER)
-       ========================================================================== */
       .oa-product-card {
         position: relative;
         overflow: hidden;
@@ -316,7 +304,6 @@
       .oa-product-card.oa-has-slideover {
         min-height: 200px;
       }
-
       .oa-product-card:hover {
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
       }
@@ -373,7 +360,6 @@
         flex: 1;
         min-width: 0;
       }
-
       .oa-has-slideover .oa-card-meta {
         padding-right: 28px;
       }
@@ -387,7 +373,6 @@
         margin-bottom: 2px;
       }
 
-      /* TITOLO SU 2 RIGHE (SOLUZIONE A) */
       .oa-card-title {
         font-family: "Cormorant Garamond", Georgia, serif;
         font-size: 16.5px;
@@ -395,8 +380,8 @@
         color: var(--oa-text-primary);
         line-height: 1.25;
         display: -webkit-box;
-        line-clamp: 2;
         -webkit-line-clamp: 2;
+        line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -404,7 +389,6 @@
         max-height: 2.6em;
       }
 
-      /* HOVER EFFECT LINEA A SCORRIMENTO (COMPATIBILE MULTI-RIGA) */
       .oa-card-title-link {
         color: inherit;
         text-decoration: none;
@@ -478,7 +462,6 @@
         letter-spacing: -0.2px;
       }
 
-      /* BOTTONE "AGGIUNGI AL CARRELLO" COMPATTO E SOTTILE */
       .oa-card-cart-btn {
         display: inline-flex;
         align-items: center;
@@ -492,9 +475,7 @@
         font-weight: 600;
         letter-spacing: 0.8px;
         text-transform: uppercase;
-        transition:
-          background 0.2s,
-          transform 0.1s;
+        transition: background 0.2s;
         flex-shrink: 0;
       }
 
@@ -508,9 +489,6 @@
         stroke: var(--oa-white);
       }
 
-      /* ==========================================================================
-       PANNELLO SLIDE-OVER (PERCORSO GUIDATO)
-       ========================================================================== */
       .oa-card-slideover {
         position: absolute;
         top: 0;
@@ -570,11 +548,6 @@
         max-height: 2.6em;
       }
 
-      .oa-slide-title:hover .oa-card-title-link,
-      .oa-slide-title .oa-card-title-link:hover {
-        background-size: 100% 1.5px;
-      }
-
       .oa-slide-close-btn {
         width: 22px;
         height: 22px;
@@ -629,7 +602,6 @@
         flex-direction: column;
         gap: 4px;
       }
-
       .oa-slide-notes-label {
         font-size: 8.5px;
         font-weight: 700;
@@ -693,7 +665,6 @@
         color: var(--oa-black);
       }
 
-      /* Quick Chips */
       .oa-chips-container {
         padding: 10px 18px 14px;
         background: var(--oa-bg-chat);
@@ -727,7 +698,6 @@
         transform: translateY(-1px);
       }
 
-      /* Typing Indicator */
       .oa-typing {
         display: inline-flex;
         align-items: center;
@@ -769,7 +739,6 @@
         }
       }
 
-      /* Input Form */
       .oa-input-container {
         padding: 14px 18px;
         background: var(--oa-white);
@@ -818,7 +787,6 @@
       .oa-send-btn:hover {
         background: #333333;
       }
-
       .oa-send-btn svg {
         width: 15px;
         height: 15px;
@@ -836,7 +804,6 @@
           border-radius: 0;
           border: none;
         }
-
         .oa-launcher-btn {
           bottom: 16px;
           right: 16px;
@@ -847,7 +814,6 @@
     </style>
   </head>
   <body>
-    <!-- Launcher Fluttuante -->
     <button
       class="oa-launcher-btn"
       id="oaLauncher"
@@ -868,7 +834,6 @@
       <span class="oa-launcher-text">Etualy • Maître Parfumeur</span>
     </button>
 
-    <!-- Finestra Widget -->
     <div class="oa-widget-container is-active" id="oaWidget">
       <header class="oa-header">
         <div class="oa-header-brand">
@@ -917,7 +882,6 @@
         <div class="oa-stepper-progress" id="oaProgress"></div>
       </div>
 
-      <!-- Lista Messaggi -->
       <div class="oa-messages-container" id="oaMessages">
         <div class="oa-msg oa-msg-bot">
           <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
@@ -930,7 +894,6 @@
         </div>
       </div>
 
-      <!-- Quick Chips -->
       <div class="oa-chips-container" id="oaChips">
         <button
           class="oa-chip"
@@ -946,7 +909,6 @@
         </button>
       </div>
 
-      <!-- Form Input -->
       <form class="oa-input-container" id="oaForm">
         <input
           type="text"
@@ -971,26 +933,36 @@
     </div>
 
     <script>
-      const BACKEND_URL = "http://127.0.0.1:8000/chat"; // PRODUZIONE: Cambia con l'URL del tuo backend FastAPI
+      // CONFIGURAZIONE ENDPOINT: Cambiare con l'URL del backend online in produzione
+      const API_BASE_URL = window.ETUALY_API_HOST || "http://127.0.0.1:8000";
 
       const INITIAL_WELCOME_HTML = `
-      <div class="oa-msg oa-msg-bot">
-        <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
-        <p>Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
-      </div>
-    `;
+        <div class="oa-msg oa-msg-bot">
+          <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
+          <p>Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
+        </div>
+      `;
 
       const INITIAL_CHIPS_HTML = `
-      <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
-      <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
-    `;
+        <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
+        <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
+      `;
 
-      // NUOVO: genera un identificativo volatile a ogni caricamento/refresh della pagina
-      function generateSessionId() {
-        return "sess_" + Math.random().toString(36).substring(2, 11);
+      // Gestione Sessione Persistente durante la navigazione sul sito
+      function getOrCreateSessionId() {
+        let sid = sessionStorage.getItem("etualy_advisor_session_id");
+        if (!sid) {
+          sid =
+            "sess_" +
+            Math.random().toString(36).substring(2, 11) +
+            "_" +
+            Date.now();
+          sessionStorage.setItem("etualy_advisor_session_id", sid);
+        }
+        return sid;
       }
 
-      let sessionId = generateSessionId();
+      let sessionId = getOrCreateSessionId();
 
       const widget = document.getElementById("oaWidget");
       const launcher = document.getElementById("oaLauncher");
@@ -1010,15 +982,33 @@
         widget.classList.remove("is-active"),
       );
 
-      // RIPULITURA COMPLETA DELLA CHAT PER RIPARTIRE DA ZERO
-      restartBtn.addEventListener("click", () => {
-        sessionId = generateSessionId();
+      // Reset Sincronizzato con il Backend
+      restartBtn.addEventListener("click", async () => {
+        const oldSession = sessionId;
+        // Genera nuova chiave di sessione
+        sessionId =
+          "sess_" +
+          Math.random().toString(36).substring(2, 11) +
+          "_" +
+          Date.now();
+        sessionStorage.setItem("etualy_advisor_session_id", sessionId);
 
         messagesContainer.innerHTML = INITIAL_WELCOME_HTML;
         updateStepper(null);
         chipsContainer.innerHTML = INITIAL_CHIPS_HTML;
         input.value = "";
         scrollToBottom();
+
+        // Notifica il backend per ripulire lo store SQLite
+        try {
+          await fetch(`${API_BASE_URL}/reset`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: oldSession }),
+          });
+        } catch (e) {
+          console.warn("[Etualy Advisor] Avviso reset remoto:", e);
+        }
       });
 
       form.addEventListener("submit", (e) => {
@@ -1046,10 +1036,10 @@
         typingDiv.className = "oa-typing";
         typingDiv.id = "oaTypingIndicator";
         typingDiv.innerHTML = `
-        <span class="oa-typing-dot"></span>
-        <span class="oa-typing-dot"></span>
-        <span class="oa-typing-dot"></span>
-      `;
+          <span class="oa-typing-dot"></span>
+          <span class="oa-typing-dot"></span>
+          <span class="oa-typing-dot"></span>
+        `;
         messagesContainer.appendChild(typingDiv);
         scrollToBottom();
       }
@@ -1063,7 +1053,6 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
 
-      // SCORRIMENTO MIRATO VERSO L'ALTO: posiziona l'elemento in cima alla vista
       function scrollToElementTop(el) {
         if (!el) {
           scrollToBottom();
@@ -1099,9 +1088,6 @@
         }
       }
 
-      // ==========================================================================
-      // RENDERING CARD CON NOME SU 2 RIGHE E BOTTONE COMPATTO
-      // ==========================================================================
       function createProductCardHtml(prod) {
         const name = prod.name || "Profumo Artistico";
         const brand = prod.brand || "Profumeria Artistica";
@@ -1139,40 +1125,111 @@
           imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.onerror=null; this.src=''; this.classList.add('oa-card-placeholder');">`;
         } else {
           imageHtml = `
-          <div class="oa-card-image oa-card-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M6 3h12l1 7H5l1-7z"></path>
-              <path d="M9 3V1h6v2"></path>
-              <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
-            </svg>
-          </div>
-        `;
+            <div class="oa-card-image oa-card-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 3h12l1 7H5l1-7z"></path>
+                <path d="M9 3V1h6v2"></path>
+                <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
+              </svg>
+            </div>
+          `;
         }
 
         const titleLinkHtml = `
-        <a href="${escapeHtml(productPageUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-title-link" title="Visualizza ${escapeHtml(name)} su Etualy">
-          ${escapeHtml(name)}
-        </a>
-      `;
+          <a href="${escapeHtml(productPageUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-title-link" title="Visualizza ${escapeHtml(name)} su Etualy">
+            ${escapeHtml(name)}
+          </a>
+        `;
 
-        // 1. CASO SLIDE-OVER (PERCORSO GUIDATO)
         if (isSlideover) {
           return `
-          <div class="oa-product-card oa-has-slideover">
+            <div class="oa-product-card oa-has-slideover">
+              <div class="oa-card-front">
+                <div class="oa-card-header">
+                  <div class="oa-card-image-box">${imageHtml}</div>
+                  <div class="oa-card-meta">
+                    <div class="oa-card-vendor">${escapeHtml(brand)}</div>
+                    <div class="oa-card-title">${titleLinkHtml}</div>
+                    <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
+                  </div>
+                  <button class="oa-card-info-btn" onclick="toggleCardSlide(this)" title="Note e atmosfera">ⓘ</button>
+                </div>
+                <div class="oa-card-footer">
+                  <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
+                  <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                    <span>Aggiungi al Carrello</span>
+                  </a>
+                </div>
+              </div>
+              <div class="oa-card-slideover">
+                <div class="oa-slide-header">
+                  <div class="oa-slide-meta">
+                    <div class="oa-slide-subtitle">Profilo & Note Olfattive</div>
+                    <div class="oa-slide-title">${titleLinkHtml}</div>
+                  </div>
+                  <button class="oa-slide-close-btn" onclick="toggleCardSlide(this)" title="Chiudi note">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+                <div class="oa-slide-body">
+                  ${cleanStory ? `<div class="oa-slide-story">"${escapeHtml(cleanStory)}"</div>` : ""}
+                  ${
+                    keyNotes.length > 0
+                      ? `
+                    <div class="oa-slide-notes-box">
+                      <div class="oa-slide-notes-label">Accordi Salienti</div>
+                      <div class="oa-notes-chips">
+                        ${keyNotes.map((n) => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join("")}
+                      </div>
+                    </div>
+                  `
+                      : ""
+                  }
+                  ${traits ? `<div class="oa-slide-traits">${escapeHtml(traits)}</div>` : ""}
+                </div>
+                <div class="oa-slide-footer">
+                  <button class="oa-slide-back-btn" onclick="toggleCardSlide(this)">← Torna alla scheda</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="oa-product-card">
             <div class="oa-card-front">
               <div class="oa-card-header">
-                <div class="oa-card-image-box">
-                  ${imageHtml}
-                </div>
+                <div class="oa-card-image-box">${imageHtml}</div>
                 <div class="oa-card-meta">
                   <div class="oa-card-vendor">${escapeHtml(brand)}</div>
                   <div class="oa-card-title">${titleLinkHtml}</div>
                   <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
                 </div>
-                <button class="oa-card-info-btn" onclick="toggleCardSlide(this)" title="Note e atmosfera">
-                  ⓘ
-                </button>
               </div>
+              ${cleanStory ? `<div class="oa-card-desc">${escapeHtml(cleanStory)}</div>` : ""}
+              ${
+                keyNotes.length > 0
+                  ? `
+                <div class="oa-notes-chips" style="margin-top: 2px;">
+                  ${keyNotes
+                    .slice(0, 4)
+                    .map(
+                      (n) =>
+                        `<span class="oa-note-pill">${escapeHtml(n)}</span>`,
+                    )
+                    .join("")}
+                </div>
+              `
+                  : ""
+              }
               <div class="oa-card-footer">
                 <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
                 <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
@@ -1185,100 +1242,13 @@
                 </a>
               </div>
             </div>
-
-            <!-- RETRO SLIDE-OVER -->
-            <div class="oa-card-slideover">
-              <div class="oa-slide-header">
-                <div class="oa-slide-meta">
-                  <div class="oa-slide-subtitle">Profilo & Note Olfattive</div>
-                  <div class="oa-slide-title">${titleLinkHtml}</div>
-                </div>
-                <button class="oa-slide-close-btn" onclick="toggleCardSlide(this)" title="Chiudi note">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-              <div class="oa-slide-body">
-                ${cleanStory ? `<div class="oa-slide-story">"${escapeHtml(cleanStory)}"</div>` : ""}
-                ${
-                  keyNotes.length > 0
-                    ? `
-                  <div class="oa-slide-notes-box">
-                    <div class="oa-slide-notes-label">Accordi Salienti</div>
-                    <div class="oa-notes-chips">
-                      ${keyNotes.map((n) => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join("")}
-                    </div>
-                  </div>
-                `
-                    : ""
-                }
-                ${traits ? `<div class="oa-slide-traits">${escapeHtml(traits)}</div>` : ""}
-              </div>
-              <div class="oa-slide-footer">
-                <button class="oa-slide-back-btn" onclick="toggleCardSlide(this)">
-                  ← Torna alla scheda
-                </button>
-              </div>
-            </div>
           </div>
         `;
-        }
-
-        // 2. CASO STANDARD (CHAT LIBERA: FRONTE DIRETTO)
-        return `
-        <div class="oa-product-card">
-          <div class="oa-card-front">
-            <div class="oa-card-header">
-              <div class="oa-card-image-box">
-                ${imageHtml}
-              </div>
-              <div class="oa-card-meta">
-                <div class="oa-card-vendor">${escapeHtml(brand)}</div>
-                <div class="oa-card-title">${titleLinkHtml}</div>
-                <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
-              </div>
-            </div>
-            ${cleanStory ? `<div class="oa-card-desc">${escapeHtml(cleanStory)}</div>` : ""}
-            ${
-              keyNotes.length > 0
-                ? `
-              <div class="oa-notes-chips" style="margin-top: 2px;">
-                ${keyNotes
-                  .slice(0, 4)
-                  .map(
-                    (n) => `<span class="oa-note-pill">${escapeHtml(n)}</span>`,
-                  )
-                  .join("")}
-              </div>
-            `
-                : ""
-            }
-            <div class="oa-card-footer">
-              <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
-              <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="9" cy="21" r="1"></circle>
-                  <circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                </svg>
-                <span>Aggiungi al Carrello</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      `;
       }
 
-      // ==========================================================================
-      // PARSER MARKDOWN PER IL TESTO DELLA CHAT
-      // ==========================================================================
       function renderMarkdownText(rawText, hasStructuredProducts = false) {
         if (!rawText) return "";
-
         let text = rawText;
-
         if (hasStructuredProducts) {
           text = text.replace(
             /^\s*\*{0,2}(?:Prezzo|Price)\*{0,2}\s*:\s*[^\n\r]+/gim,
@@ -1293,15 +1263,12 @@
             "",
           );
         }
-
         text = text.replace(
           /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
-          (m, label, url) => {
-            return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-black);font-weight:600;text-decoration:underline;">${escapeHtml(label)}</a>`;
-          },
+          (m, label, url) =>
+            `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-black);font-weight:600;text-decoration:underline;">${escapeHtml(label)}</a>`,
         );
         text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-
         const paragraphs = text
           .split(/\n\n+/)
           .map((p) => p.trim())
@@ -1311,16 +1278,13 @@
           .join("");
       }
 
-      // ==========================================================================
-      // CHIAMATA AL BACKEND FASTAPI
-      // ==========================================================================
       async function sendUserMessage(text) {
         appendUserMessage(text);
         chipsContainer.innerHTML = "";
         showTyping();
 
         try {
-          const response = await fetch(BACKEND_URL, {
+          const response = await fetch(`${API_BASE_URL}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1338,17 +1302,14 @@
 
           const botMsgDiv = document.createElement("div");
           botMsgDiv.className = "oa-msg oa-msg-bot";
-
           const hasProducts = Boolean(
             data.products && data.products.length > 0,
           );
 
-          // 1. Inserimento testo del Maître Parfumeur
           if (data.reply) {
             botMsgDiv.innerHTML = renderMarkdownText(data.reply, hasProducts);
           }
 
-          // 2. Inserimento Product Cards
           if (hasProducts) {
             data.products.forEach((prod) => {
               const cardHtml = createProductCardHtml(prod);
@@ -1357,11 +1318,8 @@
           }
 
           messagesContainer.appendChild(botMsgDiv);
-
-          // 3. Aggiorna lo stepper
           updateStepper(data.step);
 
-          // 4. Renderizza le opzioni PRIMA di calcolare la posizione finale dello scroll
           if (data.options && data.options.length > 0) {
             chipsContainer.innerHTML = "";
             data.options.forEach((opt) => {
@@ -1375,7 +1333,6 @@
             chipsContainer.innerHTML = "";
           }
 
-          // 5. Scorrimento mirato verso l'alto sulla domanda del bot
           scrollToElementTop(botMsgDiv);
         } catch (err) {
           removeTyping();

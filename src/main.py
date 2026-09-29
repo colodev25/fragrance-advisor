@@ -1,32 +1,62 @@
 """
-main.py - FastAPI Server per il Consulente Olfattivo
+main.py - FastAPI Server per il Consulente Olfattivo Etualy
 """
 
 import os
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
 
-from src.advisor import FragranceAdvisor
+BASE_DIR = Path(__file__).resolve().parent.parent
+CHROMA_DIR = BASE_DIR / "chroma_db"
 
-app = FastAPI(title="Consulente Olfattivo AI")
+advisor = None
 
-# Legge la variabile o usa "*" come fallback
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Verifica e protegge l'integrità dell'indice vettoriale all'avvio del server."""
+    global advisor
+    print("[*] Avvio Consulente Olfattivo FastAPI...")
+
+    # Se ChromaDB non è presente sul filesystem del container, avvia il reindex automatico
+    if not CHROMA_DIR.exists() or not any(CHROMA_DIR.iterdir()):
+        print("[!] Cartella ChromaDB non trovata o vuota. Avvio generazione indice vettoriale...")
+        try:
+            from src.reindex import main as build_index
+            build_index()
+            print("[+] Indice ChromaDB auto-generato con successo al boot.")
+        except Exception as e:
+            print(f"[CRITICAL] Impossibile costruire l'indice vettoriale: {e}")
+
+    # Inizializza l'istanza dell'advisor con l'indice garantito
+    from src.advisor import FragranceAdvisor
+    advisor = FragranceAdvisor()
+    print("[+] FragranceAdvisor caricato e pronto a ricevere richieste.")
+
+    yield
+    print("[*] Arresto Consulente Olfattivo.")
+
+
+app = FastAPI(title="Consulente Olfattivo AI - Etualy", lifespan=lifespan)
+
+# Configurazione CORS conforme agli standard browser
 raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
 origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+is_wildcard = "*" in origins
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"] if is_wildcard else origins,
+    # Standard W3C: allow_credentials deve essere False se l'origin è wildcard (*)
+    allow_credentials=not is_wildcard,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Inizializzazione del motore advisor
-advisor = FragranceAdvisor()
 
 
 class ChatRequest(BaseModel):
@@ -36,24 +66,39 @@ class ChatRequest(BaseModel):
     step_override: Optional[int] = None
 
 
+class ResetRequest(BaseModel):
+    session_id: str
+
+
 @app.get("/")
 def health_check():
-    return {"status": "ok", "service": "Olfactive Advisor API"}
+    return {"status": "ok", "service": "Etualy Olfactive Advisor API"}
 
 
-# Endpoint principale per la chat (gestisce sia /chat che /chat/)
 @app.post("/chat")
 @app.post("/chat/")
 def chat_endpoint(req: ChatRequest):
-    response = advisor.advise(
+    if advisor is None:
+        return {"reply": "Il servizio è in fase di avvio, riprova tra qualche secondo.", "products": []}
+
+    return advisor.advise(
         user_query=req.message,
         session_id=req.session_id,
         max_price=req.max_price,
         step_override=req.step_override
     )
-    return response
+
+
+@app.post("/reset")
+@app.post("/reset/")
+def reset_endpoint(req: ResetRequest):
+    """Cancella lo stato della sessione per ricominciare da zero."""
+    if advisor is not None:
+        advisor.reset_session(req.session_id)
+    return {"status": "ok", "session_id": req.session_id, "message": "Sessione azzerata"}
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.main:app", host="127.0.0.1", port=8000, reload=True)
+    # PRODUZIONE: disattivare reload=True per contenere l'uso di RAM ed evitare OOM
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=False)
