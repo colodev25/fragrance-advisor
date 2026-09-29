@@ -934,7 +934,10 @@
 
     <script>
       // CONFIGURAZIONE ENDPOINT: Cambiare con l'URL del backend online in produzione
-      const API_BASE_URL = "https://fragrance-advisor-api.onrender.com/";
+      const API_BASE_URL = "https://fragrance-advisor-api.onrender.com".replace(
+        /\/+$/,
+        "",
+      );
 
       const INITIAL_WELCOME_HTML = `
         <div class="oa-msg oa-msg-bot">

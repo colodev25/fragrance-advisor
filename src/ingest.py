@@ -47,7 +47,7 @@ EXCLUDED_KEYWORDS = [
     "crema", "hair", "bagnodoccia", "doccia schiuma", "sapone", "shampoo",
     "balsamo", "olio corpo", "candela", "diffusore", "ambiente",
     "solare", "siero", "scrub", "lozione", "deodorante", "sample", 
-    "profumo per capelli", "capelli", "body spray"
+    "profumo per capelli", "capelli", "body spray", "body wash"
 ]
 
 KNOWN_FAMILIES = [
