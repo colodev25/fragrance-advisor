@@ -10,6 +10,7 @@ Uso:
 
 import json
 from pathlib import Path
+from torch import nn
 import chromadb
 from chromadb.utils import embedding_functions
 
