@@ -1,94 +1,103 @@
 """
-reindex.py - Rigenerazione e sincronizzazione del Database Vettoriale ChromaDB
-
-Legge data/catalog.json e costruisce la collection persistente 'fragrances'
-utilizzando il modello multilingue condiviso con il motore di ricerca.
-
-Uso:
-    python src/reindex.py
+reindex.py - Rigenerazione dell'indice vettoriale ChromaDB tramite Hugging Face Inference API
 """
 
 import json
+import os
+import shutil
+import time
 from pathlib import Path
-from torch import nn
+
 import chromadb
 from chromadb.utils import embedding_functions
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-CATALOG_PATH = BASE_DIR / "data" / "catalog.json"
-CHROMA_DIR = BASE_DIR / "chroma_db"
+DATA_PATH = BASE_DIR / "data" / "catalog.json"
+CHROMA_PATH = BASE_DIR / "chroma_db"
+
 COLLECTION_NAME = "fragrances"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def main():
-    print("=== AVVIO RE-INDICIZZAZIONE CHROMADB ===")
+    print("[*] Avvio re-indicizzazione ChromaDB (Modalità Serverless Cloud)...")
 
-    if not CATALOG_PATH.exists():
-        print(f"[!] Errore: File {CATALOG_PATH} non trovato. Esegui prima l'estrazione catalogo.")
+    if not DATA_PATH.exists():
+        print(f"[!] ERRORE: File catalogo non trovato in {DATA_PATH}")
         return
 
-    with open(CATALOG_PATH, "r", encoding="utf-8") as f:
-        catalog = json.load(f)
+    with open(DATA_PATH, "r", encoding="utf-8") as f:
+        products = json.load(f)
 
-    print(f"[*] Caricati {len(catalog)} profumi da catalog.json.")
+    if not products:
+        print("[!] ATTENZIONE: Il catalogo è vuoto. Nessun dato da indicizzare.")
+        return
 
-    CHROMA_DIR.mkdir(parents=True, exist_ok=True)
-    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+    print(f"[*] Caricati {len(products)} prodotti da {DATA_PATH.name}")
 
-    # Allineamento dell'embedding model con il runtime di ricerca
-    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=EMBEDDING_MODEL
+    if CHROMA_PATH.exists():
+        try:
+            shutil.rmtree(CHROMA_PATH)
+        except Exception as e:
+            print(f"[!] Avviso pulizia chroma_db: {e}")
+
+    CHROMA_PATH.mkdir(parents=True, exist_ok=True)
+
+    client = chromadb.PersistentClient(path=str(CHROMA_PATH))
+
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        print("[!] ATTENZIONE: HF_TOKEN non trovato nell'ambiente! Le richieste potrebbero fallire.")
+
+    emb_fn = embedding_functions.HuggingFaceEmbeddingFunction(
+        api_key=hf_token,
+        model_name=MODEL_NAME
     )
 
-    existing_collections = [c.name for c in client.list_collections()]
-    if COLLECTION_NAME in existing_collections:
-        print(f"[*] Eliminazione vecchia collection '{COLLECTION_NAME}'...")
-        client.delete_collection(COLLECTION_NAME)
-
-    collection = client.create_collection(
+    collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
-        embedding_function=embedding_fn,
+        embedding_function=emb_fn,
         metadata={"hnsw:space": "cosine"}
     )
-    print(f"[*] Creata nuova collection '{COLLECTION_NAME}' (Cosine Distance, Modello: {EMBEDDING_MODEL}).")
 
-    ids = []
     documents = []
     metadatas = []
+    ids = []
 
-    for item in catalog:
+    for item in products:
         doc_id = str(item.get("id"))
-        semantic_text = item.get("semantic_text") or item.get("description") or item.get("name") or ""
+        semantic_text = item.get("semantic_text", "")
+        if not semantic_text:
+            semantic_text = f"{item.get('name', '')} {item.get('brand', '')} {item.get('family', '')} {item.get('description', '')}"
 
-        meta = {
+        documents.append(semantic_text)
+        ids.append(doc_id)
+        metadatas.append({
             "name": str(item.get("name", "")),
-            "brand": str(item.get("brand", "Profumeria Artistica")),
-            "price": float(item.get("price", 0.0) or 0.0),
-            "in_stock": bool(item.get("in_stock", True)),
+            "brand": str(item.get("brand", "")),
+            "price": float(item.get("price", 0.0)),
             "family": str(item.get("family", "")),
             "ptype": str(item.get("ptype", "")),
-            "add_to_cart_url": str(item.get("urls", {}).get("add_to_cart", "")),
-            "product_page_url": str(item.get("urls", {}).get("product_page", "")),
-            "image_url": str(item.get("urls", {}).get("image_url", ""))
-        }
+            "in_stock": bool(item.get("in_stock", True))
+        })
 
-        ids.append(doc_id)
-        documents.append(semantic_text)
-        metadatas.append(meta)
+    batch_size = 20
+    total_docs = len(documents)
 
-    batch_size = 100
-    for i in range(0, len(ids), batch_size):
-        end = min(i + batch_size, len(ids))
+    for i in range(0, total_docs, batch_size):
+        end_idx = min(i + batch_size, total_docs)
         collection.add(
-            ids=ids[i:end],
-            documents=documents[i:end],
-            metadatas=metadatas[i:end]
+            documents=documents[i:end_idx],
+            metadatas=metadatas[i:end_idx],
+            ids=ids[i:end_idx]
         )
-        print(f"    Indicizzati {end}/{len(ids)} profumi...")
+        print(f"    Indicizzati {end_idx}/{total_docs} prodotti...")
+        time.sleep(0.3)
 
-    print("\n=== RE-INDICIZZAZIONE COMPLETATA CON SUCCESSO ===")
-    print(f"Totale documenti memorizzati su disco in '{CHROMA_DIR}': {collection.count()}")
+    print(f"[+] Re-indicizzazione completata con successo in {CHROMA_PATH}\n")
 
 
 if __name__ == "__main__":

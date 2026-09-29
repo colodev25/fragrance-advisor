@@ -2,21 +2,27 @@
 search.py - Motore di Ricerca Semantico e Ibrido
 
 Si collega all'indice persistente ChromaDB (chroma_db/),
-applica filtri di budget (min_price, max_price) e reranking lessicale su note olfattive.
+applica filtri di budget (min_price, max_price) e reranking lessicale su note olfattive
+utilizzando le Serverless Inference API di Hugging Face per azzerare l'uso di RAM.
 
 Uso per test:
     python src/search.py
 """
 
+import os
 import re
 from pathlib import Path
+
 import chromadb
 from chromadb.utils import embedding_functions
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DIR = BASE_DIR / "chroma_db"
 COLLECTION_NAME = "fragrances"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 class FragranceSearchEngine:
@@ -30,8 +36,10 @@ class FragranceSearchEngine:
         # Connessione al database persistente generato da reindex.py
         self.chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
 
-        # Stesso modello e configurazione usati durante l'indicizzazione
-        self.embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+        # Funzione di embedding remota serverless (Zero consumo di RAM locale)
+        hf_token = os.getenv("HF_TOKEN")
+        self.embed_fn = embedding_functions.HuggingFaceEmbeddingFunction(
+            api_key=hf_token,
             model_name=EMBEDDING_MODEL
         )
 
@@ -149,7 +157,7 @@ class FragranceSearchEngine:
 
 
 if __name__ == "__main__":
-    print("=== TEST RICERCA CHROMADB (PERSISTENTE) ===")
+    print("=== TEST RICERCA CHROMADB (SERVERLESS HF) ===")
     try:
         engine = FragranceSearchEngine()
 
@@ -169,7 +177,7 @@ if __name__ == "__main__":
                 for i in range(len(res["ids"][0])):
                     m = res["metadatas"][0][i]
                     print(f"   [{i+1}] {m['name']} ({m['brand']}) - Prezzo: {m['price']}€ | Famiglia: {m.get('family', 'N/D')}")
-                    print(f"       Cart URL: {m['add_to_cart_url']}")
+                    print(f"       Cart URL: {m.get('add_to_cart_url', 'N/D')}")
             else:
                 print("   Nessun risultato trovato con questi filtri.")
     except Exception as e:

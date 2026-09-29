@@ -32,26 +32,16 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
-      - name: Verify ML dependencies
-        run: |
-          python - <<'PY'
-          import numpy
-          import torch
-          import transformers
-
-          print("NumPy:", numpy.__version__)
-          print("Torch:", torch.__version__)
-          print("Transformers:", transformers.__version__)
-          print("Torch import successful:", torch.nn.Linear(1, 1))
-          PY
-
       - name: Costruzione indice locale per i test
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python src/reindex.py
 
       - name: Esecuzione Test Suite
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SESSIONS_DB_PATH: ":memory:"
         run: |
           pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py -v
