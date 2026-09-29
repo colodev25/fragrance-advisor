@@ -28,6 +28,19 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: Verify ML dependencies
+        run: |
+          python - <<'PY'
+          import numpy
+          import torch
+          import transformers
+
+          print("NumPy:", numpy.__version__)
+          print("Torch:", torch.__version__)
+          print("Transformers:", transformers.__version__)
+          print("Torch import successful:", torch.nn.Linear(1, 1))
+          PY
+
       - name: Costruzione indice locale per i test
         run: |
           python src/reindex.py
