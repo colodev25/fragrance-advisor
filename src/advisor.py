@@ -73,10 +73,16 @@ CANONICAL_NOTES = [
     "mandorla", "fico", "sale", "mirra", "lavanda", "neroli", "tuberosa",
     "pesca", "mela", "pompelmo", "cuoio", "zenzero", "zafferano", "miele",
     "caramello", "muschio", "musk", "eliotropio", "ribes", "menta", "anice",
-    "cocco", "lampone", "cardamomo", "chiodi di garofano", "noce moscata"
+    "cocco", "lampone", "cardamomo", "chiodi di garofano", "noce moscata",
+    "orientale", "orientali", "legnoso", "legnosa", "legnosi", "legnose",
+    "agrumato", "agrumata", "agrumati", "agrumate", "floreale", "floreali",
+    "speziato", "speziata", "speziati", "speziate", "ambrato", "ambrata", "ambrati", "ambrate",
+    "gourmand", "vanigliato", "vanigliata", "muschiato", "muschiata",
+    "cuoiato", "cuoiata", "fresco", "fresca", "freschi", "fresche",
+    "marino", "marina", "marini", "marine", "acquatico", "acquatica", "acquatici",
+    "verde", "verdi", "talcato", "talcata", "chypre", "aromatico", "aromatica"
 ]
 
-# Blacklist di preposizioni, articoli e termini comuni per evitare falsi positivi
 STOPWORDS_NOTES = {
     "alla", "allo", "alle", "agli", "dalla", "dallo", "delle", "degli", "della",
     "nella", "nello", "nelle", "negli", "sulla", "sullo", "sulle", "sugli",
@@ -97,23 +103,20 @@ class FragranceAdvisor:
         client: Optional[OpenAI] = None,
         resilient_client: Optional[ResilientGroqClient] = None
     ):
-        # 1. Session store (se non passato, usa il default)
         self.session_store = session_store or SessionStore()
         self.search_engine = FragranceSearchEngine()
         groq_key = os.getenv("GROQ_API_KEY")
         if not groq_key:
             raise ValueError("GROQ_API_KEY mancante nel file .env")
 
-        # 2. Client API Groq/OpenAI
         self.client = client or OpenAI(
             base_url="https://api.groq.com/openai/v1",
-            api_key=os.getenv("GROQ_API_KEY", "")
-        )# 3. Client resiliente (se passato usa quello, altrimenti inizializza con valori standard)
+            api_key=groq_key
+        )
         self._resilient_client = resilient_client or ResilientGroqClient(self.client)
 
         self.sessions = defaultdict(list)
         self.active_perfumes = {}
-        # session_id -> {"step": None|1|2|3|4, "answers": []}
         self.guided_states = defaultdict(lambda: {"step": None, "answers": []})
 
         self.catalog_products = []
@@ -124,7 +127,6 @@ class FragranceAdvisor:
                 with open(CATALOG_PATH, "r", encoding="utf-8") as f:
                     self.catalog_products = json.load(f)
 
-                # Indicizzazione interna delle sole note valide, filtrando le stopword
                 for prod in self.catalog_products:
                     pyr = prod.get("olfactory_pyramid", {})
                     for note in pyr.get("top", []) + pyr.get("heart", []) + pyr.get("base", []):
@@ -140,18 +142,15 @@ class FragranceAdvisor:
 
     @property
     def resilient_client(self) -> ResilientGroqClient:
-        """Sincronizza dinamicamente il wrapper se self.client viene sostituito da un mock nei test."""
         if self._resilient_client.client != self.client:
             self._resilient_client = ResilientGroqClient(self.client)
         return self._resilient_client
     
     @resilient_client.setter
     def resilient_client(self, client: ResilientGroqClient):
-        """Permette di aggiornare o iniettare una configurazione personalizzata del client resiliente."""
         self._resilient_client = client
 
     def _resolve_macro_family(self, family_ans: str) -> tuple[str, list[str]]:
-        """Riconosce la macro-categoria scelta e restituisce le relative sotto-famiglie."""
         ans_clean = family_ans.lower().strip()
 
         for macro_key, sub_fams in MACRO_FAMILIES.items():
@@ -170,7 +169,6 @@ class FragranceAdvisor:
         return family_ans, [family_ans]
 
     def _find_mentioned_product(self, query: str) -> dict | None:
-        """Individua se nella frase è presente il nome di un profumo a catalogo."""
         if not self.catalog_products:
             return None
 
@@ -202,15 +200,13 @@ class FragranceAdvisor:
         return None
 
     def _has_explicit_olfactory_redirect(self, query: str) -> bool:
-        """Verifica se l'utente ha esplicitamente richiesto una nuova famiglia olfattiva o note specifiche."""
         q_lower = query.lower()
         if any(term in q_lower for term in CANONICAL_NOTES):
             return True
-        scent_terms = ["agrumat", "fresc", "acquat", "marin", "aromat", "verd", "floreal", "dolc", "cald", "gourmand", "legnos", "speziat", "cuoi"]
+        scent_terms = ["agrumat", "fresc", "acquat", "marin", "aromat", "verd", "floreal", "dolc", "cald", "gourmand", "legnos", "speziat", "cuoi", "oriental"]
         return any(term in q_lower for term in scent_terms)
 
     def _extract_target_notes(self, query: str) -> list[str]:
-        """Estrae le note olfattive o materie prime richieste esplicitamente nella query, depurate da stopword."""
         q_lower = f" {query.lower()} "
         found = []
 
@@ -226,7 +222,6 @@ class FragranceAdvisor:
         return found
 
     def _find_keyword_matches(self, target_notes: list[str], min_price: float | None, max_price: float | None, query: str, limit: int = 4) -> list[dict]:
-        """Ricerca ibrida: individua nel catalogo le fragranze che contengono letteralmente la nota richiesta."""
         if not target_notes or not self.catalog_products:
             return []
 
@@ -238,6 +233,9 @@ class FragranceAdvisor:
             req_season = "Autunno / Inverno"
         elif any(w in q_lower for w in ["estiv", "primaver", "cald"]):
             req_season = "Primavera / Estate"
+
+        is_query_expensive = bool(re.search(r"\b(costos[oa]|pregiat[oa]|di\s+fascia\s+alta|di\s+lusso|alta\s+gamma|alta\s+profumeria)\b", q_lower))
+        is_query_cheaper = bool(re.search(r"\b(economic[oa]|abbordabile|accessibile|basso\s+costo)\b", q_lower))
 
         for prod in self.catalog_products:
             price = float(prod.get("price", 0.0))
@@ -255,17 +253,18 @@ class FragranceAdvisor:
 
             matches_count = 0
             for t_note in target_notes:
-                if any(t_note in n for n in all_notes):
+                tn = t_note.lower().strip()
+                if tn in family:
                     score += 35
                     matches_count += 1
-                elif t_note in family:
-                    score += 20
+                elif any(tn in n for n in all_notes):
+                    score += 30
                     matches_count += 1
-                elif t_note in name:
+                elif tn in name:
                     score += 25
                     matches_count += 1
-                elif t_note in semantic:
-                    score += 10
+                elif tn in semantic:
+                    score += 15
                     matches_count += 1
 
             if matches_count == 0:
@@ -282,7 +281,12 @@ class FragranceAdvisor:
 
             scored_candidates.append((score, prod))
 
-        scored_candidates.sort(key=lambda x: x[0], reverse=True)
+        if is_query_expensive:
+            scored_candidates.sort(key=lambda x: (x[0], x[1].get("price", 0.0)), reverse=True)
+        elif is_query_cheaper:
+            scored_candidates.sort(key=lambda x: (x[0], -x[1].get("price", 0.0)), reverse=True)
+        else:
+            scored_candidates.sort(key=lambda x: x[0], reverse=True)
 
         results = []
         for _, p in scored_candidates[:limit]:
@@ -300,7 +304,6 @@ class FragranceAdvisor:
         return results
 
     def _detect_gender(self, name: str, tags: list, usage_profile: str = "", description: str = "") -> str:
-        """Determina il genere del profumo senza allucinazioni da sottostringa né priorità errate."""
         name_lower = name.lower()
         tags_lower = [t.strip().lower() for t in tags]
         u_prof_lower = (usage_profile or "").lower()
@@ -332,7 +335,6 @@ class FragranceAdvisor:
         return "Unisex"
 
     def _detect_season(self, family: str, tags: list, usage_profile: str = "", description: str = "") -> str:
-        """Determina la stagionalità o contesto ideale senza sovrascritture casuali."""
         tags_lower = [t.strip().lower() for t in tags]
         u_prof_lower = (usage_profile or "").lower()
         desc_lower = (description or "").lower()
@@ -358,7 +360,6 @@ class FragranceAdvisor:
         return "Quattro Stagioni"
 
     def _is_compatible_with_guided(self, prod_enriched: dict, gender_req: str, occasion_req: str) -> bool:
-        """Valida deterministicamente la compatibilità con le scelte dell'utente nel percorso guidato."""
         traits = prod_enriched.get("traits", "")
         parts = [p.strip() for p in traits.split("•")]
         prod_gender = parts[1] if len(parts) > 1 else "Unisex"
@@ -382,7 +383,6 @@ class FragranceAdvisor:
         return True
 
     def _enrich_product_payload(self, prod_dict: dict, card_type: str = "slideover") -> dict:
-        """Estrae e organizza gli attributi per la Product Card."""
         p_name = prod_dict.get("name", "").strip()
         p_brand = prod_dict.get("brand", "Profumeria Artistica").strip()
         p_price = float(prod_dict.get("price", 0.0) or 0.0)
@@ -403,7 +403,11 @@ class FragranceAdvisor:
         traits = ""
 
         if cat_match:
-            p_page = cat_match.get("urls", {}).get("product_page", "") or p_page
+            # Recupero garantito di tutti gli URL e immagini dal catalogo master
+            urls = cat_match.get("urls", {})
+            p_page = urls.get("product_page", "") or p_page
+            p_cart = urls.get("add_to_cart", "") or p_cart
+            p_img = urls.get("image_url", "") or p_img
 
             pyr = cat_match.get("olfactory_pyramid", {})
             top = [n.strip() for n in pyr.get("top", []) if n.strip()][:2]
@@ -489,13 +493,12 @@ class FragranceAdvisor:
         }
 
     def _extract_price_constraints(self, query: str, active_perfume: dict | None) -> tuple[float | None, float | None, str]:
-        """Estrae vincoli di budget relativi o assoluti e ripulisce la query semantica."""
         min_p = None
         max_p = None
         q = query.strip()
 
         is_cheaper = bool(re.search(r"\b(pi[uù]\s+economic[oa]|meno\s+costos[oa]|pi[uù]\s+abbordabile|pi[uù]\s+accessibile|spendere\s+meno|a\s+meno|costa\s+meno)\b", q, re.I))
-        is_expensive = bool(re.search(r"\b(pi[uù]\s+costos[oa]|pi[uù]\s+pregiat[oa]|di\s+fascia\s+pi[uù]\s+alta|pi[uù]\s+esclusiv[oa]|di\s+lusso|alta\s+gamma|alta\s+profumeria|spendere\s+di\s+pi[uù])\b", q, re.I))
+        is_expensive = bool(re.search(r"\b(pi[uù]\s+costos[oa]|pi[uù]\s+pregiat[oa]|di\s+fascia\s+pi[uù]\s+alta|pi[uù]\s+esclusiv[oa]|spendere\s+di\s+pi[uù])\b", q, re.I))
 
         if is_cheaper and active_perfume and active_perfume.get("price"):
             current_price = float(active_perfume["price"])
@@ -525,7 +528,7 @@ class FragranceAdvisor:
         search_query = re.sub(r"\b(?:sopra\s+(?:i\s+)?|oltre\s+(?:i\s+)?|pi[uù]\s+di\s+|almeno\s+|minimo\s+|min\s+|>|>=)\s*\d+(?:[.,]\d+)?\s*(?:€|euro)?\b", "", search_query, flags=re.I)
         search_query = re.sub(r"\b\d+\s*(?:€|euro)\b", "", search_query, flags=re.I)
         search_query = re.sub(r"\b(pi[uù]\s+economic[oa]|meno\s+costos[oa]|pi[uù]\s+abbordabile|pi[uù]\s+accessibile|spendere\s+meno|a\s+meno)\b", "", search_query, flags=re.I)
-        search_query = re.sub(r"\b(pi[uù]\s+costos[oa]|pi[uù]\s+pregiat[oa]|di\s+fascia\s+pi[uù]\s+alta|pi[uù]\s+esclusiv[oa]|di\s+lusso|alta\s+gamma|alta\s+profumeria|spendere\s+di\s+pi[uù])\b", "", search_query, flags=re.I)
+        search_query = re.sub(r"\b(pi[uù]\s+costos[oa]|pi[uù]\s+pregiat[oa]|di\s+fascia\s+pi[uù]\s+alta|pi[uù]\s+esclusiv[oa]|spendere\s+di\s+pi[uù])\b", "", search_query, flags=re.I)
         search_query = re.sub(r"\s+", " ", search_query).strip()
 
         stopwords = [
@@ -587,7 +590,6 @@ class FragranceAdvisor:
         if any(re.search(p, q) for p in stay_patterns):
             return "VALUTA"
 
-        # 3. FALLBACK CON MODELLO REASONING (Se la query è ambigua)
         prompt = (
             f"Il cliente sta valutando il profumo '{active_perfume.get('name')}'. "
             f"Ha appena scritto: \"{query}\".\n"
@@ -603,7 +605,7 @@ class FragranceAdvisor:
                 primary_model=FALLBACK_FREE_MODEL,
                 fallback_model=FALLBACK_FREE_MODEL,
                 temperature=0.0,
-                max_tokens=250,  # Spazio sufficiente per completare il reasoning
+                max_tokens=250,
                 graceful_fallback_text="VALUTA"
             ).upper()
             return "CAMBIA" if "CAMBIA" in decision else "VALUTA"
@@ -614,12 +616,9 @@ class FragranceAdvisor:
         if not session_id:
             session_id = "default"
 
-        # Se l'istanza è stata creata senza passare da __init__ (es. in fixture mock dei test)
         if not hasattr(self, "session_store") or self.session_store is None:
             self.session_store = SessionStore()
 
-        # 1. RECUPERO STATO DA SQLITE (Chat libera + Percorso guidato)
-        # Sincronizza lo storico dei messaggi, il profumo attivo (per VALUTA/CAMBIA) e lo step
         sess_data = self.session_store.get_session(session_id)
         self.sessions[session_id] = sess_data["history"]
         self.active_perfumes[session_id] = sess_data["active_perfume"]
@@ -630,7 +629,6 @@ class FragranceAdvisor:
         state = self.guided_states[session_id]
         response = None
 
-        # --- TRIGGER DI RESET / AVVIO ---
         start_guided_triggers = [
             "guidami", "guida", "ricomincia", "riparti",
             "percorso guidato", "ricomincia percorso", "inizia guida"
@@ -662,7 +660,6 @@ class FragranceAdvisor:
                 "mode": "free"
             }
 
-        # --- PERCORSO GUIDATO ---
         effective_step = step_override if step_override is not None else state["step"]
 
         if response is None and effective_step is not None:
@@ -707,11 +704,9 @@ class FragranceAdvisor:
                 state["step"] = None
                 response = self._generate_guided_recommendations(state["answers"], session_id)
 
-        # --- CHAT LIBERA (Entity match, VALUTA follow-up, CAMBIA ricerca ibrida) ---
         if response is None:
             response = self._handle_free_chat(user_query, session_id, max_price)
 
-        # 2. SALVATAGGIO STATO SU SQLITE (Eseguito SEMPRE, sia per free che per guided)
         self.session_store.save_session(
             session_id=session_id,
             history=self.sessions[session_id],
@@ -848,7 +843,6 @@ class FragranceAdvisor:
             fallback_model=FALLBACK_FREE_MODEL,
             temperature=0.0
         )
-        
 
         self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato completato: {macro_label}, {gender}, {occasion}, {budget_str}"})
         self.sessions[session_id].append({"role": "assistant", "content": reply})
@@ -900,12 +894,11 @@ class FragranceAdvisor:
             messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
             reply = self.resilient_client.create_completion(
-              messages=messages,
-              primary_model=PRIMARY_FREE_MODEL,
-              fallback_model=FALLBACK_FREE_MODEL,
-              temperature=0.0
-          )
-            
+                messages=messages,
+                primary_model=PRIMARY_FREE_MODEL,
+                fallback_model=FALLBACK_FREE_MODEL,
+                temperature=0.0
+            )
 
             enriched = self._enrich_product_payload(mentioned_product, card_type="standard")
 
@@ -956,12 +949,11 @@ class FragranceAdvisor:
                 messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
                 reply = self.resilient_client.create_completion(
-                  messages=messages,
-                  primary_model=PRIMARY_FREE_MODEL,
-                  fallback_model=FALLBACK_FREE_MODEL,
-                  temperature=0.0
-              )
-                
+                    messages=messages,
+                    primary_model=PRIMARY_FREE_MODEL,
+                    fallback_model=FALLBACK_FREE_MODEL,
+                    temperature=0.0
+                )
 
                 self.sessions[session_id].append({"role": "user", "content": user_query})
                 self.sessions[session_id].append({"role": "assistant", "content": reply})
@@ -986,9 +978,21 @@ class FragranceAdvisor:
                         min_price=effective_min_p,
                         max_price=effective_max_p,
                         query=user_query,
-                        limit=3
+                        limit=4
                     )
-                    print(f"[HYBRID BOOST] Trovate {len(keyword_matches)} fragranze con note esatte: {target_notes}")
+                    print(f"[HYBRID BOOST] Trovate {len(keyword_matches)} fragranze con note o famiglie esatte: {target_notes}")
+                elif is_seeking_similar_alternative and active:
+                    active_fam = active.get("family", "")
+                    if active_fam:
+                        fam_tokens = [f.strip().lower() for f in active_fam.split(",") if len(f.strip()) >= 3]
+                        keyword_matches = self._find_keyword_matches(
+                            target_notes=fam_tokens,
+                            min_price=effective_min_p,
+                            max_price=effective_max_p,
+                            query=user_query,
+                            limit=4
+                        )
+                        print(f"[HYBRID BOOST ALTERNATIVA] Trovate {len(keyword_matches)} fragranze affini per famiglia '{active_fam}' entro il budget.")
 
                 if is_seeking_similar_alternative and active:
                     active_fam = active.get("family", "")
@@ -1017,7 +1021,6 @@ class FragranceAdvisor:
                 candidate_idx = 1
                 seen_names = set()
 
-                # 1. Priorità assoluta ai candidati che contengono le note richieste (Keyword-Boost)
                 for km in keyword_matches:
                     p_name_lower = km["name"].strip().lower()
                     if is_seeking_similar_alternative and active and p_name_lower == active.get("name", "").strip().lower():
@@ -1038,7 +1041,6 @@ class FragranceAdvisor:
                     )
                     candidate_idx += 1
 
-                # 2. Integrazione con i risultati semantici di ChromaDB
                 if results["ids"] and len(results["ids"][0]) > 0:
                     for i in range(len(results["ids"][0])):
                         meta = results["metadatas"][0][i]
@@ -1103,31 +1105,33 @@ class FragranceAdvisor:
                         "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n\n"
                         "COMPITO DI SELEZIONE ALTERNATIVA:\n"
                         f"Il cliente sta chiedendo un'ALTERNATIVA al profumo che stava valutando: '{active['name']}' ({active.get('family', '')}).\n"
-                        "Hai a disposizione una lista di CANDIDATI dal catalogo che rispettano già i vincoli di budget e affinità olfattiva.\n"
-                        "1. Analizza la richiesta dell'utente.\n"
-                        f"2. Scegli TRA I CANDIDATI il profumo più affine e coerente per famiglia ({active.get('family', '')}), accordi olfattivi e carattere, che rispetti la fascia economica richiesta.\n"
-                        f"3. Nella tua spiegazione (massimo 2-3 frasi), spiega con garbo ed eleganza perché questa creazione è l'alternativa ideale a '{active['name']}', evidenziando cosa condividono (note o sensazione) e cosa la distingue nella fascia desiderata.\n"
-                        "4. FORMATO RISPOSTA:\n"
-                        "   [ID: PRODOTTO_X]\n"
-                        "   Spiegazione raffinata ed esperta (massimo 2-3 frasi) del perché è l'alternativa ideale.\n"
+                        "Hai a disposizione una lista di CANDIDATI dal catalogo.\n\n"
+                        "REGOLE TASSATIVE:\n"
+                        "1. Scegli tra i candidati il profumo alternativo più affine per accordi olfattivi, famiglia, note o che rispetti il vincolo richiesto.\n"
+                        "2. FORMATO RISPOSTA:\n"
+                        "   Inizia TASSATIVAMENTE con '[ID: PRODOTTO_X]' (es. [ID: PRODOTTO_1]) seguito da 2-3 frasi di spiegazione raffinata.\n"
                         "   NON inserire link, prezzi o immagini nel testo.\n"
-                        "5. SCARTO: Se NESSUN candidato è adatto, scrivi '[ID: NESSUNO]' all'inizio."
+                        "3. Se e solo se la richiesta dell'utente è del tutto assurda o nessun candidato è utilizzabile, inizia con '[ID: NESSUNO]'."
                     )
                     user_message_content = f"{active_info}RICHIESTA UTENTE: {user_query}\n\nCANDIDATI ALTERNATIVI DISPONIBILI:\n{context_str}"
                 else:
                     system_prompt = (
                         "Sei un Maitre Parfumeur raffinato ed esperto di una boutique di profumeria artistica.\n\n"
                         "COMPITO DI SELEZIONE RIGOROSA:\n"
-                        "Hai a disposizione una lista di CANDIDATI estratti dal catalogo che rispettano già i vincoli di budget e note richiesti.\n"
-                        "1. Analizza la richiesta dell'utente.\n"
-                        "2. Scegli TRA I CANDIDATI ESATTAMENTE UN SOLO PRODOTTO che rispecchia REALMENTE e COERENTEMENTE la richiesta.\n"
-                        "3. Se l'utente ha chiesto una nota specifica o una stagione, dai priorità alla fragranza che la contiene ed evidenzia con eleganza la sua armonia.\n"
-                        "4. REGOLA ANTI-CONTRADDIZIONE: Se un candidato è caldo/intenso, NON proporlo per richieste di freschezza marina o leggerezza.\n"
-                        "5. FORMATO RISPOSTA:\n"
-                        "   [ID: PRODOTTO_X]\n"
-                        "   Descrizione raffinata ed esperta (massimo 2-3 frasi) del perché questa creazione è la scelta perfetta per le sue note olfattive ed occasioni d'uso.\n"
-                        "   NON inserire link, prezzi o immagini nel testo.\n"
-                        "6. SCARTO: Se NESSUN candidato è adatto, scrivi '[ID: NESSUNO]' all'inizio e spiega gentilmente che al momento non abbiamo la fragranza adatta."
+                        "Hai a disposizione una lista di CANDIDATI estratti dal catalogo.\n\n"
+                        "REGOLE TASSATIVE:\n"
+                        "1. REGOLA DI SCARTO PER RICHIESTE BIZZARRE:\n"
+                        "   Se la richiesta dell'utente riguarda alimenti o note bizzarri non da profumeria (es. pizza, mozzarella, pomodoro da cucina, fritti, formaggi, petrolio, ecc.) oppure odori assurdi:\n"
+                        "   DEVI TASSATIVAMENTE INIZIARE LA RISPOSTA CON:\n"
+                        "   [ID: NESSUNO]\n"
+                        "   Spiega con garbo ed eleganza che la boutique non dispone di fragranze con tali accordi gastronomici.\n\n"
+                        "2. SELEZIONE TRA I CANDIDATI (per tutte le richieste lecite di profumeria):\n"
+                        "   Scegli TRA I CANDIDATI il prodotto più coerente per note, famiglia o atmosfera richiesta.\n"
+                        "   DEVI TASSATIVAMENTE INIZIARE LA RISPOSTA CON L'ID CORRISPONDENTE, ad esempio:\n"
+                        "   [ID: PRODOTTO_1]\n"
+                        "   Descrizione raffinata ed esperta (massimo 2-3 frasi) del perché questa creazione è la scelta perfetta per le sue caratteristiche.\n"
+                        "   NON ALLUCINARE LA RISPOSTA con proposte totalmente inventate: scegli solo tra i candidati forniti.\n"
+                        "   NON inserire link, prezzi o immagini nel testo."
                     )
                     user_message_content = f"RICHIESTA UTENTE: {user_query}\n\nCANDIDATI CATALOGO DISPONIBILI:\n{context_str}"
 
@@ -1144,21 +1148,21 @@ class FragranceAdvisor:
                 selected_product = None
                 is_emergency = "Maître Parfumeur" in reply and "molte richieste" in reply
 
-                match = re.search(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]", reply, re.IGNORECASE)
+                match = re.search(r"\[?ID:\s*(PRODOTTO_\d+|NESSUNO)\]?|\[(NESSUNO)\]", reply, re.IGNORECASE)
                 if match:
-                    selected_id = match.group(1).upper()
+                    raw_id = match.group(1) or match.group(2)
+                    selected_id = raw_id.upper()
                     if selected_id in candidates_map:
                         selected_product = candidates_map[selected_id]
                         self.active_perfumes[session_id] = selected_product
                         print(f"[ADVISOR] Profumo attivo registrato: {candidates_map[selected_id]['name']}")
                     elif selected_id == "NESSUNO":
                         selected_product = None
-                        print("[ADVISOR] Nessun profumo pertinente identificato dal modello.")
+                        self.active_perfumes[session_id] = None
+                        print("[ADVISOR] Nessun profumo pertinente identificato dal modello (Scarto esplicito).")
 
-                    # Rimuove il tag tecnico dalla risposta finale destinata all'utente
-                    reply = re.sub(r"\[ID:\s*(PRODOTTO_\d+|NESSUNO)\]\s*", "", reply).strip()
+                    reply = re.sub(r"\[?ID:\s*(PRODOTTO_\d+|NESSUNO)\]?\s*|\[(NESSUNO)\]\s*", "", reply, flags=re.IGNORECASE).strip()
 
-                    # Se il modello ha emesso soltanto il tag lasciando il testo vuoto
                     if not reply:
                         reply = (
                             "Nel nostro catalogo di alta profumeria artistica non disponiamo di fragranze "
@@ -1166,14 +1170,37 @@ class FragranceAdvisor:
                             "più canonici o aiutarti a trovare una composizione raffinata adatta a te."
                         )
                 elif is_emergency:
-                    # Se l'API è in stato di emergenza, evitiamo di associare profumi a caso
                     selected_product = None
                     print("[ADVISOR] Risposta di emergenza LLM: nessun prodotto assegnato.")
                 else:
-                    selected_product = candidates_map.get("PRODOTTO_1")
-                    if selected_product:
+                    named_candidate = None
+                    for pid, cand in candidates_map.items():
+                        c_name = cand["name"].lower().strip()
+                        if len(c_name) > 3 and c_name in reply.lower():
+                            named_candidate = cand
+                            break
+
+                    if named_candidate:
+                        selected_product = named_candidate
                         self.active_perfumes[session_id] = selected_product
-                        print(f"[ADVISOR FALLBACK] Profumo attivo registrato (primo candidato): {selected_product['name']}")
+                        print(f"[ADVISOR NAME MATCH] Profumo attivo registrato per citazione diretta: {named_candidate['name']}")
+                    else:
+                        rejection_pattern = re.search(
+                            r"\b(?:non\s+(?:abbiamo|disponiamo|trattiamo|trovo|esiste)\s+(?:a\s+catalogo|in\s+boutique|alcun|quest|profum|fragranz)|"
+                            r"nessun[oa]?\s+(?:profumo|fragranza|creazione)\s+(?:presente|disponibile|adatt[oa])|"
+                            r"impossibile\s+soddisfare|non\s+[eè]\s+possibile\s+trovare)\b",
+                            reply,
+                            re.IGNORECASE
+                        )
+                        if rejection_pattern:
+                            selected_product = None
+                            self.active_perfumes[session_id] = None
+                            print("[ADVISOR] Rifiuto esplicito identificato nel testo: nessun prodotto assegnato.")
+                        else:
+                            selected_product = candidates_map.get("PRODOTTO_1")
+                            if selected_product:
+                                self.active_perfumes[session_id] = selected_product
+                                print(f"[ADVISOR FALLBACK] Profumo attivo registrato (primo candidato): {selected_product['name']}")
 
                 product_payload = []
                 if selected_product:
@@ -1186,7 +1213,6 @@ class FragranceAdvisor:
                 return {"reply": reply, "options": [], "products": product_payload, "step": None, "mode": "free"}
             
     def reset_session(self, session_id: str):
-        """Cancella la cronologia e lo stato della sessione sia in memoria che su SQLite."""
         if not session_id:
             return
         self.session_store.clear_session(session_id)

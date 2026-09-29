@@ -3,26 +3,21 @@ search.py - Motore di Ricerca Semantico e Ibrido
 
 Si collega all'indice persistente ChromaDB (chroma_db/),
 applica filtri di budget (min_price, max_price) e reranking lessicale su note olfattive
-utilizzando le Serverless Inference API di Hugging Face per azzerare l'uso di RAM.
+utilizzando il motore ONNX nativo ultra-leggero di ChromaDB (~80 MB RAM).
 
 Uso per test:
     python src/search.py
 """
 
-import os
 import re
 from pathlib import Path
 
 import chromadb
 from chromadb.utils import embedding_functions
-from dotenv import load_dotenv
-
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DIR = BASE_DIR / "chroma_db"
 COLLECTION_NAME = "fragrances"
-EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 class FragranceSearchEngine:
@@ -33,15 +28,10 @@ class FragranceSearchEngine:
                 "Esegui prima 'python src/reindex.py' per generare l'indice persistente."
             )
 
-        # Connessione al database persistente generato da reindex.py
         self.chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
 
-        # Funzione di embedding remota serverless (Zero consumo di RAM locale)
-        hf_token = os.getenv("HF_TOKEN")
-        self.embed_fn = embedding_functions.HuggingFaceEmbeddingFunction(
-            api_key=hf_token,
-            model_name=EMBEDDING_MODEL
-        )
+        # Motore locale ONNX identico a quello usato in reindex.py
+        self.embed_fn = embedding_functions.DefaultEmbeddingFunction()
 
         try:
             self.collection = self.chroma_client.get_collection(
@@ -113,7 +103,6 @@ class FragranceSearchEngine:
                 meta = raw_results["metadatas"][0][i]
                 price = meta.get("price", 0.0)
 
-                # Controllo di consistenza sul prezzo
                 if min_price is not None and price < min_price:
                     continue
                 if max_price is not None and price > max_price:
@@ -124,7 +113,6 @@ class FragranceSearchEngine:
                     filtered_metas.append(meta)
                     filtered_docs.append(doc)
 
-        # Fallback se non ci sono keyword rilevanti o match lessicale
         if not filtered_ids:
             valid_ids = []
             valid_metas = []
@@ -157,7 +145,7 @@ class FragranceSearchEngine:
 
 
 if __name__ == "__main__":
-    print("=== TEST RICERCA CHROMADB (SERVERLESS HF) ===")
+    print("=== TEST RICERCA CHROMADB (ONNX LOCALE) ===")
     try:
         engine = FragranceSearchEngine()
 

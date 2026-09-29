@@ -1,29 +1,23 @@
 """
-reindex.py - Rigenerazione dell'indice vettoriale ChromaDB tramite Hugging Face Inference API
+reindex.py - Rigenerazione dell'indice vettoriale ChromaDB tramite motore locale ONNX
 """
 
 import json
 import os
 import shutil
-import time
 from pathlib import Path
 
 import chromadb
 from chromadb.utils import embedding_functions
-from dotenv import load_dotenv
-
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "catalog.json"
 CHROMA_PATH = BASE_DIR / "chroma_db"
-
 COLLECTION_NAME = "fragrances"
-MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def main():
-    print("[*] Avvio re-indicizzazione ChromaDB (Modalità Serverless Cloud)...")
+    print("[*] Avvio re-indicizzazione ChromaDB (Motore Locale ONNX - Zero chiamate API esterne)...")
 
     if not DATA_PATH.exists():
         print(f"[!] ERRORE: File catalogo non trovato in {DATA_PATH}")
@@ -48,14 +42,7 @@ def main():
 
     client = chromadb.PersistentClient(path=str(CHROMA_PATH))
 
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
-        print("[!] ATTENZIONE: HF_TOKEN non trovato nell'ambiente! Le richieste potrebbero fallire.")
-
-    emb_fn = embedding_functions.HuggingFaceEmbeddingFunction(
-        api_key=hf_token,
-        model_name=MODEL_NAME
-    )
+    emb_fn = embedding_functions.DefaultEmbeddingFunction()
 
     collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
@@ -73,6 +60,8 @@ def main():
         if not semantic_text:
             semantic_text = f"{item.get('name', '')} {item.get('brand', '')} {item.get('family', '')} {item.get('description', '')}"
 
+        urls = item.get("urls", {})
+
         documents.append(semantic_text)
         ids.append(doc_id)
         metadatas.append({
@@ -81,10 +70,13 @@ def main():
             "price": float(item.get("price", 0.0)),
             "family": str(item.get("family", "")),
             "ptype": str(item.get("ptype", "")),
-            "in_stock": bool(item.get("in_stock", True))
+            "in_stock": bool(item.get("in_stock", True)),
+            "add_to_cart_url": str(urls.get("add_to_cart", "")),
+            "product_page_url": str(urls.get("product_page", "")),
+            "image_url": str(urls.get("image_url", ""))
         })
 
-    batch_size = 20
+    batch_size = 50
     total_docs = len(documents)
 
     for i in range(0, total_docs, batch_size):
@@ -95,7 +87,6 @@ def main():
             ids=ids[i:end_idx]
         )
         print(f"    Indicizzati {end_idx}/{total_docs} prodotti...")
-        time.sleep(0.3)
 
     print(f"[+] Re-indicizzazione completata con successo in {CHROMA_PATH}\n")
 
