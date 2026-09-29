@@ -555,17 +555,9 @@
       "Per lui"
     ],
     "olfactory_pyramid": {
-      "top": [
-        "Cardamomo",
-        "Rosa di Taif",
-        "Davana"
-      ],
-      "heart": [
-        "Oud"
-      ],
-      "base": [
-        "Musk"
-      ]
+      "top": [],
+      "heart": [],
+      "base": []
     },
     "family": "Legnosa",
     "ptype": "Parfum, unisex",
@@ -576,7 +568,7 @@
       "add_to_cart": "https://etualy.com/cart/55204734730574:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-oud-blond-parfum-30-ml.png?v=1765978039"
     },
-    "semantic_text": "Profumo Oud Blond Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Note di testa: Cardamomo, Rosa di Taif, Davana. Note di cuore: Oud. Note di fondo: Musk. Carattere, contesto d'uso e occasioni: Ideale per personalità raffinate e sicure, che cercano un profumo intenso ma equilibrato. Perfetto per chi ama le fragranze di nicchia unisex, sofisticate, calde e avvolgenti, capaci di distinguersi senza ostentazione. Particolarmente indicato per la sera e per occasioni speciali, questo profumo esp"
+    "semantic_text": "Profumo Oud Blond Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Ideale per personalità raffinate e sicure, che cercano un profumo intenso ma equilibrato. Perfetto per chi ama le fragranze di nicchia unisex, sofisticate, calde e avvolgenti, capaci di distinguersi senza ostentazione. Particolarmente indicato per la sera e per occasioni speciali, questo profumo esp"
   },
   {
     "id": "sh_10853323178318",
@@ -18133,7 +18125,8 @@
       ],
       "base": [
         "Mimosa",
-        "Muschio di Quercia"
+        "Muschio di Quercia",
+        "Muschio Naso Nathalie Koobus"
       ]
     },
     "family": "Floreale",
@@ -18145,7 +18138,7 @@
       "add_to_cart": "https://etualy.com/cart/41157101879456:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/products/bon-parfumeur-102-edp-30-ml-1.jpg?v=1633963378"
     },
-    "semantic_text": "Profumo 102 EDP: tè, cardamomo, mimosa di Bon Parfumeur. Tipologia: Eau de Parfum. Famiglia olfattiva: Floreale. Tag: 30 ml, BF21, Bon Parfumeur, Eau de Parfum, fino a 50€, Floreale, Fragranze, Per lei, Per lui, SS 2022. Note di testa: Bergamotto, Cardamomo, Coriandolo. Note di cuore: Tè verde, Mimosa, Gelsomino. Note di fondo: Mimosa, Muschio di Quercia. Carattere, contesto d'uso e occasioni: Fragranza unisex raffinata, adatta sia per uomo che per donna."
+    "semantic_text": "Profumo 102 EDP: tè, cardamomo, mimosa di Bon Parfumeur. Tipologia: Eau de Parfum. Famiglia olfattiva: Floreale. Tag: 30 ml, BF21, Bon Parfumeur, Eau de Parfum, fino a 50€, Floreale, Fragranze, Per lei, Per lui, SS 2022. Note di testa: Bergamotto, Cardamomo, Coriandolo. Note di cuore: Tè verde, Mimosa, Gelsomino. Note di fondo: Mimosa, Muschio di Quercia, Muschio Naso Nathalie Koobus. Carattere, contesto d'uso e occasioni: Fragranza unisex raffinata, adatta sia per uomo che per donna."
   },
   {
     "id": "sh_5998896218272",
@@ -19414,68 +19407,6 @@
     "semantic_text": "Profumo Casablanca Lily Extrait de Parfum 50 ml di Byredo. Tipologia: Extrait de Parfum. Famiglia olfattiva: Floreale, Fruttata. Tag: 200€ e oltre, 50 ml, Extrait de parfum, Floreale, Fragranze, Fruttata, Per lei, Per lui. Note di testa: Prugna, Gardenia. Note di cuore: Garofano, Tuberosa Indiana. Note di fondo: Palissandro, Miele. Carattere, contesto d'uso e occasioni: Fragranza unisex raffinata, adatta sia per uomo che per donna."
   },
   {
-    "id": "sh_8642979758414",
-    "shopify_product_id": 8642979758414,
-    "name": "Rose of no man's land Profumo per Capelli 75 ml",
-    "brand": "Byredo",
-    "sku": "7340032860962",
-    "price": 65.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "tags": [
-      "75 ml",
-      "Capelli",
-      "da 51€ a 100€",
-      "Profumo per capelli Tutti i tipi di capelli"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [],
-      "base": []
-    },
-    "family": "",
-    "ptype": "Profumo Artistico",
-    "usage_profile": "Il tuo tocco finale per un look impeccabile. Scopri la bellezza senza tempo del profumo per capelli Byredo Rose of No Man's Land, un'ode alla compassione e all'altruismo delle infermiere che hanno salvato vite durante la prima guerra mondiale. Adatto...",
-    "description": "Il tuo tocco finale per un look impeccabile. Scopri la bellezza senza tempo del profumo per capelli Byredo Rose of No Man's Land, un'ode alla compassione e all'altruismo delle infermiere che hanno salvato vite durante la prima guerra mondiale. Adatto sia per uomo che per donna, questo profumo floreale trasmette eleganza e esclusività.",
-    "urls": {
-      "product_page": "https://etualy.com/products/byredo-rose-of-no-mans-land-profumo-per-capelli-75-ml",
-      "add_to_cart": "https://etualy.com/cart/47376538239310:1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/products/byredo-rose-of-no-man_s-land-profumo-per-capelli-75-ml-1.jpg?v=1701787589"
-    },
-    "semantic_text": "Profumo Rose of no man's land Profumo per Capelli 75 ml di Byredo. Tipologia: Profumo Artistico. Famiglia olfattiva: Profumeria Artistica. Tag: 75 ml, Capelli, da 51€ a 100€, Profumo per capelli Tutti i tipi di capelli. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Il tuo tocco finale per un look impeccabile. Scopri la bellezza senza tempo del profumo per capelli Byredo Rose of No Man's Land, un'ode alla compassione e all'altruismo delle infermiere che hanno salvato vite durante la prima guerra mondiale. Adatto..."
-  },
-  {
-    "id": "sh_8642979004750",
-    "shopify_product_id": 8642979004750,
-    "name": "Black Saffron Profumo per Capelli 75 ml",
-    "brand": "Byredo",
-    "sku": "7340032860559",
-    "price": 65.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "tags": [
-      "75 ml",
-      "Capelli",
-      "da 51€ a 100€",
-      "Profumo per capelli Tutti i tipi di capelli"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [],
-      "base": []
-    },
-    "family": "",
-    "ptype": "Profumo Artistico",
-    "usage_profile": "Il profumo per capelli Byredo Black Saffron è un capolavoro olfattivo che combina sapientemente note agrumate, zafferano, violetta nera, cuoio e altri elementi per creare un'esperienza sensoriale unica. Con la sua fragranza orientale unisex, questo p...",
-    "description": "Il profumo per capelli Byredo Black Saffron è un capolavoro olfattivo che combina sapientemente note agrumate, zafferano, violetta nera, cuoio e altri elementi per creare un'esperienza sensoriale unica. Con la sua fragranza orientale unisex, questo profumo per capelli è perfetto per chi cerca un tocco di eleganza e sofisticatezza nella propria beauty routine. Aggiungi un tocco di esclusività alla tua collezione di profumi con Byredo Black Saffron Hair Perfume.",
-    "urls": {
-      "product_page": "https://etualy.com/products/byredo-black-saffron-profumo-per-capelli-75-ml",
-      "add_to_cart": "https://etualy.com/cart/47376537846094:1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/products/byredo-black-saffron-profumo-per-capelli-75-ml-1.jpg?v=1701787574"
-    },
-    "semantic_text": "Profumo Black Saffron Profumo per Capelli 75 ml di Byredo. Tipologia: Profumo Artistico. Famiglia olfattiva: Profumeria Artistica. Tag: 75 ml, Capelli, da 51€ a 100€, Profumo per capelli Tutti i tipi di capelli. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Il profumo per capelli Byredo Black Saffron è un capolavoro olfattivo che combina sapientemente note agrumate, zafferano, violetta nera, cuoio e altri elementi per creare un'esperienza sensoriale unica. Con la sua fragranza orientale unisex, questo p..."
-  },
-  {
     "id": "sh_8642976219470",
     "shopify_product_id": 8642976219470,
     "name": "Eyes Closed EDP",
@@ -20705,42 +20636,6 @@
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/products/meo-fusciuni-spirito-parfum-100-ml-1.jpg?v=1615970190"
     },
     "semantic_text": "Profumo SPIRITO EXTRAIT DE PARFUM 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum. Famiglia olfattiva: Legnosa, Verde. Tag: 100 ml, 200€ e oltre, Extrait de parfum, Fragranze, Fragranze invernali, Legnosa, Meo Fusciuni, Parfum, Per lei, Per lui, Verde. Note di testa: Angelica, Camomilla, Semi di Carota, Nota Erbacea. Note di cuore: Cipresso, Mirto, Issopo. Note di fondo: Legno di Cedro, Vetiver, Muschio, Guaiaco, Elemi, Assoluta di Fava Tonka. Carattere, contesto d'uso e occasioni: Fragranza unisex raffinata, adatta sia per uomo che per donna. Ideale da indossare durante autunno e inverno (climi freschi o freddi)."
-  },
-  {
-    "id": "sh_5962149429408",
-    "shopify_product_id": 5962149429408,
-    "name": "Teint De Neige profumo per capelli 50 ml",
-    "brand": "Lorenzo Villoresi",
-    "sku": "8028544103515",
-    "price": 66.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "tags": [
-      "50 ml",
-      "BF21",
-      "Capelli",
-      "da 51€ a 100€",
-      "Floreale",
-      "Lorenzo Villoresi",
-      "Per lui",
-      "Profumo per capelli",
-      "Tutti i tipi di capelli"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [],
-      "base": []
-    },
-    "family": "Floreale",
-    "ptype": "Profumo Artistico",
-    "usage_profile": "Fragranza maschile pensata prevalentemente per lui.",
-    "description": "Un'aura fragrante, un velo da vaporizzare sui capelli per questa inconfondibile fragranza dai fiori preziosi e note cipriate. Avvolge e protegge come un velo. Ultimo tocco del trattamento quotidiano.",
-    "urls": {
-      "product_page": "https://etualy.com/products/lorenzo-villoresi-teint-de-neige-profumo-per-capelli-50-ml",
-      "add_to_cart": "https://etualy.com/cart/37644721455264:1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/products/lorenzo-villoresi-teint-de-neige-profumo-per-capelli-50-ml-1.jpg?v=1609860181"
-    },
-    "semantic_text": "Profumo Teint De Neige profumo per capelli 50 ml di Lorenzo Villoresi. Tipologia: Profumo Artistico. Famiglia olfattiva: Floreale. Tag: 50 ml, BF21, Capelli, da 51€ a 100€, Floreale, Lorenzo Villoresi, Per lui, Profumo per capelli, Tutti i tipi di capelli. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Fragranza maschile pensata prevalentemente per lui."
   },
   {
     "id": "sh_5962149167264",
@@ -26174,40 +26069,6 @@
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/products/Amouage-Epic-Man-EDP-100-ml-1.jpg?v=1607533295"
     },
     "semantic_text": "Profumo Epic Man EDP di Amouage. Tipologia: Eau de Parfum. Famiglia olfattiva: Legnosa, Orientale. Tag: 100 ml, 200€ e oltre, 50 ml, Amouage, BF21, Eau de Parfum, Fragranze, Fragranze invernali, Legnosa, Orientale, Per lui. Note di testa: Pepe rosa, Incenso, Cumino, Cardamomo, Zafferano, Macis, Noce moscata, Mirto. Note di cuore: Geranio, Mirra. Note di fondo: Legno di pud, Sandalo, Cuoio, Incenso, Legno di cedro, Muschio, Castoreo. Carattere, contesto d'uso e occasioni: Fragranza maschile pensata prevalentemente per lui. Ideale da indossare durante autunno e inverno (climi freschi o freddi)."
-  },
-  {
-    "id": "sh_5847520510112",
-    "shopify_product_id": 5847520510112,
-    "name": "Eau Rose Profumo per Capelli 30 ml",
-    "brand": "Diptyque",
-    "sku": "3700431415035/3700431443311",
-    "price": 65.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "tags": [
-      "30 ml",
-      "BF21",
-      "Capelli",
-      "Diptyque",
-      "fino a 50€",
-      "Profumo per capelli",
-      "Tutti i tipi di capelli"
-    ],
-    "olfactory_pyramid": {
-      "top": [],
-      "heart": [],
-      "base": []
-    },
-    "family": "",
-    "ptype": "Profumo Artistico",
-    "usage_profile": "Petali, foglie verdi, spine, stelo e boccioli di Rosa compongono la fragranza di questo sottile profumo per capelli....",
-    "description": "Petali, foglie verdi, spine, stelo e boccioli di Rosa compongono la fragranza di questo sottile profumo per capelli.",
-    "urls": {
-      "product_page": "https://etualy.com/products/diptyque-eau-rose-profumo-per-capelli-30-ml",
-      "add_to_cart": "https://etualy.com/cart/37104712188064:1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/products/Diptyque-Eau-Rose-Profumo-per-Capelli-30-ml-1.jpg?v=1605284573"
-    },
-    "semantic_text": "Profumo Eau Rose Profumo per Capelli 30 ml di Diptyque. Tipologia: Profumo Artistico. Famiglia olfattiva: Profumeria Artistica. Tag: 30 ml, BF21, Capelli, Diptyque, fino a 50€, Profumo per capelli, Tutti i tipi di capelli. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Petali, foglie verdi, spine, stelo e boccioli di Rosa compongono la fragranza di questo sottile profumo per capelli...."
   },
   {
     "id": "sh_5847520346272",

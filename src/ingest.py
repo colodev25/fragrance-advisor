@@ -47,7 +47,7 @@ EXCLUDED_KEYWORDS = [
     "crema", "hair", "bagnodoccia", "doccia schiuma", "sapone", "shampoo",
     "balsamo", "olio corpo", "candela", "diffusore", "ambiente",
     "solare", "siero", "scrub", "lozione", "deodorante", "sample", 
-    "profumo per capelli", "capelli"
+    "profumo per capelli", "capelli", "body spray"
 ]
 
 KNOWN_FAMILIES = [
@@ -598,7 +598,6 @@ def transform_product(prod: dict, store_url: Optional[str] = None) -> dict:
         "semantic_text": semantic_text
     }
 
-
 def run_ingest(store_url: Optional[str] = None) -> int:
     """
     Funzione programmatica per eseguire la data ingestion.
@@ -615,8 +614,13 @@ def run_ingest(store_url: Optional[str] = None) -> int:
 
     print(f"\nScaricati: {len(raw_products)} | Riconosciuti come Profumi: {len(kept_products)} | Esclusi: {len(dropped_products)}")
 
+    # Inizializzazione liste e contatori
     catalog = []
     out_of_stock = []
+    pyramids_found = 0
+    families_found = 0
+    ptypes_found = 0
+    usage_found = 0
 
     for i, p in enumerate(kept_products, 1):
         item = transform_product(p, store_url)
@@ -624,6 +628,7 @@ def run_ingest(store_url: Optional[str] = None) -> int:
             catalog.append(item)
         else:
             out_of_stock.append(item)
+
         total_notes = len(item["olfactory_pyramid"]["top"]) + len(item["olfactory_pyramid"]["heart"]) + len(item["olfactory_pyramid"]["base"])
         if total_notes > 0:
             pyramids_found += 1
@@ -648,7 +653,7 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     with open(DROPPED_FILE, "w", encoding="utf-8") as f:
         json.dump(dropped_products, f, ensure_ascii=False, indent=2)
 
-        print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
+    print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
     print(f"Profumi disponibili salvati in {OUTPUT_FILE}: {len(catalog)}")
     print(f"Profumi esauriti salvati in {OUT_OF_STOCK_FILE}: {len(out_of_stock)}")
     print(f"  - Piramidi olfattive estratte:  {pyramids_found}/{len(kept_products)}")
@@ -659,7 +664,6 @@ def run_ingest(store_url: Optional[str] = None) -> int:
 
     print(f"\n[+] Catalogo salvato in {OUTPUT_FILE}: {len(catalog)} prodotti disponibili.")
     return len(catalog)
-
 
 def main():
     run_ingest()
