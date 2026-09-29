@@ -3,6 +3,10 @@ name: Test Suite & Quality Gate
 on:
   push:
     branches: [feature/new-site, main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
   pull_request:
     branches: [feature/new-site, main]
 
