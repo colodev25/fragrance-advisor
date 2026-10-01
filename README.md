@@ -1,247 +1,60 @@
 # Fragrance Advisor
 
-> AI-powered conversational assistant for personalized fragrance discovery.
+Fragrance Advisor is a conversational perfume discovery service for Etualy. It combines a product catalog, semantic search and an AI assistant to help customers find fragrances by notes, style, occasion and budget.
 
-Fragrance Advisor is an AI-powered assistant designed to help customers discover perfumes based on their preferences, needs and context.
+The project includes a FastAPI backend, a browser chat interface, a Shopify catalog pipeline and persistent conversation sessions. Product recommendations are grounded in catalog results, with application logic applying structured constraints before the assistant explains its suggestions.
 
-The system combines **natural-language conversation**, **semantic search**, **structured fragrance data** and **LLM-based reasoning** to generate personalized recommendations for an e-commerce environment.
+## Highlights
 
----
+- Free-form fragrance discovery and a four-step guided consultation
+- Semantic product search with price and fragrance-note filtering
+- Context-aware follow-up questions and product alternatives
+- Persistent sessions stored in SQLite
+- Shopify catalog ingestion and a local ChromaDB search index
 
-## ✨ Features
+## Run locally
 
-- 💬 Conversational fragrance discovery
-- 🌸 Personalized perfume recommendations
-- 🧠 Semantic search over the product catalog
-- 🎯 Guided and free-form conversation modes
-- 💰 Budget and price constraints
-- 🧴 Product context and alternative suggestions
-- 🌿 Olfactory notes and fragrance families
-- 💾 Persistent conversation sessions
-- 🌐 FastAPI backend for website integration
-- 🧪 Unit, integration and end-to-end testing
-
----
-
-## 🧠 How It Works
-
-```text
-Customer
-   │
-   ▼
-Web Interface
-   │
-   ▼
-FastAPI API
-   │
-   ▼
-FragranceAdvisor
-   │
-   ├── Semantic Search ──► ChromaDB
-   │
-   ├── LLM ──────────────► Groq
-   │
-   └── Session Store ────► SQLite
-   │
-   ▼
-Personalized Recommendations
-```
-
-The advisor interprets the customer's request, retrieves relevant fragrances, applies deterministic constraints and uses the resulting context to generate the final response.
-
----
-
-## 🛠️ Tech Stack
-
-| Area            | Technologies                    |
-| --------------- | ------------------------------- |
-| Backend         | Python, FastAPI, Pydantic       |
-| AI              | Groq, OpenAI-compatible API     |
-| Semantic Search | ChromaDB, Sentence Transformers |
-| Frontend        | HTML, CSS, JavaScript           |
-| Persistence     | SQLite                          |
-| Data            | JSON                            |
-| Testing         | pytest                          |
-
----
-
-## 📁 Project Structure
-
-````text
-fragrance-advisor/
-│
-├── data/
-│   ├── catalog.json
-│   ├── out_of_stock.json
-│   └── scartati.json
-│
-├── docs/
-│   ├── ADVISOR.md
-│   ├── API.md
-│   ├── ARCHITECTURE.md
-│   ├── DATA_PIPELINE.md
-│   ├── SEARCH_ENGINE.md
-│   └── TESTING.md
-│
-├── src/
-│   ├── advisor.py
-│   ├── ingest.py
-│   ├── main.py
-│   ├── reindex.py
-│   ├── search.py
-│   └── session_store.py
-│
-├── tests/
-│   ├── test_api.py
-│   ├── test_parsers.py
-│   ├── test_scenarios_e2e.py
-│   └── test_session_store.py
-│
-├── index.html
-├── pytest.ini
-├── requirements.txt
-├── .gitignore
-└── README.md
-
-
-## 🚀 Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/colodev25/fragrance-advisor.git
-cd fragrance-advisor
-````
-
-To work on the current development branch:
-
-```bash
-git checkout feature/new-site
-```
-
-### 2. Create a virtual environment
+Uses Python 3.11 in the CI workflow and requires a Groq API key to start the advisor.
 
 ```bash
 python -m venv .venv
 ```
 
-On Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-### 3. Install dependencies
+Activate the environment, then install the dependencies and configure the API key:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
-
-Create a `.env` file in the project root containing the required API credentials.
+Create a `.env` file in the project root:
 
 ```env
 GROQ_API_KEY=your_api_key_here
 ```
 
-> ⚠️ Never commit `.env` or API keys to the repository.
-
-### 5. Prepare the product catalog
-
-If the catalog needs to be updated, run the ingestion pipeline:
-
-```bash
-python src/ingest.py
-```
-
-Then rebuild the semantic search index:
-
-```bash
-python src/reindex.py
-```
-
-### 6. Start the backend
+Start the API:
 
 ```bash
 uvicorn src.main:app --reload
 ```
 
-The API will be available at:
+The API listens at `http://127.0.0.1:8000`. On startup, it builds the local search index from `data/catalog.json` if `chroma_db/` is missing or empty.
 
-```text
-http://127.0.0.1:8000
-```
+## Project documentation
 
----
+- [Architecture](docs/ARCHITECTURE.md) — application components and data flow
+- [Data pipeline](docs/DATA_PIPELINE.md) — Shopify ingestion and catalog maintenance
+- [Search engine](docs/SEARCH_ENGINE.md) — indexing, retrieval and filtering
+- [Advisor](docs/ADVISOR.md) — conversation and recommendation behavior
+- [API](docs/API.md) — HTTP endpoints and configuration
+- [Testing](docs/TESTING.md) — test coverage and execution
 
-## 🧪 Testing
+## Technology
 
-The project includes unit, API, session persistence and end-to-end tests.
+Python, FastAPI, Groq's OpenAI-compatible API, ChromaDB, SQLite, Shopify JSON products endpoint, and a standalone HTML/CSS/JavaScript chat interface.
 
-Run the test suite with:
+## Future improvements
 
-```bash
-pytest
-```
-
-For details about the available test categories and scenarios, see the testing documentation.
-
----
-
-## 📚 Documentation
-
-The detailed technical documentation is organized by component:
-
-| Document                                   | Description                                    |
-| ------------------------------------------ | ---------------------------------------------- |
-| **[Architecture](docs/ARCHITECTURE.md)**   | System structure and component relationships   |
-| **[Data Pipeline](docs/DATA_PIPELINE.md)** | Product ingestion and data processing          |
-| **[Search Engine](docs/SEARCH_ENGINE.md)** | Semantic retrieval and result processing       |
-| **[Advisor](docs/ADVISOR.md)**             | Conversation, recommendation and session logic |
-| **[API](docs/API.md)**                     | Backend endpoints and API usage                |
-| **[Testing](docs/TESTING.md)**             | Test structure, scenarios and execution        |
-
-The README provides a high-level overview, while the documentation contains the implementation details.
-
----
-
-## 📌 Project Status
-
-**Development — `feature/new-site`**
-
-The project is currently being developed and adapted for integration with a new website.
-
-The main conversational, search, persistence and API components are implemented, while the integration and other project components continue to evolve.
-
-The documentation describes the current implementation and may change together with the codebase.
-
----
-
-## 🔮 Future Improvements
-
-- Expanded recommendation evaluation
-- More advanced fragrance preference modeling
-- Additional product filtering
-- Improved frontend integration
-- Expanded test coverage
-- Automated CI testing [✅]
-- Performance and scalability improvements
-- Production deployment configuration
-
-- Render Plan upgrade (no cold start)
-- Better LLMs
-
-## 🔐 Security
-
-API credentials and other secrets must be stored in environment variables and must not be committed to Git.
-
-The `.env` file and local session database are excluded from version control through `.gitignore`.
-
-If a credential is accidentally exposed, it should be revoked and regenerated immediately.
-
----
-
-## 📄 License
-
-This project currently does not specify a public open-source license.
+- Evaluate more capable LLMs to improve intent understanding and recommendation explanations.
+- Move to an always-on deployment platform or plan to reduce the cold starts currently experienced on Render.
+- Add richer search filters, such as brand, fragrance family, availability and more precise price ranges.

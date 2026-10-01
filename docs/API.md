@@ -1,48 +1,16 @@
-# API
+# HTTP API
 
-## Overview
-
-Fragrance Advisor exposes a lightweight HTTP API through FastAPI.
-
-The API acts as the communication layer between the web interface and the conversational advisor.
-
-```text
-Frontend
-   │
-   ▼
-FastAPI
-   │
-   ▼
-FragranceAdvisor
-```
-
----
-
-## Base URL
-
-When running locally:
-
-```text
-http://127.0.0.1:8000
-```
-
----
+The FastAPI application in `src/main.py` exposes the chat service to the browser interface and other clients. For local development, run `uvicorn src.main:app --reload`; the base URL is `http://127.0.0.1:8000`.
 
 ## Endpoints
 
-### `GET /`
+| Method and path | Purpose |
+| --- | --- |
+| `GET /` | Health check; returns `{"status":"ok","service":"Etualy Olfactive Advisor API"}`. |
+| `POST /chat` or `POST /chat/` | Send a message and receive the advisor response. |
+| `POST /reset` or `POST /reset/` | Clear a conversation session. |
 
-Basic application endpoint.
-
-It can be used to verify that the FastAPI application is running.
-
----
-
-### `POST /chat`
-
-Main endpoint used by the frontend to send a message to the advisor.
-
-#### Request
+### Chat request
 
 ```json
 {
@@ -53,121 +21,55 @@ Main endpoint used by the frontend to send a message to the advisor.
 }
 ```
 
-#### Parameters
+| Field | Type | Required | Behavior |
+| --- | --- | --- | --- |
+| `message` | string | Yes | User message sent to the advisor. |
+| `session_id` | string or `null` | No | Session key; defaults to `default`. |
+| `max_price` | number or `null` | No | Maximum price constraint in the search flow. |
+| `step_override` | integer or `null` | No | Optional guided-flow step supplied to the advisor. |
 
-| Parameter       | Type   | Required | Description                            |
-| --------------- | ------ | -------: | -------------------------------------- |
-| `message`       | string |      Yes | User message                           |
-| `session_id`    | string |      Yes | Identifier of the conversation session |
-| `max_price`     | number |       No | Maximum allowed price                  |
-| `step_override` | string |       No | Optional guided-flow step override     |
+The response is the advisor's JSON object. It includes `reply`, `products`, `options`, `step`, and `mode` where applicable. `products` contains structured product cards; `options` contains guided-flow choices. `step` is the active guided step or `null`, and `mode` identifies guided or free conversation responses.
 
----
+Example response shape:
 
-### `POST /chat/`
-
-The trailing-slash version is also exposed for compatibility with clients that submit requests to `/chat/`.
-
-It uses the same request structure as `/chat`.
-
----
-
-## Session Handling
-
-The `session_id` identifies the conversation.
-
-The frontend generates or maintains the identifier and sends it with subsequent requests.
-
-The backend uses it to retrieve and persist the corresponding session state.
-
-```text
-session_id
-    │
-    ▼
-SessionStore
-    │
-    ▼
-SQLite
+```json
+{
+  "reply": "Ecco una fragranza in linea con la tua richiesta.",
+  "options": [],
+  "products": [],
+  "step": null,
+  "mode": "free"
+}
 ```
 
-Persistent session information can include:
+Product fields depend on the selected card. They can include name, brand, price, product and image URLs, fragrance traits, story, key notes and `card_type`.
 
-- conversation history;
-- active perfume;
-- guided-flow state;
-- update timestamp.
+### Reset request
 
-This allows conversational context to survive application restarts.
+```json
+{
+  "session_id": "example-session"
+}
+```
 
----
+The response is `{"status":"ok","session_id":"example-session","message":"Sessione azzerata"}`. Reset removes the stored history, active product and guided state for the given session.
+
+## Validation and errors
+
+Request bodies are validated by Pydantic. Missing required fields or invalid field types produce FastAPI's standard `422` validation response. The `/chat` handler returns a temporary startup message with an empty product list if the advisor has not initialized yet. Runtime exceptions from downstream search or persistence operations are not converted into a documented custom error schema.
 
 ## CORS
 
-CORS is configured by the backend to allow requests from the website frontend.
+`ALLOWED_ORIGINS` is a comma-separated list of origins. It defaults to `*`. When the wildcard is configured, the application allows all origins and disables credentialed CORS requests; set explicit origins when credentials are required or access should be restricted.
 
-The allowed origins can be configured through the environment:
+## Configuration
 
-```env
-ALLOWED_ORIGINS=*
-```
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `GROQ_API_KEY` | Required credential for Groq-backed advisor initialization. | None |
+| `GROQ_PRIMARY_MODEL` | Primary model name. | `openai/gpt-oss-120b` |
+| `GROQ_FALLBACK_MODEL` | Fallback model name. | `openai/gpt-oss-20b` |
+| `ALLOWED_ORIGINS` | Comma-separated browser origins allowed by CORS. | `*` |
+| `SESSIONS_DB_PATH` | Optional SQLite database path. | `data/sessions.db` |
 
-For production deployments, the value should be restricted to the domains that actually need access to the API.
-
----
-
-## Error Handling
-
-The API validates incoming requests before passing them to the advisor.
-
-Errors can originate from:
-
-- invalid request data;
-- missing required parameters;
-- advisor processing;
-- external LLM services;
-- search or persistence operations.
-
-The API returns an appropriate HTTP error response when request processing cannot be completed.
-
----
-
-## Request Flow
-
-A typical request follows:
-
-```text
-HTTP POST /chat
-       │
-       ▼
-Request Validation
-       │
-       ▼
-FragranceAdvisor.advise()
-       │
-       ├──► SessionStore
-       │
-       ├──► Search Engine
-       │
-       └──► LLM
-       │
-       ▼
-Generated Response
-       │
-       ▼
-HTTP Response
-```
-
----
-
-## Environment Variables
-
-The API and advisor require environment configuration for external services.
-
-Example:
-
-```env
-GROQ_API_KEY=your_api_key_here
-ALLOWED_ORIGINS=*
-```
-
-Secrets must be stored in `.env` and excluded from version control.
+Keep credentials out of source control. The advisor and ingestion modules load a root `.env` file, which is suitable for local `GROQ_API_KEY`, `SESSIONS_DB_PATH` and `SHOPIFY_STORE_URL` configuration. `ALLOWED_ORIGINS` is read by `src/main.py` when the app module is imported, before the advisor loads `.env`; set it in the process environment before starting the server (or configure Uvicorn to load the file). The model names are read when `src/llm_resilience.py` is imported, so configure `GROQ_PRIMARY_MODEL` and `GROQ_FALLBACK_MODEL` in the process environment before startup as well.

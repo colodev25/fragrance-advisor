@@ -1,260 +1,78 @@
 # Architecture
 
-## Overview
+Fragrance Advisor separates catalog ingestion, product retrieval, conversation handling, session persistence and HTTP transport. The browser interface sends chat requests to the FastAPI service; the advisor combines catalog candidates with Groq-generated explanations.
 
-Fragrance Advisor is organized as a modular application in which product ingestion, semantic search, conversational logic, persistence and HTTP communication are handled by separate components.
-
-The main runtime flow is:
+## Runtime components
 
 ```text
-                    ┌──────────────┐
-                    │   Frontend   │
-                    │  index.html  │
-                    └──────┬───────┘
+Browser interface (index.html)
+              │ HTTP
+              ▼
+      FastAPI (src/main.py)
+              │
+              ▼
+ FragranceAdvisor (src/advisor.py)
+       ┌──────┼─────────┐
+       ▼      ▼         ▼
+    Search   Groq   SessionStore
+       │                │
+       ▼                ▼
+   ChromaDB           SQLite
+```
+
+### API and interface
+
+`src/main.py` defines the FastAPI application, CORS policy, startup lifecycle, health check, chat routes and reset routes. At startup, if `chroma_db/` is absent or empty, it attempts to create the vector index from `data/catalog.json`, then initializes the advisor. The browser interface in `index.html` manages the chat display and a session identifier in `sessionStorage`; its API base URL is configured in the page source.
+
+### Conversation advisor
+
+`src/advisor.py` coordinates the guided and free-form flows, restores conversation state, identifies active-product follow-ups, applies recommendation rules, enriches product cards and prepares catalog context for the LLM. `src/llm_resilience.py` handles retry and fallback behavior for Groq calls.
+
+### Search and indexing
+
+`src/search.py` queries the persistent ChromaDB collection named `fragrances`, applies price constraints and lexical checks, and returns product metadata and semantic documents. `src/reindex.py` recreates this collection from the current catalog. The default embedding function is ChromaDB's built-in `DefaultEmbeddingFunction`; the reindexer uses cosine distance.
+
+### Catalog ingestion
+
+`src/ingest.py` reads a Shopify store's public `/products.json` endpoint, cleans and transforms product fields, extracts fragrance data from product sections and tags, and writes the catalog plus availability and rejected-product datasets. When configured, Groq can help extract fragrance pyramid data if other extraction methods do not find it.
+
+### Session persistence
+
+`src/session_store.py` stores conversation history, active fragrance, guided-flow state and update timestamp in SQLite. The default database is `data/sessions.db`; `SESSIONS_DB_PATH` can override it. SQLite WAL mode is enabled for session storage.
+
+## Catalog and request flows
+
+```text
+Shopify /products → src/ingest.py → data/catalog.json
+                                            │
+                                            ▼
+                                      src/reindex.py
+                                            │
+                                            ▼
+                                          ChromaDB
+```
+
+```text
+Browser → FastAPI → FragranceAdvisor → Search → ChromaDB
                            │
-                           ▼
-                    ┌──────────────┐
-                    │   FastAPI    │
-                    │   main.py    │
-                    └──────┬───────┘
-                           │
-                           ▼
-                 ┌────────────────────┐
-                 │ FragranceAdvisor   │
-                 │    advisor.py      │
-                 └───┬──────┬─────┬──┘
-                     │      │     │
-             ┌───────┘      │     └──────────┐
-             ▼              ▼                ▼
-       ┌───────────┐  ┌───────────┐   ┌────────────┐
-       │  Search   │  │    LLM    │   │  Session   │
-       │  Engine   │  │   Groq    │   │   Store    │
-       └─────┬─────┘  └───────────┘   └─────┬──────┘
-             │                              │
-             ▼                              ▼
-        ┌───────────┐                 ┌──────────┐
-        │ ChromaDB  │                 │  SQLite  │
-        └───────────┘                 └──────────┘
+                           ├── Groq for conversational interpretation and replies
+                           └── SessionStore → SQLite
 ```
 
----
+The GitHub Actions catalog workflow runs ingestion on a schedule or manual dispatch and pushes changes to `feature/new-site`. It does not rebuild ChromaDB. The CI test workflow separately builds an index from the checked-out catalog before running its selected tests.
 
-## Project Components
+## Repository map
 
-### `src/main.py`
-
-Provides the FastAPI application and exposes the HTTP interface used by the frontend.
-
-Responsibilities include:
-
-- application initialization;
-- CORS configuration;
-- request validation;
-- `/chat` endpoint handling;
-- communication with `FragranceAdvisor`.
-
----
-
-### `src/advisor.py`
-
-Contains the central `FragranceAdvisor` class.
-
-It coordinates:
-
-- conversation state;
-- guided and free-form interaction;
-- user preferences;
-- product context;
-- semantic retrieval;
-- deterministic filtering;
-- recommendation generation;
-- LLM interaction;
-- session persistence.
-
-The advisor acts as the orchestration layer between the API, search engine, LLM and session store.
-
----
-
-### `src/search.py`
-
-Implements the semantic fragrance retrieval layer.
-
-It:
-
-1. loads the product catalog;
-2. creates or accesses the ChromaDB collection;
-3. generates embeddings;
-4. performs semantic retrieval;
-5. applies deterministic filters;
-6. performs additional result processing.
-
-The search engine is used by the advisor when product candidates are required.
-
----
-
-### `src/session_store.py`
-
-Provides persistent storage for conversational sessions using SQLite.
-
-The session store is responsible for saving and retrieving information such as:
-
-- conversation history;
-- currently active perfume;
-- guided-flow state;
-- session timestamps.
-
-The backend can therefore reconstruct a session after the in-memory advisor state is lost or the application is restarted.
-
----
-
-### `src/ingest.py`
-
-Implements the product data ingestion pipeline.
-
-It retrieves product information and transforms it into the structured datasets consumed by the rest of the application.
-
-The main output is:
-
-```text
-data/catalog.json
-```
-
-Additional files contain out-of-stock and rejected products.
-
----
-
-### `src/reindex.py`
-
-Rebuilds the persistent ChromaDB index from the current catalog.
-
-Its role is intentionally separate from ingestion:
-
-```text
-ingest.py
-    ↓
-catalog.json
-    ↓
-reindex.py
-    ↓
-ChromaDB index
-```
-
-This allows the catalog and the semantic index to be updated independently.
-
----
-
-### `index.html`
-
-Provides the browser-based chat interface.
-
-The frontend:
-
-- displays the conversation;
-- manages the client-side session identifier;
-- sends messages to the FastAPI backend;
-- displays recommendations and product information;
-- manages chat interaction controls.
-
----
-
-## Data Flow
-
-### Catalog flow
-
-```text
-Product Source
-      │
-      ▼
-  ingest.py
-      │
-      ▼
-catalog.json
-      │
-      ▼
-  reindex.py
-      │
-      ▼
- ChromaDB
-```
-
-### Conversation flow
-
-```text
-User
- │
- ▼
-Frontend
- │
- ▼
-FastAPI
- │
- ▼
-FragranceAdvisor
- │
- ├──► SessionStore ──► SQLite
- │
- ├──► SearchEngine ──► ChromaDB
- │
- └──► LLM ───────────► Groq
- │
- ▼
-Response
- │
- ▼
-Frontend
-```
-
----
-
-## Session Persistence
-
-Sessions use a two-level model.
-
-The frontend stores and sends a `session_id`, while the backend uses that identifier to access persistent session data through `SessionStore`.
-
-```text
-Browser
-   │
-   │ session_id
-   ▼
-FastAPI
-   │
-   ▼
-FragranceAdvisor
-   │
-   ▼
-SessionStore
-   │
-   ▼
-SQLite
-```
-
-The SQLite database stores the state required to reconstruct an ongoing conversation.
-
----
-
-## External Services
-
-The application can communicate with external services for:
-
-- product data ingestion;
-- LLM inference;
-- embedding generation.
-
-API credentials are supplied through environment variables and are not part of the source code.
-
----
-
-## Design Principles
-
-The architecture separates responsibilities between:
-
-- **data acquisition**;
-- **data transformation**;
-- **semantic retrieval**;
-- **conversation orchestration**;
-- **LLM generation**;
-- **session persistence**;
-- **HTTP communication**.
-
-This separation allows individual components to evolve without requiring the entire application to be rewritten.
+| Path                    | Responsibility                                   |
+| ----------------------- | ------------------------------------------------ |
+| `src/main.py`           | FastAPI application and routes                   |
+| `src/advisor.py`        | Conversation and recommendation orchestration    |
+| `src/search.py`         | Runtime semantic retrieval and filtering         |
+| `src/reindex.py`        | ChromaDB index generation                        |
+| `src/ingest.py`         | Shopify product ingestion and normalization      |
+| `src/session_store.py`  | SQLite session persistence                       |
+| `src/llm_resilience.py` | LLM retry and model fallback                     |
+| `data/`                 | Product JSON datasets and local session database |
+| `index.html`            | Browser chat interface                           |
+| `tests/`                | API, parser, session, resilience and E2E tests   |
+| `.github/workflows/`    | CI tests and scheduled catalog synchronization   |

@@ -1,238 +1,44 @@
-# Search Engine
+# Search engine
 
-## Overview
+The search layer retrieves fragrance candidates from the catalog using ChromaDB vector search and applies deterministic price and lexical processing. It is implemented by `src/search.py`; `src/reindex.py` builds the persistent index from `data/catalog.json`.
 
-Fragrance Advisor uses semantic search to retrieve fragrance candidates from the product catalog.
+## Indexing
 
-The search system combines vector similarity with deterministic processing such as price filtering and lexical relevance.
-
-This allows natural-language requests to be matched against product information even when the exact words used by the customer are not present in the product name.
-
----
-
-## Components
-
-The search layer is primarily implemented through:
-
-```text
-src/search.py
-src/reindex.py
-```
-
-The two modules have different responsibilities.
-
-### `search.py`
-
-Handles product retrieval during application runtime.
-
-### `reindex.py`
-
-Builds the ChromaDB index from the current `catalog.json`.
-
----
-
-## Indexing Pipeline
-
-The catalog and vector index are generated through separate steps:
-
-```text
-Product Data
-     │
-     ▼
- ingest.py
-     │
-     ▼
-catalog.json
-     │
-     ▼
-reindex.py
-     │
-     ▼
-ChromaDB
-```
-
-This separation makes it possible to update product data without coupling ingestion directly to runtime search.
-
----
-
-## Embeddings
-
-The system uses a multilingual Sentence Transformer model:
-
-```text
-paraphrase-multilingual-MiniLM-L12-v2
-```
-
-The model converts semantic product representations into numerical vectors.
-
-This is particularly useful for multilingual natural-language queries and descriptions.
-
----
-
-## Product Representation
-
-Products are indexed using their semantic representation together with structured metadata.
-
-Relevant information can include:
-
-- product name;
-- brand;
-- price;
-- availability;
-- fragrance family;
-- olfactory pyramid;
-- usage profile;
-- product URL;
-- semantic text.
-
-The semantic representation provides the textual context used by the embedding model.
-
----
-
-## Runtime Search
-
-A simplified runtime flow is:
-
-```text
-User Query
-    │
-    ▼
-Semantic Embedding
-    │
-    ▼
-ChromaDB Retrieval
-    │
-    ▼
-Candidate Pool
-    │
-    ├──► Price Filtering
-    │
-    └──► Lexical / Note Processing
-    │
-    ▼
-Relevant Candidates
-```
-
-The search layer can retrieve additional candidates before applying deterministic processing.
-
-This over-fetching approach allows the advisor to work with a larger candidate pool rather than immediately limiting the result set.
-
----
-
-## Semantic Similarity
-
-Semantic retrieval is based on vector similarity rather than exact string matching.
-
-For example, a request such as:
-
-```text
-"Vorrei qualcosa di fresco e marino per l'estate"
-```
-
-can retrieve products whose descriptions or semantic representations express similar characteristics even when they do not contain the exact same sentence.
-
----
-
-## Deterministic Filtering
-
-Semantic similarity alone is not sufficient for constraints that require exact logic.
-
-The system can therefore apply deterministic filters after retrieval.
-
-Examples include:
-
-- maximum price;
-- availability;
-- explicit note requirements;
-- product metadata.
-
-This creates a hybrid retrieval process:
-
-```text
-Semantic Retrieval
-       +
-Deterministic Filtering
-       +
-Lexical Relevance
-       ↓
-Final Candidate Set
-```
-
----
-
-## Explicit Note Matching
-
-When a user explicitly requests a fragrance note, the advisor can apply additional note-oriented processing.
-
-This is useful for queries where the presence of a specific ingredient or olfactory characteristic is a strong requirement.
-
-The process can consider information contained in:
-
-- top notes;
-- heart notes;
-- base notes;
-- fragrance family;
-- product name;
-- semantic description.
-
----
-
-## Reindexing
-
-The semantic index can be rebuilt with:
+Run:
 
 ```bash
 python src/reindex.py
 ```
 
-The reindexing process uses the current `data/catalog.json` as its source.
+The reindexer recreates `chroma_db/`, creates the `fragrances` collection with cosine distance, and indexes each product's `semantic_text`. If that field is empty, it builds a shorter text from the product name, brand, family and description. ChromaDB's `DefaultEmbeddingFunction` produces embeddings locally; the search query uses the same default function.
 
-A typical catalog update therefore follows:
+Each record stores the catalog identifier, semantic text and metadata used by the application, including name, brand, price, family, product type, stock status, product URL, cart URL and image URL.
+
+## Runtime retrieval
+
+For each query, `FragranceSearchEngine.search()`:
+
+1. Builds ChromaDB price filters from optional minimum and maximum values.
+2. Retrieves up to ten semantically similar records, or fewer if the collection is smaller.
+3. Extracts keywords from the query and keeps candidates whose indexed document contains at least one keyword.
+4. Applies the requested result limit.
+
+If keyword matching produces no candidates, the search layer returns the semantically retrieved records that satisfy the price constraints. The result includes IDs, metadata, documents and an `exact_match_found` flag; this flag indicates whether the lexical pass found matches, not whether the results are exact product matches.
+
+## Notes and product constraints
+
+The advisor also performs request-specific processing beyond the search engine, including explicit fragrance-note matching and product suitability checks. Those rules live in `src/advisor.py`; they are not all implemented as ChromaDB filters. The search layer applies numeric price limits but does not independently guarantee stock availability filtering at query time. The catalog ingestion step controls which products are written to the primary searchable catalog.
+
+## Refreshing the index
+
+After changing the catalog, regenerate the index:
 
 ```bash
-python src/ingest.py
 python src/reindex.py
 ```
 
-The first command updates the catalog, while the second rebuilds the search index.
+For a full Shopify catalog refresh, first run `python src/ingest.py`, then run the reindexer. On API startup, a missing or empty `chroma_db/` directory triggers an automatic reindex attempt from the existing local catalog. If the catalog is unavailable or empty, index creation cannot complete.
 
----
+## Component boundaries
 
-## ChromaDB
-
-ChromaDB is used as the vector database for fragrance retrieval.
-
-The application maintains a fragrance collection containing:
-
-- product identifiers;
-- semantic documents;
-- product metadata;
-- embeddings.
-
-The exact storage configuration is handled by the indexing and search components.
-
----
-
-## Search and Recommendation
-
-The search engine does not directly generate the final conversational answer.
-
-Instead:
-
-```text
-Search Engine
-      │
-      ▼
-Candidate Fragrances
-      │
-      ▼
-FragranceAdvisor
-      │
-      ▼
-LLM
-      │
-      ▼
-Conversational Response
-```
-
-This separation allows retrieval and response generation to evolve independently.
+The search engine returns candidates and metadata; it does not write conversational responses or manage sessions. `FragranceAdvisor` decides how the candidates fit the conversation and asks the configured Groq model to formulate the reply.
