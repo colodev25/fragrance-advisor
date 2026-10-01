@@ -555,9 +555,17 @@
       "Per lui"
     ],
     "olfactory_pyramid": {
-      "top": [],
-      "heart": [],
-      "base": []
+      "top": [
+        "Cardamomo",
+        "Rosa di Taif",
+        "Davana"
+      ],
+      "heart": [
+        "Oud"
+      ],
+      "base": [
+        "Musk"
+      ]
     },
     "family": "Legnosa",
     "ptype": "Parfum, unisex",
@@ -568,7 +576,7 @@
       "add_to_cart": "https://etualy.com/cart/55204734730574:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-oud-blond-parfum-30-ml.png?v=1765978039"
     },
-    "semantic_text": "Profumo Oud Blond Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Ideale per personalità raffinate e sicure, che cercano un profumo intenso ma equilibrato. Perfetto per chi ama le fragranze di nicchia unisex, sofisticate, calde e avvolgenti, capaci di distinguersi senza ostentazione. Particolarmente indicato per la sera e per occasioni speciali, questo profumo esp"
+    "semantic_text": "Profumo Oud Blond Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Note di testa: Cardamomo, Rosa di Taif, Davana. Note di cuore: Oud. Note di fondo: Musk. Carattere, contesto d'uso e occasioni: Ideale per personalità raffinate e sicure, che cercano un profumo intenso ma equilibrato. Perfetto per chi ama le fragranze di nicchia unisex, sofisticate, calde e avvolgenti, capaci di distinguersi senza ostentazione. Particolarmente indicato per la sera e per occasioni speciali, questo profumo esp"
   },
   {
     "id": "sh_10853323178318",
@@ -631,17 +639,9 @@
       "Per lui"
     ],
     "olfactory_pyramid": {
-      "top": [
-        "Neroli"
-      ],
-      "heart": [
-        "Petitgrain",
-        "Cashmeran"
-      ],
-      "base": [
-        "Musk",
-        "Cetalox"
-      ]
+      "top": [],
+      "heart": [],
+      "base": []
     },
     "family": "Legnosa, Floreale, Muschiata",
     "ptype": "Parfum, unisex",
@@ -652,7 +652,7 @@
       "add_to_cart": "https://etualy.com/cart/55203896918350:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-an-unseen-edp-30-ml.png?v=1765963610"
     },
-    "semantic_text": "Profumo An Unseen Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa, Floreale, Muschiata. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Floreale, Fragranze, Legnosa, Muschiata, Per lei, Per lui. Note di testa: Neroli. Note di cuore: Petitgrain, Cashmeran. Note di fondo: Musk, Cetalox. Carattere, contesto d'uso e occasioni: An Unseen è perfetto per chi ama i profumi puliti, eleganti e contemporanei, per personalità sensibili, curate e naturalmente sofisticate. Ideale per chi cerca una fragranza unisex di nicchia, delicata ma riconoscibile, capace di accompagnare con discrezione. Perfetto per il giorno, per ambienti lum"
+    "semantic_text": "Profumo An Unseen Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa, Floreale, Muschiata. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Floreale, Fragranze, Legnosa, Muschiata, Per lei, Per lui. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: An Unseen è perfetto per chi ama i profumi puliti, eleganti e contemporanei, per personalità sensibili, curate e naturalmente sofisticate. Ideale per chi cerca una fragranza unisex di nicchia, delicata ma riconoscibile, capace di accompagnare con discrezione. Perfetto per il giorno, per ambienti lum"
   },
   {
     "id": "sh_10852483072334",
@@ -2990,55 +2990,6 @@
     "semantic_text": "Profumo Power Self EDP 90 ml di Initio. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Floreale, Muschiata. Tag: 200€ e oltre, 90 ml, Floreale, Muschiata, Per lei, Per lui. Note di testa: Pepe Rosa, Pepe Nero. Note di cuore: Fiori Bianchi, Osmanto, Rosa Bianca, Magnolia. Note di fondo: Ambroxan, Muschio, Legno di Cedro, Legno di Sandalo. Carattere, contesto d'uso e occasioni: Power Self è pensato per chi desidera andare oltre la semplice esperienza olfattiva. È la scelta ideale per personalità decise, consapevoli, che vogliono trasmettere carisma ed equilibrio interiore attraverso una firma olfattiva originale e profonda. La sua natura unisex lo rende perfetto per chiunq"
   },
   {
-    "id": "sh_10406393708878",
-    "shopify_product_id": 10406393708878,
-    "name": "Parfum 1 Body Wash 250 ml",
-    "brand": "Fugazzi",
-    "sku": "9504166639957",
-    "price": 35.0,
-    "currency": "EUR",
-    "in_stock": true,
-    "tags": [
-      "250 ml",
-      "Bagno doccia",
-      "Corpo",
-      "Detergente",
-      "fino a 50€",
-      "Per lei",
-      "Per lui"
-    ],
-    "olfactory_pyramid": {
-      "top": [
-        "Agrumi Freschi",
-        "Ribes Nero",
-        "Menta Piperita",
-        "Mandarino"
-      ],
-      "heart": [
-        "Davana",
-        "Olibano",
-        "Fiori d Arancio",
-        "Pepe Rosa"
-      ],
-      "base": [
-        "Patchouli",
-        "Muschio",
-        "Legno di Sandalo",
-        "Legno di Cedro"
-      ]
-    },
-    "family": "",
-    "ptype": "Profumo Artistico",
-    "usage_profile": "Perfetto per chi desidera iniziare (o concludere) la giornata con una coccola energizzante e di classe, il Body Wash Parfum 1 è ideale per tutti i tipi di pelle, anche le più sensibili. Adatto sia a lui che a lei, può essere utilizzato da solo per una freschezza raffinata o in abbinamento alle fragranze Fugazzi per creare un profumo stratificato e su misura. È la scelta ideale per chi ama distinguersi anche nei gesti quotidiani, trasformando la doccia in un rituale di benessere e stile.",
-    "description": "Il Body Wash Parfum 1 di Fugazzi è molto più di un semplice detergente: è un’esperienza sensoriale completa che unisce freschezza, idratazione e raffinatezza. Ispirato all’omonimo Extrait de Parfum, questo body wash vegano sprigiona un bouquet olfattivo vibrante che inizia con note frizzanti di mandarino, ribes nero e menta verde. Il cuore speziato e floreale di davana, incenso, fiori d’arancio e pepe rosa aggiunge intensità e mistero, mentre le note di fondo — patchouli, muschio, legno di sandalo e cedro — avvolgono la pelle con un calore avvolgente e sofisticato. La sua formula delicata deterge in profondità senza seccare, lasciando la pelle morbida, fresca e profumata a lungo.",
-    "urls": {
-      "product_page": "https://etualy.com/products/parfum-1-body-wash-250-ml",
-      "add_to_cart": "https://etualy.com/cart/52722707300686:1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/fugazzi-parfum-1-body-wash-250-ml.png?v=1744811687"
-    },
-    "semantic_text": "Profumo Parfum 1 Body Wash 250 ml di Fugazzi. Tipologia: Profumo Artistico. Famiglia olfattiva: Profumeria Artistica. Tag: 250 ml, Bagno doccia, Corpo, Detergente, fino a 50€, Per lei, Per lui. Note di testa: Agrumi Freschi, Ribes Nero, Menta Piperita, Mandarino. Note di cuore: Davana, Olibano, Fiori d Arancio, Pepe Rosa. Note di fondo: Patchouli, Muschio, Legno di Sandalo, Legno di Cedro. Carattere, contesto d'uso e occasioni: Perfetto per chi desidera iniziare (o concludere) la giornata con una coccola energizzante e di classe, il Body Wash Parfum 1 è ideale per tutti i tipi di pelle, anche le più sensibili. Adatto sia a lui che a lei, può essere utilizzato da solo per una freschezza raffinata o in abbinamento alle fragr"
-  },
-  {
     "id": "sh_10406165283150",
     "shopify_product_id": 10406165283150,
     "name": "Orange Crush Eau de Parfum",
@@ -3888,8 +3839,13 @@
       "Per lui"
     ],
     "olfactory_pyramid": {
-      "top": [],
-      "heart": [],
+      "top": [
+        "Rabarbaro verde"
+      ],
+      "heart": [
+        "Incenso",
+        "Chypre"
+      ],
       "base": []
     },
     "family": "Aromatica",
@@ -3901,7 +3857,7 @@
       "add_to_cart": "https://etualy.com/cart/37104849092768:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/aedes-de-venustas-signature-edp-100-ml.png?v=1753793617"
     },
-    "semantic_text": "Profumo Signature EDP 100 ml di Aedes de Venustas. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Aromatica. Tag: 100 ml, 200€ e oltre, Aedes de Venustas, Agrumata, Aromatica, Eau de Parfum, Fragranze, Per lei, Per lui. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Aedes de Venustas Signature Eau de Parfum è ideale per chi cerca una fragranza unisex, sofisticata e innovativa, che sfida le tradizionali strutture olfattive. È il profumo perfetto per chi desidera una fragranza intensa, complessa e affascinante, che catturi l'attenzione con eleganza e mistero. Que"
+    "semantic_text": "Profumo Signature EDP 100 ml di Aedes de Venustas. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Aromatica. Tag: 100 ml, 200€ e oltre, Aedes de Venustas, Agrumata, Aromatica, Eau de Parfum, Fragranze, Per lei, Per lui. Note di testa: Rabarbaro verde. Note di cuore: Incenso, Chypre. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Aedes de Venustas Signature Eau de Parfum è ideale per chi cerca una fragranza unisex, sofisticata e innovativa, che sfida le tradizionali strutture olfattive. È il profumo perfetto per chi desidera una fragranza intensa, complessa e affascinante, che catturi l'attenzione con eleganza e mistero. Que"
   },
   {
     "id": "sh_10169894928718",
@@ -30418,15 +30374,9 @@
       "Speziata"
     ],
     "olfactory_pyramid": {
-      "top": [
-        "Vaniglia"
-      ],
-      "heart": [
-        "Muschio"
-      ],
-      "base": [
-        "Castoreum"
-      ]
+      "top": [],
+      "heart": [],
+      "base": []
     },
     "family": "Orientale, Speziata",
     "ptype": "Eau de Parfum, unisex",
@@ -30437,7 +30387,7 @@
       "add_to_cart": "https://etualy.com/cart/37996006473888:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/aedes-de-venustas-sueno-latino-edp-100-ml_37.png?v=1753710641"
     },
-    "semantic_text": "Profumo Absolute Aphrodisiac EDP - 90 ml di Initio. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Orientale, Speziata. Tag: 200€ e oltre, 90 ml, BF21, Eau de Parfum, Fragranze, Initio, Orientale, Per lei, Per lui, Speziata. Note di testa: Vaniglia. Note di cuore: Muschio. Note di fondo: Castoreum. Carattere, contesto d'uso e occasioni: Initio Absolute Aphrodisiac è destinato a uomini e donne che abbracciano la propria sensualità e desiderano trasmettere una presenza magnetica. È la scelta perfetta per chi cerca un'esperienza olfattiva intensa, in grado di riflettere la propria unicità. Questa fragranza si presta ad essere indossat"
+    "semantic_text": "Profumo Absolute Aphrodisiac EDP - 90 ml di Initio. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Orientale, Speziata. Tag: 200€ e oltre, 90 ml, BF21, Eau de Parfum, Fragranze, Initio, Orientale, Per lei, Per lui, Speziata. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Initio Absolute Aphrodisiac è destinato a uomini e donne che abbracciano la propria sensualità e desiderano trasmettere una presenza magnetica. È la scelta perfetta per chi cerca un'esperienza olfattiva intensa, in grado di riflettere la propria unicità. Questa fragranza si presta ad essere indossat"
   },
   {
     "id": "sh_6580602273952",
