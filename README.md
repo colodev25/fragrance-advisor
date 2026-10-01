@@ -225,11 +225,12 @@ The documentation describes the current implementation and may change together w
 - Additional product filtering
 - Improved frontend integration
 - Expanded test coverage
-- Automated CI testing
+- Automated CI testing [✅]
 - Performance and scalability improvements
 - Production deployment configuration
 
----
+- Render Plan upgrade (no cold start)
+- Better LLMs
 
 ## 🔐 Security
 
