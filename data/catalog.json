@@ -639,9 +639,17 @@
       "Per lui"
     ],
     "olfactory_pyramid": {
-      "top": [],
-      "heart": [],
-      "base": []
+      "top": [
+        "Neroli"
+      ],
+      "heart": [
+        "Petitgrain",
+        "Cashmeran"
+      ],
+      "base": [
+        "Musk",
+        "Cetalox"
+      ]
     },
     "family": "Legnosa, Floreale, Muschiata",
     "ptype": "Parfum, unisex",
@@ -652,7 +660,7 @@
       "add_to_cart": "https://etualy.com/cart/55203896918350:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-an-unseen-edp-30-ml.png?v=1765963610"
     },
-    "semantic_text": "Profumo An Unseen Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa, Floreale, Muschiata. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Floreale, Fragranze, Legnosa, Muschiata, Per lei, Per lui. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: An Unseen è perfetto per chi ama i profumi puliti, eleganti e contemporanei, per personalità sensibili, curate e naturalmente sofisticate. Ideale per chi cerca una fragranza unisex di nicchia, delicata ma riconoscibile, capace di accompagnare con discrezione. Perfetto per il giorno, per ambienti lum"
+    "semantic_text": "Profumo An Unseen Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa, Floreale, Muschiata. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Floreale, Fragranze, Legnosa, Muschiata, Per lei, Per lui. Note di testa: Neroli. Note di cuore: Petitgrain, Cashmeran. Note di fondo: Musk, Cetalox. Carattere, contesto d'uso e occasioni: An Unseen è perfetto per chi ama i profumi puliti, eleganti e contemporanei, per personalità sensibili, curate e naturalmente sofisticate. Ideale per chi cerca una fragranza unisex di nicchia, delicata ma riconoscibile, capace di accompagnare con discrezione. Perfetto per il giorno, per ambienti lum"
   },
   {
     "id": "sh_10852483072334",
@@ -3839,13 +3847,8 @@
       "Per lui"
     ],
     "olfactory_pyramid": {
-      "top": [
-        "Rabarbaro verde"
-      ],
-      "heart": [
-        "Incenso",
-        "Chypre"
-      ],
+      "top": [],
+      "heart": [],
       "base": []
     },
     "family": "Aromatica",
@@ -3857,7 +3860,7 @@
       "add_to_cart": "https://etualy.com/cart/37104849092768:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/aedes-de-venustas-signature-edp-100-ml.png?v=1753793617"
     },
-    "semantic_text": "Profumo Signature EDP 100 ml di Aedes de Venustas. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Aromatica. Tag: 100 ml, 200€ e oltre, Aedes de Venustas, Agrumata, Aromatica, Eau de Parfum, Fragranze, Per lei, Per lui. Note di testa: Rabarbaro verde. Note di cuore: Incenso, Chypre. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Aedes de Venustas Signature Eau de Parfum è ideale per chi cerca una fragranza unisex, sofisticata e innovativa, che sfida le tradizionali strutture olfattive. È il profumo perfetto per chi desidera una fragranza intensa, complessa e affascinante, che catturi l'attenzione con eleganza e mistero. Que"
+    "semantic_text": "Profumo Signature EDP 100 ml di Aedes de Venustas. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Aromatica. Tag: 100 ml, 200€ e oltre, Aedes de Venustas, Agrumata, Aromatica, Eau de Parfum, Fragranze, Per lei, Per lui. Note di testa: fresche/agrumate. Note di cuore: floreali/speziate. Note di fondo: legnose/ambrate. Carattere, contesto d'uso e occasioni: Aedes de Venustas Signature Eau de Parfum è ideale per chi cerca una fragranza unisex, sofisticata e innovativa, che sfida le tradizionali strutture olfattive. È il profumo perfetto per chi desidera una fragranza intensa, complessa e affascinante, che catturi l'attenzione con eleganza e mistero. Que"
   },
   {
     "id": "sh_10169894928718",
