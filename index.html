@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Gond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
@@ -607,6 +607,7 @@
         background: var(--oa-border-subtle);
       }
 
+      /* FOOTER ARMONIZZATO */
       .oa-card-footer {
         display: flex;
         align-items: center;
@@ -625,6 +626,9 @@
         white-space: nowrap;
       }
 
+      /* =======================================================================
+         PULSANTE CARRELLO CON MICRO-INTERAZIONI & FEEDBACK
+         ======================================================================= */
       .oa-card-cart-btn {
         display: inline-flex;
         align-items: center;
@@ -633,26 +637,77 @@
         background: var(--oa-black);
         color: var(--oa-white) !important;
         text-decoration: none;
+        border: 1px solid transparent;
         border-radius: var(--oa-radius-sm);
         font-size: 9.5px;
         font-weight: 600;
         letter-spacing: 0.8px;
         text-transform: uppercase;
         transition:
-          background 0.2s ease,
-          transform 0.15s ease;
+          background 0.25s ease,
+          border-color 0.25s ease,
+          color 0.25s ease,
+          transform 0.15s ease,
+          box-shadow 0.2s ease;
         flex-shrink: 0;
+        cursor: pointer;
+        user-select: none;
       }
 
       .oa-card-cart-btn:hover {
         background: #333333;
         transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
       }
 
       .oa-card-cart-btn svg {
         width: 12px;
         height: 12px;
         stroke: var(--oa-white);
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+      }
+
+      .oa-btn-check-icon {
+        stroke: var(--oa-accent-gold) !important;
+        animation: oaCheckPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      @keyframes oaCheckPop {
+        0% {
+          transform: scale(0.3) rotate(-20deg);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1) rotate(0deg);
+          opacity: 1;
+        }
+      }
+
+      /* Stato transitorio: In aggiunta (click in corso) */
+      .oa-card-cart-btn.is-adding {
+        background: #231f1a;
+        border-color: var(--oa-accent-gold);
+        color: var(--oa-white) !important;
+        transform: scale(0.97);
+        pointer-events: none;
+      }
+
+      /* Stato persistente: Già aggiunto al carrello */
+      .oa-card-cart-btn.is-added {
+        background: #fbfaf8;
+        border-color: var(--oa-accent-gold);
+        color: var(--oa-black) !important;
+      }
+
+      .oa-card-cart-btn.is-added .oa-btn-check-icon {
+        stroke: var(--oa-accent-gold) !important;
+      }
+
+      .oa-card-cart-btn.is-added:hover {
+        background: #f4f0e8;
+        border-color: #aa8d69;
+        transform: translateY(-1px);
       }
 
       .oa-card-slideover {
@@ -875,7 +930,7 @@
       }
 
       /* =======================================================================
-         INDICATORE DIGITAZIONE CON SUPPORTO COLD-START PROGRESSIVO
+         INDICATORE DIGITAZIONE CON COLD-START PROGRESSIVO
          ======================================================================= */
       .oa-typing {
         display: inline-flex;
@@ -1639,6 +1694,42 @@
         }
       }
 
+      // =======================================================================
+      // MICRO-INTERAZIONE & FEEDBACK CARRELLO
+      // =======================================================================
+      function handleAddToCart(e, btn) {
+        if (e) e.preventDefault();
+        if (!btn || btn.classList.contains("is-adding")) return;
+
+        const url = btn.getAttribute("href");
+
+        // Se è già stato aggiunto, un clic successivo apre direttamente la scheda del carrello
+        if (btn.classList.contains("is-added")) {
+          if (url && url !== "#") window.open(url, "_blank");
+          return;
+        }
+
+        const cartIcon = btn.querySelector(".oa-btn-cart-icon");
+        const checkIcon = btn.querySelector(".oa-btn-check-icon");
+        const textSpan = btn.querySelector(".oa-cart-btn-text");
+
+        // Fase 1: Feedback immediato di aggiunta
+        btn.classList.add("is-adding");
+        if (cartIcon) cartIcon.style.display = "none";
+        if (checkIcon) checkIcon.style.display = "inline-block";
+        if (textSpan) textSpan.textContent = "Aggiunto!";
+
+        // Fase 2: Apertura ritardata (600ms) e stabilizzazione persistente
+        setTimeout(() => {
+          if (url && url !== "#") {
+            window.open(url, "_blank");
+          }
+          btn.classList.remove("is-adding");
+          btn.classList.add("is-added");
+          if (textSpan) textSpan.textContent = "Nel Carrello";
+        }, 600);
+      }
+
       function createProductCardHtml(prod) {
         const name = prod.name || "Profumo Artistico";
         const brand = prod.brand || "Profumeria Artistica";
@@ -1692,6 +1783,20 @@
           </a>
         `;
 
+        const cartButtonHtml = `
+          <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn" onclick="handleAddToCart(event, this)">
+            <svg class="oa-btn-cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <svg class="oa-btn-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span class="oa-cart-btn-text">Aggiungi al Carrello</span>
+          </a>
+        `;
+
         if (isSlideover) {
           return `
             <div class="oa-product-card oa-has-slideover">
@@ -1707,14 +1812,7 @@
                 </div>
                 <div class="oa-card-footer">
                   <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
-                  <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="9" cy="21" r="1"></circle>
-                      <circle cx="20" cy="21" r="1"></circle>
-                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                    </svg>
-                    <span>Aggiungi al Carrello</span>
-                  </a>
+                  ${cartButtonHtml}
                 </div>
               </div>
               <div class="oa-card-slideover">
@@ -1783,14 +1881,7 @@
               }
               <div class="oa-card-footer">
                 <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
-                <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="9" cy="21" r="1"></circle>
-                    <circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                  </svg>
-                  <span>Aggiungi al Carrello</span>
-                </a>
+                ${cartButtonHtml}
               </div>
             </div>
           </div>
