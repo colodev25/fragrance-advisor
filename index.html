@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>Etualy | Maître Parfumeur AI</title>
 
@@ -44,6 +44,7 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+        -webkit-tap-highlight-color: transparent;
       }
 
       body {
@@ -115,13 +116,12 @@
       }
 
       /* =======================================================================
-         WIDGET CONTAINER (RESPONSIVE PC & TABLET)
+         WIDGET CONTAINER (DESKTOP / DEFAULT)
          ======================================================================= */
       .oa-widget-container {
         position: fixed;
         bottom: clamp(20px, 3.2vh, 32px);
         right: clamp(20px, 2.5vw, 36px);
-        /* Dimensioni fluide: non eccedono lo schermo su laptop a 768p ma si allargano su 1440p */
         width: clamp(380px, 26vw, 440px);
         height: clamp(540px, 76vh, 690px);
         max-width: calc(100vw - 40px);
@@ -216,8 +216,8 @@
       .oa-icon-btn {
         background: none;
         border: none;
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
         cursor: pointer;
         color: var(--oa-text-secondary);
         border-radius: var(--oa-radius-sm);
@@ -263,11 +263,11 @@
       }
 
       /* =======================================================================
-         AREA MESSAGGI & SCROLLBAR DESKTOP
+         AREA MESSAGGI & SCROLLBAR
          ======================================================================= */
       .oa-messages-container {
         flex: 1 1 auto;
-        min-height: 0; /* Previene overflow rigidi nei flexbox CSS */
+        min-height: 0;
         overflow-y: auto;
         padding: 20px 20px 24px;
         background: var(--oa-bg-chat);
@@ -290,10 +290,6 @@
       .oa-messages-container::-webkit-scrollbar-thumb {
         background: var(--oa-border);
         border-radius: 4px;
-      }
-
-      .oa-messages-container::-webkit-scrollbar-thumb:hover {
-        background: #cfcfcf;
       }
 
       /* =======================================================================
@@ -346,7 +342,7 @@
       }
 
       /* =======================================================================
-         SCHEDE PRODOTTO DESKTOP & SLIDEOVER
+         SCHEDE PRODOTTO & SLIDEOVER
          ======================================================================= */
       .oa-product-card {
         position: relative;
@@ -560,7 +556,7 @@
 
       .oa-card-slideover {
         position: absolute;
-        inset: 0; /* Copre perfettamente l'intera scheda */
+        inset: 0;
         background: #ffffff;
         padding: 14px 16px;
         display: flex;
@@ -822,7 +818,7 @@
       }
 
       /* =======================================================================
-         BARRA INPUT (FOOTER SCRITTURA)
+         BARRA INPUT
          ======================================================================= */
       .oa-input-container {
         padding: 14px 20px;
@@ -928,25 +924,181 @@
       }
 
       /* =======================================================================
-         PLACEHOLDER MOBILE (<= 600px)
-         (Base mantenuta pulita in attesa del rifacimento completo al punto 2)
+         LAYOUT MOBILE: NATIVE FULL-SCREEN APP CON SCORRIMENTO DAL BASSO
          ======================================================================= */
       @media (max-width: 600px) {
-        .oa-widget-container {
-          bottom: 0;
-          right: 0;
-          width: 100vw;
-          height: 100vh;
-          max-height: 100vh;
-          border-radius: 0;
-          border: none;
+        body {
+          padding: 0;
         }
 
+        /* Launcher su Mobile: posizionato elegantemente in basso a destra */
         .oa-launcher-btn {
-          bottom: 16px;
-          right: 16px;
+          bottom: max(16px, env(safe-area-inset-bottom, 16px));
+          right: max(16px, env(safe-area-inset-right, 16px));
           height: 48px;
           padding: 0 18px;
+          border-radius: 24px; /* Forma a capsula moderna per mobile */
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .oa-launcher-text {
+          font-size: 11px;
+          letter-spacing: 1.2px;
+        }
+
+        /* Il Widget diventa una vera e propria App a schermo intero */
+        .oa-widget-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh; /* Copre perfettamente l'altezza dinamica di iOS Safari / Chrome */
+          max-width: 100vw;
+          max-height: 100dvh;
+          border-radius: 0;
+          border: none;
+          box-shadow: none;
+          /* Nascosto sotto il bordo inferiore dello schermo quando inattivo */
+          opacity: 1;
+          transform: translateY(100%);
+          pointer-events: none;
+          /* Transizione a scorrimento verticale fluida nativa */
+          transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+          overscroll-behavior: contain;
+          z-index: 9999999;
+        }
+
+        /* Quando aperto, scorre dal basso verso l'alto fino a coprire lo schermo */
+        .oa-widget-container.is-active {
+          transform: translateY(0);
+          pointer-events: all;
+        }
+
+        /* Header fisso in alto con supporto per Isola Dinamica / Notch di iOS */
+        .oa-header {
+          padding-top: max(14px, env(safe-area-inset-top, 14px));
+          padding-left: 16px;
+          padding-right: 14px;
+          padding-bottom: 12px;
+          background: #ffffff;
+        }
+
+        .oa-header-title {
+          font-size: 19px;
+        }
+
+        /* Pulsanti dell'header con area di tocco aumentata */
+        .oa-icon-btn {
+          width: 38px;
+          height: 38px;
+        }
+
+        .oa-icon-btn svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        /* Area messaggi nativa: scroll fluido e touch friendly */
+        .oa-messages-container {
+          padding: 16px 14px 18px;
+          gap: 14px;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+        }
+
+        .oa-msg {
+          max-width: 92%;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .oa-msg-bot {
+          padding: 14px 16px;
+        }
+
+        /* Schede prodotto su mobile: proporzionate e senza sformature */
+        .oa-product-card {
+          margin: 10px 0 2px 0;
+        }
+
+        .oa-card-front {
+          padding: 14px;
+          gap: 10px;
+        }
+
+        .oa-card-image-box {
+          width: 64px;
+          height: 64px;
+        }
+
+        .oa-card-title {
+          font-size: 15.5px;
+        }
+
+        .oa-card-footer {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .oa-card-cart-btn {
+          padding: 8px 14px;
+          font-size: 10px;
+        }
+
+        /* Slideover delle note a schermo intero interno */
+        .oa-card-slideover {
+          padding: 14px;
+        }
+
+        /* Chips rapidi orizzontali più facili da toccare con il pollice */
+        .oa-chips-container {
+          padding: 8px 14px 10px;
+          gap: 6px;
+        }
+
+        .oa-chip {
+          padding: 8px 14px;
+          min-height: 38px;
+          font-size: 12px;
+        }
+
+        /* Barra di input fissata in basso con safe-area per la barra home di iOS */
+        .oa-input-container {
+          padding-top: 10px;
+          padding-left: 12px;
+          padding-right: 12px;
+          padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+          background: #ffffff;
+          gap: 8px;
+        }
+
+        /* Dimensione font a 16px per evitare lo sgradevole auto-zoom di iOS Safari al focus */
+        .oa-input-field {
+          height: 44px;
+          font-size: 16px;
+          padding: 0 14px;
+        }
+
+        .oa-send-btn {
+          width: 44px;
+          height: 44px;
+        }
+      }
+
+      /* =======================================================================
+         ACCESSIBILITÀ: SUPPORTO PREFERS-REDUCED-MOTION
+         ======================================================================= */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
         }
       }
     </style>
