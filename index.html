@@ -65,6 +65,104 @@
       }
 
       /* =======================================================================
+         TEASER PROATTIVO SUL LAUNCHER
+         ======================================================================= */
+      .oa-teaser {
+        position: fixed;
+        bottom: calc(clamp(20px, 3.2vh, 32px) + 64px);
+        right: clamp(20px, 2.5vw, 36px);
+        max-width: 290px;
+        background: var(--oa-white);
+        border: 1px solid var(--oa-border);
+        border-radius: var(--oa-radius-md);
+        padding: 12px 14px;
+        box-shadow:
+          0 14px 34px -4px rgba(0, 0, 0, 0.12),
+          0 4px 12px rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        z-index: 999997;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(10px);
+        transition:
+          opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+      }
+
+      .oa-teaser::after {
+        content: "";
+        position: absolute;
+        bottom: -6px;
+        right: 30px;
+        width: 10px;
+        height: 10px;
+        background: var(--oa-white);
+        border-right: 1px solid var(--oa-border);
+        border-bottom: 1px solid var(--oa-border);
+        transform: rotate(45deg);
+      }
+
+      .oa-teaser.is-visible {
+        opacity: 1;
+        pointer-events: all;
+        transform: translateY(0);
+      }
+
+      .oa-teaser-body {
+        flex: 1;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        cursor: pointer;
+        min-width: 0;
+      }
+
+      .oa-teaser-sparkle {
+        font-size: 13px;
+        line-height: 1.3;
+        flex-shrink: 0;
+      }
+
+      .oa-teaser-text {
+        font-size: 12px;
+        line-height: 1.45;
+        font-weight: 500;
+        color: var(--oa-text-primary);
+        letter-spacing: 0.2px;
+      }
+
+      .oa-teaser-close {
+        background: none;
+        border: none;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        cursor: pointer;
+        color: var(--oa-text-muted);
+        border-radius: var(--oa-radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition:
+          color 0.2s ease,
+          background 0.2s ease;
+      }
+
+      .oa-teaser-close:hover {
+        color: var(--oa-black);
+        background: var(--oa-border-subtle);
+      }
+
+      .oa-teaser-close svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      /* =======================================================================
          LAUNCHER FLUTTUANTE (DESKTOP & TABLET)
          ======================================================================= */
       .oa-launcher-btn {
@@ -342,7 +440,7 @@
       }
 
       /* =======================================================================
-         SCHEDE PRODOTTO & SLIDEOVER (ARMONIZZATE)
+         SCHEDE PRODOTTO & SLIDEOVER
          ======================================================================= */
       .oa-product-card {
         position: relative;
@@ -509,7 +607,6 @@
         background: var(--oa-border-subtle);
       }
 
-      /* FOOTER ARMONIZZATO: ancorato alla base e proporzionato */
       .oa-card-footer {
         display: flex;
         align-items: center;
@@ -778,18 +875,26 @@
       }
 
       /* =======================================================================
-         INDICATORE DIGITAZIONE
+         INDICATORE DIGITAZIONE CON SUPPORTO COLD-START PROGRESSIVO
          ======================================================================= */
       .oa-typing {
         display: inline-flex;
-        align-items: center;
-        gap: 5px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
         padding: 12px 16px;
         background: var(--oa-white);
         border: 1px solid var(--oa-border);
         border-radius: var(--oa-radius-bubble);
         width: fit-content;
+        max-width: 90%;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      }
+
+      .oa-typing-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
       }
 
       .oa-typing-dot {
@@ -818,6 +923,42 @@
         40% {
           opacity: 1;
           transform: scale(1.15);
+        }
+      }
+
+      .oa-typing-status {
+        font-size: 11.5px;
+        line-height: 1.45;
+        color: var(--oa-text-secondary);
+        font-style: italic;
+        transition: all 0.3s ease;
+        animation: oaFadeIn 0.3s ease forwards;
+      }
+
+      .oa-typing-status:empty {
+        display: none;
+      }
+
+      .oa-typing-status.oa-shimmer {
+        background: linear-gradient(
+          90deg,
+          var(--oa-text-secondary) 0%,
+          var(--oa-accent-gold) 50%,
+          var(--oa-text-secondary) 100%
+        );
+        background-size: 200% auto;
+        color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+        animation: oaShimmer 2.4s linear infinite;
+      }
+
+      @keyframes oaShimmer {
+        0% {
+          background-position: 200% center;
+        }
+        100% {
+          background-position: 0% center;
         }
       }
 
@@ -933,6 +1074,17 @@
       @media (max-width: 600px) {
         body {
           padding: 0;
+        }
+
+        .oa-teaser {
+          bottom: calc(max(16px, env(safe-area-inset-bottom, 16px)) + 58px);
+          right: max(16px, env(safe-area-inset-right, 16px));
+          max-width: calc(100vw - 32px);
+          padding: 11px 13px;
+        }
+
+        .oa-teaser::after {
+          right: 32px;
         }
 
         .oa-launcher-btn {
@@ -1101,6 +1253,34 @@
     </style>
   </head>
   <body>
+    <!-- TEASER PROATTIVO SUL LAUNCHER -->
+    <div class="oa-teaser" id="oaTeaser">
+      <div class="oa-teaser-body" id="oaTeaserBody">
+        <span class="oa-teaser-sparkle">✨</span>
+        <span class="oa-teaser-text"
+          >Cerchi la tua fragranza ideale o un consiglio su misura?</span
+        >
+      </div>
+      <button
+        class="oa-teaser-close"
+        id="oaTeaserClose"
+        aria-label="Chiudi invito"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- LAUNCHER FLUTTUANTE -->
     <button
       class="oa-launcher-btn"
       id="oaLauncher"
@@ -1121,7 +1301,8 @@
       <span class="oa-launcher-text">Etualy • Maître Parfumeur</span>
     </button>
 
-    <div class="oa-widget-container is-active" id="oaWidget">
+    <!-- WIDGET CONTAINER -->
+    <div class="oa-widget-container" id="oaWidget">
       <header class="oa-header">
         <div class="oa-header-brand">
           <span class="oa-header-store">Etualy • The Art of Essence</span>
@@ -1220,7 +1401,7 @@
     </div>
 
     <script>
-      // CONFIGURAZIONE ENDPOINT: Cambiare con l'URL del backend online in produzione
+      // CONFIGURAZIONE ENDPOINT: URL del backend online
       const API_BASE_URL = "https://fragrance-advisor-api.onrender.com".replace(
         /\/+$/,
         "",
@@ -1265,17 +1446,55 @@
       const stepper = document.getElementById("oaStepper");
       const progress = document.getElementById("oaProgress");
 
-      launcher.addEventListener("click", () =>
-        widget.classList.add("is-active"),
-      );
-      closeBtn.addEventListener("click", () =>
-        widget.classList.remove("is-active"),
-      );
+      const teaser = document.getElementById("oaTeaser");
+      const teaserClose = document.getElementById("oaTeaserClose");
+      const teaserBody = document.getElementById("oaTeaserBody");
+
+      // =======================================================================
+      // LOGICA TEASER PROATTIVO
+      // =======================================================================
+      function dismissTeaser() {
+        if (teaser) teaser.classList.remove("is-visible");
+        sessionStorage.setItem("etualy_teaser_closed", "true");
+      }
+
+      // Mostra il teaser dopo 5 secondi solo se non è già stato chiuso e la chat è chiusa
+      setTimeout(() => {
+        if (
+          teaser &&
+          !widget.classList.contains("is-active") &&
+          sessionStorage.getItem("etualy_teaser_closed") !== "true"
+        ) {
+          teaser.classList.add("is-visible");
+        }
+      }, 5000);
+
+      if (teaserBody) {
+        teaserBody.addEventListener("click", () => {
+          dismissTeaser();
+          widget.classList.add("is-active");
+        });
+      }
+
+      if (teaserClose) {
+        teaserClose.addEventListener("click", (e) => {
+          e.stopPropagation();
+          dismissTeaser();
+        });
+      }
+
+      launcher.addEventListener("click", () => {
+        dismissTeaser();
+        widget.classList.add("is-active");
+      });
+
+      closeBtn.addEventListener("click", () => {
+        widget.classList.remove("is-active");
+      });
 
       // Reset Sincronizzato con il Backend
       restartBtn.addEventListener("click", async () => {
         const oldSession = sessionId;
-        // Genera nuova chiave di sessione
         sessionId =
           "sess_" +
           Math.random().toString(36).substring(2, 11) +
@@ -1289,7 +1508,6 @@
         input.value = "";
         scrollToBottom();
 
-        // Notifica il backend per ripulire lo store SQLite
         try {
           await fetch(`${API_BASE_URL}/reset`, {
             method: "POST",
@@ -1321,20 +1539,63 @@
         scrollToBottom();
       }
 
+      // =======================================================================
+      // GESTIONE TYPING & COLD START PROGRESSIVO
+      // =======================================================================
+      let typingTimer1 = null;
+      let typingTimer2 = null;
+
+      function clearTypingTimers() {
+        if (typingTimer1) {
+          clearTimeout(typingTimer1);
+          typingTimer1 = null;
+        }
+        if (typingTimer2) {
+          clearTimeout(typingTimer2);
+          typingTimer2 = null;
+        }
+      }
+
       function showTyping() {
+        clearTypingTimers();
         const typingDiv = document.createElement("div");
         typingDiv.className = "oa-typing";
         typingDiv.id = "oaTypingIndicator";
         typingDiv.innerHTML = `
-          <span class="oa-typing-dot"></span>
-          <span class="oa-typing-dot"></span>
-          <span class="oa-typing-dot"></span>
+          <div class="oa-typing-dots">
+            <span class="oa-typing-dot"></span>
+            <span class="oa-typing-dot"></span>
+            <span class="oa-typing-dot"></span>
+          </div>
+          <div class="oa-typing-status" id="oaTypingStatus"></div>
         `;
         messagesContainer.appendChild(typingDiv);
         scrollToBottom();
+
+        // Stadio 2: dopo 6 secondi (primo rassicuramento)
+        typingTimer1 = setTimeout(() => {
+          const statusEl = document.getElementById("oaTypingStatus");
+          if (statusEl) {
+            statusEl.textContent =
+              "Il Maître Parfumeur sta consultando l'archivio delle essenze...";
+            scrollToBottom();
+          }
+        }, 6000);
+
+        // Stadio 3: dopo 20 secondi (cold-start effettivo di Render)
+        typingTimer2 = setTimeout(() => {
+          const statusEl = document.getElementById("oaTypingStatus");
+          if (statusEl) {
+            statusEl.textContent =
+              "Stiamo riaprendo la bottega olfattiva, richiederà solo qualche istante in più...";
+            statusEl.classList.add("oa-shimmer");
+            scrollToBottom();
+          }
+        }, 20000);
       }
 
       function removeTyping() {
+        clearTypingTimers();
         const typing = document.getElementById("oaTypingIndicator");
         if (typing) typing.remove();
       }
