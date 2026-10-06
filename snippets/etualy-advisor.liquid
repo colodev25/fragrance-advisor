@@ -1,0 +1,2184 @@
+{% comment %}
+  ==============================================================================
+  Etualy — Maître Parfumeur AI Widget
+  File: snippets/etualy-advisor.liquid
+  Descrizione: Widget di consulenza olfattiva per Shopify con integrazione AI,
+               gestione mobile native-like, skeleton loader e persistenza.
+  
+  Installazione:
+  Includere in 'layout/theme.liquid' appena prima del tag di chiusura </body>:
+  {% render 'etualy-advisor' %}
+  ==============================================================================
+{% endcomment %}
+
+<!-- Google Fonts dedicati (caricamento asincrono per non impattare Core Web Vitals) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</noscript>
+
+<style>
+  :root {
+    --oa-bg-page: #f7f7f7;
+    --oa-bg-widget: #ffffff;
+    --oa-bg-chat: #fafaf9;
+    --oa-bg-card: #ffffff;
+    --oa-text-primary: #111111;
+    --oa-text-secondary: #555555;
+    --oa-text-muted: #888888;
+    --oa-accent-gold: #bfa27e;
+    --oa-accent-gold-light: #f6f3ee;
+    --oa-border: #e8e8e8;
+    --oa-border-subtle: #f0f0f0;
+    --oa-black: #111111;
+    --oa-white: #ffffff;
+    --oa-user-bubble: #181818;
+    --oa-user-text: #ffffff;
+    --oa-shadow:
+      0 20px 48px -10px rgba(0, 0, 0, 0.14),
+      0 8px 20px -4px rgba(0, 0, 0, 0.05);
+    --oa-radius-sm: 2px;
+    --oa-radius-md: 6px;
+    --oa-radius-bubble: 6px;
+  }
+
+  /* ===========================================================================
+     THEME SHIELDING (ISOLAMENTO CSS CONTRO I CONFLITTI DEL TEMA SHOPIFY)
+     =========================================================================== */
+  .oa-teaser,
+  .oa-launcher-btn,
+  .oa-widget-container,
+  .oa-widget-container * {
+    box-sizing: border-box !important;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .oa-widget-container button,
+  .oa-launcher-btn,
+  .oa-teaser button {
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: normal;
+    box-shadow: none;
+  }
+
+  .oa-widget-container p,
+  .oa-widget-container h2 {
+    margin: 0;
+    padding: 0;
+  }
+
+  .oa-widget-container a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* Blocco scroll sullo sfondo dello store quando la chat mobile è attiva */
+  body.oa-no-scroll {
+    overflow: hidden !important;
+    touch-action: none !important;
+    height: 100% !important;
+  }
+
+  /* ===========================================================================
+     TEASER PROATTIVO SUL LAUNCHER
+     =========================================================================== */
+  .oa-teaser {
+    position: fixed;
+    bottom: calc(clamp(20px, 3.2vh, 32px) + 64px);
+    right: clamp(20px, 2.5vw, 36px);
+    max-width: 290px;
+    background: var(--oa-white);
+    border: 1px solid var(--oa-border);
+    border-radius: var(--oa-radius-md);
+    padding: 12px 14px;
+    box-shadow:
+      0 14px 34px -4px rgba(0, 0, 0, 0.12),
+      0 4px 12px rgba(0, 0, 0, 0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    z-index: 2147483640;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition:
+      opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+
+  .oa-teaser::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    right: 30px;
+    width: 10px;
+    height: 10px;
+    background: var(--oa-white);
+    border-right: 1px solid var(--oa-border);
+    border-bottom: 1px solid var(--oa-border);
+    transform: rotate(45deg);
+  }
+
+  .oa-teaser.is-visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  .oa-teaser-body {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .oa-teaser-sparkle {
+    font-size: 13px;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+
+  .oa-teaser-text {
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--oa-text-primary);
+    letter-spacing: 0.2px;
+  }
+
+  .oa-teaser-close {
+    background: none;
+    border: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    cursor: pointer;
+    color: var(--oa-text-muted);
+    border-radius: var(--oa-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .oa-teaser-close:hover {
+    color: var(--oa-black);
+    background: var(--oa-border-subtle);
+  }
+
+  .oa-teaser-close svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* ===========================================================================
+     LAUNCHER FLUTTUANTE (DESKTOP & TABLET)
+     =========================================================================== */
+  .oa-launcher-btn {
+    position: fixed;
+    bottom: clamp(20px, 3.2vh, 32px);
+    right: clamp(20px, 2.5vw, 36px);
+    height: 52px;
+    padding: 0 24px;
+    background: var(--oa-black);
+    color: var(--oa-white);
+    border: 1px solid #222222;
+    border-radius: var(--oa-radius-md);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+    transition:
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      background 0.2s ease;
+    z-index: 2147483641;
+    user-select: none;
+  }
+
+  .oa-launcher-btn:hover {
+    background: #222222;
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+  }
+
+  .oa-launcher-btn:active {
+    transform: translateY(0);
+  }
+
+  .oa-launcher-icon {
+    width: 19px;
+    height: 19px;
+    stroke: var(--oa-accent-gold);
+    flex-shrink: 0;
+  }
+
+  .oa-launcher-text {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ===========================================================================
+     WIDGET CONTAINER (DESKTOP)
+     =========================================================================== */
+  .oa-widget-container {
+    position: fixed;
+    bottom: clamp(20px, 3.2vh, 32px);
+    right: clamp(20px, 2.5vw, 36px);
+    width: clamp(380px, 26vw, 440px);
+    height: clamp(540px, 76vh, 690px);
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 48px);
+    background: var(--oa-bg-widget);
+    border-radius: var(--oa-radius-md);
+    border: 1px solid var(--oa-border);
+    box-shadow: var(--oa-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 2147483642;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(16px) scale(0.985);
+    transition:
+      opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .oa-widget-container.is-active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0) scale(1);
+  }
+
+  /* ===========================================================================
+     HEADER
+     =========================================================================== */
+  .oa-header {
+    padding: 16px 22px;
+    background: var(--oa-white);
+    border-bottom: 1px solid var(--oa-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .oa-header-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .oa-header-store {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 2.2px;
+    text-transform: uppercase;
+    color: var(--oa-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .oa-header-title {
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: var(--oa-text-primary);
+    line-height: 1.1;
+  }
+
+  .oa-header-status {
+    font-size: 10.5px;
+    color: var(--oa-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .oa-status-dot {
+    width: 6px;
+    height: 6px;
+    background-color: var(--oa-accent-gold);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .oa-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .oa-icon-btn {
+    background: none;
+    border: none;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    color: var(--oa-text-secondary);
+    border-radius: var(--oa-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .oa-icon-btn:hover {
+    color: var(--oa-black);
+    background: var(--oa-border-subtle);
+  }
+
+  .oa-icon-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  /* ===========================================================================
+     STEPPER PROGRESS
+     =========================================================================== */
+  .oa-stepper-bar {
+    height: 2.5px;
+    width: 100%;
+    background: var(--oa-border-subtle);
+    display: none;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .oa-stepper-bar.is-visible {
+    display: block;
+  }
+
+  .oa-stepper-progress {
+    height: 100%;
+    width: 25%;
+    background: var(--oa-accent-gold);
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ===========================================================================
+     MESSAGGI & CHAT AREA
+     =========================================================================== */
+  .oa-messages-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 20px 24px;
+    background: var(--oa-bg-chat);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--oa-border) transparent;
+  }
+
+  .oa-messages-container::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .oa-messages-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .oa-messages-container::-webkit-scrollbar-thumb {
+    background: var(--oa-border);
+    border-radius: 4px;
+  }
+
+  .oa-msg {
+    max-width: 90%;
+    line-height: 1.55;
+    font-size: 13.5px;
+    animation: oaFadeIn 0.25s ease forwards;
+    word-break: break-word;
+  }
+
+  @keyframes oaFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .oa-msg-user {
+    align-self: flex-end;
+    background: var(--oa-user-bubble);
+    color: var(--oa-user-text);
+    padding: 12px 16px;
+    border-radius: var(--oa-radius-bubble);
+    font-weight: 400;
+  }
+
+  .oa-msg-bot {
+    align-self: flex-start;
+    background: var(--oa-white);
+    color: var(--oa-text-primary);
+    padding: 16px 18px;
+    border-radius: var(--oa-radius-bubble);
+    border: 1px solid var(--oa-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    width: 100%;
+  }
+
+  .oa-msg-bot p {
+    margin-bottom: 8px;
+  }
+  .oa-msg-bot p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* ===========================================================================
+     GESTIONE ERRORI BOUTIQUE & RETRY
+     =========================================================================== */
+  .oa-msg-error {
+    background: var(--oa-white);
+    border: 1px solid var(--oa-border);
+    border-left: 3px solid var(--oa-accent-gold);
+    padding: 16px 18px;
+    border-radius: var(--oa-radius-bubble);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .oa-error-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--oa-accent-gold);
+  }
+
+  .oa-error-header svg {
+    width: 15px;
+    height: 15px;
+    stroke: var(--oa-accent-gold);
+    flex-shrink: 0;
+  }
+
+  .oa-error-text {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--oa-text-secondary);
+    font-style: italic;
+  }
+
+  .oa-retry-btn {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    background: var(--oa-white);
+    color: var(--oa-text-primary);
+    border: 1px solid var(--oa-border);
+    border-radius: var(--oa-radius-sm);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.15s ease;
+    user-select: none;
+  }
+
+  .oa-retry-btn:hover {
+    background: var(--oa-black);
+    color: var(--oa-white);
+    border-color: var(--oa-black);
+    transform: translateY(-1px);
+  }
+
+  .oa-retry-btn:hover svg {
+    transform: rotate(-60deg);
+    stroke: var(--oa-white);
+  }
+
+  .oa-retry-btn svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--oa-text-primary);
+    flex-shrink: 0;
+    transition:
+      transform 0.25s ease,
+      stroke 0.2s ease;
+  }
+
+  /* ===========================================================================
+     SCHEDE PRODOTTO & SKELETON LOADER
+     =========================================================================== */
+  .oa-product-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--oa-white);
+    border: 1px solid var(--oa-border);
+    border-radius: var(--oa-radius-md);
+    margin: 12px 0 4px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    transition:
+      box-shadow 0.25s ease,
+      border-color 0.2s ease;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .oa-product-card.oa-has-slideover {
+    min-height: 185px;
+  }
+
+  .oa-product-card:hover {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.07);
+    border-color: #dedede;
+  }
+
+  .oa-card-front {
+    padding: 16px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 12px;
+  }
+
+  .oa-card-header {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .oa-card-image-box {
+    position: relative;
+    width: 74px;
+    height: 74px;
+    border: 1px solid var(--oa-border-subtle);
+    border-radius: var(--oa-radius-sm);
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .oa-card-image-box.oa-skeleton {
+    background-color: var(--oa-accent-gold-light);
+  }
+
+  .oa-card-image-box.oa-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.75) 50%,
+      transparent 100%
+    );
+    animation: oaImageShimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes oaImageShimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .oa-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .oa-card-image.is-loaded {
+    opacity: 1;
+  }
+
+  .oa-card-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--oa-accent-gold);
+    background: var(--oa-accent-gold-light);
+    opacity: 1 !important;
+  }
+
+  .oa-card-placeholder svg {
+    width: 26px;
+    height: 26px;
+    stroke: var(--oa-accent-gold);
+  }
+
+  .oa-card-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .oa-has-slideover .oa-card-meta {
+    padding-right: 32px;
+  }
+
+  .oa-card-vendor {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--oa-text-secondary);
+    margin-bottom: 2px;
+  }
+
+  .oa-card-title {
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 16.5px;
+    font-weight: 600;
+    color: var(--oa-text-primary);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 2px;
+    max-height: 2.6em;
+  }
+
+  .oa-card-title-link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    background-image: linear-gradient(var(--oa-black), var(--oa-black));
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 1.5px;
+    transition: background-size 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding-bottom: 1px;
+  }
+
+  .oa-card-title:hover .oa-card-title-link,
+  .oa-card-title-link:hover {
+    background-size: 100% 1.5px;
+  }
+
+  .oa-card-badge {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 9.5px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--oa-accent-gold);
+    font-weight: 600;
+  }
+
+  .oa-card-desc {
+    font-size: 12px;
+    color: var(--oa-text-secondary);
+    line-height: 1.45;
+  }
+
+  .oa-card-info-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--oa-border);
+    background: #ffffff;
+    color: var(--oa-text-secondary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.2s ease;
+  }
+
+  .oa-card-info-btn:hover {
+    border-color: var(--oa-black);
+    color: var(--oa-black);
+    background: var(--oa-border-subtle);
+  }
+
+  .oa-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--oa-border-subtle);
+    padding-top: 12px;
+    margin-top: auto;
+    gap: 8px;
+  }
+
+  .oa-card-price {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--oa-text-primary);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+
+  /* ===========================================================================
+     PULSANTE CARRELLO (DIRETTO A CHECKOUT)
+     =========================================================================== */
+  .oa-card-cart-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--oa-black);
+    color: var(--oa-white) !important;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: var(--oa-radius-sm);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    transition:
+      background 0.25s ease,
+      border-color 0.25s ease,
+      color 0.25s ease,
+      transform 0.15s ease,
+      box-shadow 0.2s ease;
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .oa-card-cart-btn:hover {
+    background: #333333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  .oa-card-cart-btn svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--oa-white);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .oa-btn-check-icon {
+    stroke: var(--oa-accent-gold) !important;
+    animation: oaCheckPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes oaCheckPop {
+    0% {
+      transform: scale(0.3) rotate(-20deg);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  .oa-card-cart-btn.is-adding {
+    background: #231f1a;
+    border-color: var(--oa-accent-gold);
+    color: var(--oa-white) !important;
+    transform: scale(0.97);
+    pointer-events: none;
+  }
+
+  .oa-card-cart-btn.is-added {
+    background: #fbfaf8;
+    border-color: var(--oa-accent-gold);
+    color: var(--oa-black) !important;
+  }
+
+  .oa-card-cart-btn.is-added .oa-btn-check-icon {
+    stroke: var(--oa-accent-gold) !important;
+  }
+
+  .oa-card-cart-btn.is-added:hover {
+    background: #f4f0e8;
+    border-color: #aa8d69;
+    transform: translateY(-1px);
+  }
+
+  /* ===========================================================================
+     SLIDEOVER NOTE OLFATTIVE
+     =========================================================================== */
+  .oa-card-slideover {
+    position: absolute;
+    inset: 0;
+    background: #ffffff;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 10;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+  }
+
+  .oa-product-card.is-open .oa-card-slideover {
+    transform: translateY(0);
+  }
+
+  .oa-slide-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--oa-border-subtle);
+    padding-bottom: 7px;
+    gap: 8px;
+  }
+
+  .oa-slide-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .oa-slide-subtitle {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--oa-accent-gold);
+    margin-bottom: 1px;
+  }
+
+  .oa-slide-title {
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--oa-text-primary);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .oa-slide-close-btn {
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: 1px solid var(--oa-border);
+    border-radius: 50%;
+    color: var(--oa-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .oa-slide-close-btn:hover {
+    border-color: var(--oa-black);
+    color: var(--oa-black);
+    background: var(--oa-border-subtle);
+  }
+
+  .oa-slide-close-btn svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .oa-slide-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+  }
+
+  .oa-slide-body::-webkit-scrollbar {
+    width: 3px;
+  }
+  .oa-slide-body::-webkit-scrollbar-thumb {
+    background: var(--oa-border);
+  }
+
+  .oa-slide-story {
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--oa-text-secondary);
+    font-style: italic;
+  }
+
+  .oa-slide-notes-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .oa-slide-notes-label {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--oa-accent-gold);
+  }
+
+  .oa-notes-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .oa-note-pill {
+    background: #f8f7f4;
+    border: 1px solid var(--oa-border);
+    border-radius: var(--oa-radius-sm);
+    padding: 3px 8px;
+    font-size: 10.5px;
+    color: var(--oa-text-primary);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+
+  .oa-slide-traits {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--oa-text-muted);
+    border-top: 1px dashed var(--oa-border-subtle);
+    padding-top: 6px;
+    margin-top: auto;
+  }
+
+  .oa-slide-footer {
+    border-top: 1px solid var(--oa-border-subtle);
+    padding-top: 6px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .oa-slide-back-btn {
+    background: none;
+    border: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--oa-text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s ease;
+    padding: 2px 0;
+  }
+
+  .oa-slide-back-btn:hover {
+    color: var(--oa-black);
+  }
+
+  /* ===========================================================================
+     CHIPS DI RISPOSTA RAPIDA
+     =========================================================================== */
+  .oa-chips-container {
+    padding: 10px 20px 14px;
+    background: var(--oa-bg-chat);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .oa-chips-container:empty {
+    display: none;
+    padding: 0;
+  }
+
+  .oa-chip {
+    background: var(--oa-white);
+    border: 1px solid var(--oa-border);
+    color: var(--oa-text-primary);
+    padding: 7px 13px;
+    border-radius: var(--oa-radius-sm);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition:
+      all 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.15s ease;
+    user-select: none;
+  }
+
+  .oa-chip:hover {
+    border-color: var(--oa-black);
+    background: var(--oa-black);
+    color: var(--oa-white);
+    transform: translateY(-1px);
+  }
+
+  .oa-chip:active {
+    transform: translateY(0);
+  }
+
+  /* ===========================================================================
+     TYPING INDICATOR CON COLD START A 3 STADI
+     =========================================================================== */
+  .oa-typing {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--oa-white);
+    border: 1px solid var(--oa-border);
+    border-radius: var(--oa-radius-bubble);
+    width: fit-content;
+    max-width: 90%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  }
+
+  .oa-typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .oa-typing-dot {
+    width: 5px;
+    height: 5px;
+    background: var(--oa-text-secondary);
+    border-radius: 50%;
+    opacity: 0.3;
+    animation: oaBlink 1.4s infinite both;
+  }
+
+  .oa-typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .oa-typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes oaBlink {
+    0%,
+    80%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.9);
+    }
+    40% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
+  .oa-typing-status {
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--oa-text-secondary);
+    font-style: italic;
+    transition: all 0.3s ease;
+    animation: oaFadeIn 0.3s ease forwards;
+  }
+
+  .oa-typing-status:empty {
+    display: none;
+  }
+
+  .oa-typing-status.oa-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--oa-text-secondary) 0%,
+      var(--oa-accent-gold) 50%,
+      var(--oa-text-secondary) 100%
+    );
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: oaShimmer 2.4s linear infinite;
+  }
+
+  @keyframes oaShimmer {
+    0% {
+      background-position: 200% center;
+    }
+    100% {
+      background-position: 0% center;
+    }
+  }
+
+  /* ===========================================================================
+     BARRA INPUT
+     =========================================================================== */
+  .oa-input-container {
+    padding: 14px 20px;
+    background: var(--oa-white);
+    border-top: 1px solid var(--oa-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .oa-input-field {
+    flex: 1;
+    height: 42px;
+    border: 1px solid var(--oa-border);
+    background: #fafafa;
+    border-radius: var(--oa-radius-sm);
+    padding: 0 14px;
+    font-size: 13px;
+    color: var(--oa-text-primary);
+    font-family: inherit;
+    outline: none;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .oa-input-field:focus {
+    border-color: var(--oa-black);
+    background: #ffffff;
+  }
+
+  .oa-send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--oa-radius-sm);
+    background: var(--oa-black);
+    border: none;
+    color: var(--oa-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      transform 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .oa-send-btn:hover {
+    background: #333333;
+    transform: scale(1.02);
+  }
+
+  .oa-send-btn:active {
+    transform: scale(0.98);
+  }
+
+  .oa-send-btn svg {
+    width: 15px;
+    height: 15px;
+    stroke: var(--oa-white);
+    transform: translateX(1px);
+  }
+
+  /* ===========================================================================
+     RESPONSIVE DESKTOP RANGE 1: NOTEBOOK & BASSO PROFILO (<= 740px altezza)
+     =========================================================================== */
+  @media (min-width: 601px) and (max-height: 740px) {
+    .oa-widget-container {
+      height: calc(100vh - 32px);
+      bottom: 16px;
+      right: 20px;
+    }
+
+    .oa-header {
+      padding: 12px 18px;
+    }
+
+    .oa-header-title {
+      font-size: 19px;
+    }
+
+    .oa-messages-container {
+      padding: 14px 16px 16px;
+      gap: 12px;
+    }
+
+    .oa-input-container {
+      padding: 10px 16px;
+    }
+  }
+
+  /* ===========================================================================
+     RESPONSIVE DESKTOP RANGE 2: TABLET / SPLIT-SCREEN (601px - 1024px)
+     =========================================================================== */
+  @media (min-width: 601px) and (max-width: 1024px) {
+    .oa-widget-container {
+      width: clamp(380px, 42vw, 420px);
+      bottom: 24px;
+      right: 24px;
+    }
+  }
+
+  /* ===========================================================================
+     LAYOUT MOBILE (<= 600px): NATIVE FULL-SCREEN APP
+     =========================================================================== */
+  @media (max-width: 600px) {
+    .oa-teaser {
+      bottom: calc(max(16px, env(safe-area-inset-bottom, 16px)) + 58px);
+      right: max(16px, env(safe-area-inset-right, 16px));
+      max-width: calc(100vw - 32px);
+      padding: 11px 13px;
+    }
+
+    .oa-teaser::after {
+      right: 32px;
+    }
+
+    .oa-launcher-btn {
+      bottom: max(16px, env(safe-area-inset-bottom, 16px));
+      right: max(16px, env(safe-area-inset-right, 16px));
+      height: 48px;
+      padding: 0 18px;
+      border-radius: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .oa-launcher-text {
+      font-size: 11px;
+      letter-spacing: 1.2px;
+    }
+
+    .oa-widget-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      max-width: 100vw;
+      max-height: 100dvh;
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+      opacity: 1;
+      transform: translateY(100%);
+      pointer-events: none;
+      transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+      overscroll-behavior: contain;
+      z-index: 2147483647;
+    }
+
+    .oa-widget-container.is-active {
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    .oa-header {
+      padding-top: max(14px, env(safe-area-inset-top, 14px));
+      padding-left: 16px;
+      padding-right: 14px;
+      padding-bottom: 12px;
+      background: #ffffff;
+    }
+
+    .oa-header-title {
+      font-size: 19px;
+    }
+
+    .oa-icon-btn {
+      width: 38px;
+      height: 38px;
+    }
+
+    .oa-icon-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .oa-messages-container {
+      padding: 16px 14px 18px;
+      gap: 14px;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    .oa-msg {
+      max-width: 92%;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .oa-msg-bot {
+      padding: 14px 16px;
+    }
+
+    .oa-product-card {
+      margin: 10px 0 2px 0;
+    }
+
+    .oa-product-card.oa-has-slideover {
+      min-height: 175px;
+    }
+
+    .oa-card-front {
+      padding: 14px 14px 12px;
+      gap: 10px;
+    }
+
+    .oa-card-image-box {
+      width: 64px;
+      height: 64px;
+    }
+
+    .oa-card-title {
+      font-size: 15.5px;
+    }
+
+    .oa-card-footer {
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 10px;
+      margin-top: auto;
+    }
+
+    .oa-card-cart-btn {
+      padding: 8px 14px;
+      font-size: 10px;
+    }
+
+    .oa-card-slideover {
+      padding: 14px;
+    }
+
+    .oa-chips-container {
+      padding: 8px 14px 10px;
+      gap: 6px;
+    }
+
+    .oa-chip {
+      padding: 8px 14px;
+      min-height: 38px;
+      font-size: 12px;
+    }
+
+    .oa-input-container {
+      padding-top: 10px;
+      padding-left: 12px;
+      padding-right: 12px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+      background: #ffffff;
+      gap: 8px;
+    }
+
+    .oa-input-field {
+      height: 44px;
+      font-size: 16px;
+      padding: 0 14px;
+    }
+
+    .oa-send-btn {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .oa-widget-container *,
+    .oa-launcher-btn,
+    .oa-teaser {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+
+<!-- ===========================================================================
+     MARKUP DEL WIDGET
+     =========================================================================== -->
+<div class="oa-teaser" id="oaTeaser">
+  <div class="oa-teaser-body" id="oaTeaserBody">
+    <span class="oa-teaser-sparkle">✨</span>
+    <span class="oa-teaser-text">Cerchi la tua fragranza ideale o un consiglio su misura?</span>
+  </div>
+  <button class="oa-teaser-close" id="oaTeaserClose" aria-label="Chiudi invito">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+</div>
+
+<button class="oa-launcher-btn" id="oaLauncher" aria-label="Apri Maître Parfumeur">
+  <svg class="oa-launcher-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 3h12l1 7H5l1-7z"></path>
+    <path d="M9 3V1h6v2"></path>
+    <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
+  </svg>
+  <span class="oa-launcher-text">Etualy • Maître Parfumeur</span>
+</button>
+
+<div class="oa-widget-container" id="oaWidget">
+  <header class="oa-header">
+    <div class="oa-header-brand">
+      <span class="oa-header-store">Etualy • The Art of Essence</span>
+      <h2 class="oa-header-title">Maître Parfumeur</h2>
+      <div class="oa-header-status">
+        <span class="oa-status-dot"></span>
+        <span>Consulenza Olfattiva d'Élite</span>
+      </div>
+    </div>
+    <div class="oa-header-actions">
+      <button class="oa-icon-btn" id="oaRestartBtn" title="Ricomincia consulenza">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+      <button class="oa-icon-btn" id="oaCloseBtn" title="Riduci a icona">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="oa-stepper-bar" id="oaStepper">
+    <div class="oa-stepper-progress" id="oaProgress"></div>
+  </div>
+
+  <div class="oa-messages-container" id="oaMessages">
+    <div class="oa-msg oa-msg-bot">
+      <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
+      <p>Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
+    </div>
+  </div>
+
+  <div class="oa-chips-container" id="oaChips">
+    <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
+    <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
+  </div>
+
+  <form class="oa-input-container" id="oaForm">
+    <input type="text" class="oa-input-field" id="oaInput" placeholder="Chiedi una nota, un profumo o un consiglio..." autocomplete="off">
+    <button type="submit" class="oa-send-btn" aria-label="Invia">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </form>
+</div>
+
+<!-- ===========================================================================
+     LOGICA JS INTEGRATA
+     =========================================================================== -->
+<script>
+  (function () {
+    const API_BASE_URL = "https://fragrance-advisor-api.onrender.com".replace(/\/+$/, "");
+
+    const INITIAL_WELCOME_HTML = `
+      <div class="oa-msg oa-msg-bot">
+        <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
+        <p>Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
+      </div>
+    `;
+
+    const INITIAL_CHIPS_HTML = `
+      <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
+      <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
+    `;
+
+    function getOrCreateSessionId() {
+      let sid = sessionStorage.getItem("etualy_advisor_session_id");
+      if (!sid) {
+        sid = "sess_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
+        sessionStorage.setItem("etualy_advisor_session_id", sid);
+      }
+      return sid;
+    }
+
+    let sessionId = getOrCreateSessionId();
+
+    const widget = document.getElementById("oaWidget");
+    const launcher = document.getElementById("oaLauncher");
+    const closeBtn = document.getElementById("oaCloseBtn");
+    const restartBtn = document.getElementById("oaRestartBtn");
+    const messagesContainer = document.getElementById("oaMessages");
+    const chipsContainer = document.getElementById("oaChips");
+    const form = document.getElementById("oaForm");
+    const input = document.getElementById("oaInput");
+    const stepper = document.getElementById("oaStepper");
+    const progress = document.getElementById("oaProgress");
+
+    const teaser = document.getElementById("oaTeaser");
+    const teaserClose = document.getElementById("oaTeaserClose");
+    const teaserBody = document.getElementById("oaTeaserBody");
+
+    function openWidget() {
+      dismissTeaser();
+      widget.classList.add("is-active");
+      if (window.innerWidth <= 600) {
+        document.body.classList.add("oa-no-scroll");
+      }
+      scrollToBottom();
+    }
+
+    function closeWidget() {
+      widget.classList.remove("is-active");
+      document.body.classList.remove("oa-no-scroll");
+      if (document.activeElement === input) {
+        input.blur();
+      }
+    }
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 600) {
+        document.body.classList.remove("oa-no-scroll");
+      } else if (widget.classList.contains("is-active")) {
+        document.body.classList.add("oa-no-scroll");
+      }
+    });
+
+    const dismissKeyboard = () => {
+      if (document.activeElement === input) {
+        input.blur();
+      }
+    };
+
+    messagesContainer.addEventListener("touchstart", dismissKeyboard, { passive: true });
+    messagesContainer.addEventListener("touchmove", dismissKeyboard, { passive: true });
+    messagesContainer.addEventListener("mousedown", (e) => {
+      if (e.target !== input && document.activeElement === input) {
+        input.blur();
+      }
+    });
+
+    input.addEventListener("focus", () => {
+      setTimeout(() => {
+        scrollToBottom();
+        if (window.innerWidth <= 600) {
+          input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 280);
+    });
+
+    window.handleImageLoad = function (img) {
+      if (!img) return;
+      img.classList.add("is-loaded");
+      if (img.parentElement) {
+        img.parentElement.classList.remove("oa-skeleton");
+      }
+    };
+
+    window.handleImageError = function (img) {
+      if (!img || !img.parentElement) return;
+      const box = img.parentElement;
+      box.classList.remove("oa-skeleton");
+      box.innerHTML = `
+        <div class="oa-card-image oa-card-placeholder is-loaded">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6 3h12l1 7H5l1-7z"></path>
+            <path d="M9 3V1h6v2"></path>
+            <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
+          </svg>
+        </div>
+      `;
+    };
+
+    let currentStepValue = null;
+    let lastUserMessage = "";
+
+    function saveChatState(stepOverride) {
+      try {
+        if (stepOverride !== undefined) {
+          currentStepValue = stepOverride;
+        }
+        sessionStorage.setItem("etualy_chat_messages", messagesContainer.innerHTML);
+        sessionStorage.setItem("etualy_chat_chips", chipsContainer.innerHTML);
+        sessionStorage.setItem("etualy_last_user_message", lastUserMessage || "");
+        if (currentStepValue !== null) {
+          sessionStorage.setItem("etualy_chat_step", String(currentStepValue));
+        } else {
+          sessionStorage.removeItem("etualy_chat_step");
+        }
+      } catch (e) {
+        console.warn("[Etualy Advisor] Avviso salvataggio stato:", e);
+      }
+    }
+
+    function restoreChatState() {
+      try {
+        const savedMessages = sessionStorage.getItem("etualy_chat_messages");
+        const savedChips = sessionStorage.getItem("etualy_chat_chips");
+        const savedStep = sessionStorage.getItem("etualy_chat_step");
+        const savedLastMsg = sessionStorage.getItem("etualy_last_user_message");
+
+        if (savedLastMsg) {
+          lastUserMessage = savedLastMsg;
+        }
+
+        if (savedMessages && savedMessages.trim().length > 0) {
+          messagesContainer.innerHTML = savedMessages;
+
+          if (savedChips !== null) {
+            chipsContainer.innerHTML = savedChips;
+          }
+
+          if (savedStep && !isNaN(parseInt(savedStep, 10))) {
+            currentStepValue = parseInt(savedStep, 10);
+            updateStepper(currentStepValue);
+          } else {
+            currentStepValue = null;
+            updateStepper(null);
+          }
+
+          sessionStorage.setItem("etualy_teaser_closed", "true");
+          if (teaser) teaser.classList.remove("is-visible");
+
+          messagesContainer.querySelectorAll("img.oa-card-image").forEach((img) => {
+            if (img.complete && img.naturalWidth > 0) {
+              window.handleImageLoad(img);
+            }
+          });
+
+          scrollToBottom();
+        }
+      } catch (e) {
+        console.warn("[Etualy Advisor] Avviso ripristino stato:", e);
+      }
+    }
+
+    function dismissTeaser() {
+      if (teaser) teaser.classList.remove("is-visible");
+      sessionStorage.setItem("etualy_teaser_closed", "true");
+    }
+
+    setTimeout(() => {
+      if (
+        teaser &&
+        !widget.classList.contains("is-active") &&
+        sessionStorage.getItem("etualy_teaser_closed") !== "true"
+      ) {
+        teaser.classList.add("is-visible");
+      }
+    }, 5000);
+
+    if (teaserBody) {
+      teaserBody.addEventListener("click", () => {
+        openWidget();
+      });
+    }
+
+    if (teaserClose) {
+      teaserClose.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dismissTeaser();
+      });
+    }
+
+    launcher.addEventListener("click", () => {
+      openWidget();
+    });
+
+    closeBtn.addEventListener("click", () => {
+      closeWidget();
+    });
+
+    restartBtn.addEventListener("click", async () => {
+      const oldSession = sessionId;
+      sessionId = "sess_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
+      sessionStorage.setItem("etualy_advisor_session_id", sessionId);
+
+      sessionStorage.removeItem("etualy_chat_messages");
+      sessionStorage.removeItem("etualy_chat_chips");
+      sessionStorage.removeItem("etualy_chat_step");
+      sessionStorage.removeItem("etualy_last_user_message");
+      currentStepValue = null;
+      lastUserMessage = "";
+
+      messagesContainer.innerHTML = INITIAL_WELCOME_HTML;
+      updateStepper(null);
+      chipsContainer.innerHTML = INITIAL_CHIPS_HTML;
+      input.value = "";
+      scrollToBottom();
+
+      try {
+        await fetch(`${API_BASE_URL}/reset`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: oldSession }),
+        });
+      } catch (e) {
+        console.warn("[Etualy Advisor] Avviso reset remoto:", e);
+      }
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+      dismissKeyboard();
+      sendUserMessage(text);
+    });
+
+    window.handleChipClick = function (text) {
+      dismissKeyboard();
+      sendUserMessage(text);
+    };
+
+    function appendUserMessage(text) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "oa-msg oa-msg-user";
+      msgDiv.textContent = text;
+      messagesContainer.appendChild(msgDiv);
+      scrollToBottom();
+      saveChatState();
+    }
+
+    let typingTimer1 = null;
+    let typingTimer2 = null;
+
+    function clearTypingTimers() {
+      if (typingTimer1) {
+        clearTimeout(typingTimer1);
+        typingTimer1 = null;
+      }
+      if (typingTimer2) {
+        clearTimeout(typingTimer2);
+        typingTimer2 = null;
+      }
+    }
+
+    function showTyping() {
+      clearTypingTimers();
+      const typingDiv = document.createElement("div");
+      typingDiv.className = "oa-typing";
+      typingDiv.id = "oaTypingIndicator";
+      typingDiv.innerHTML = `
+        <div class="oa-typing-dots">
+          <span class="oa-typing-dot"></span>
+          <span class="oa-typing-dot"></span>
+          <span class="oa-typing-dot"></span>
+        </div>
+        <div class="oa-typing-status" id="oaTypingStatus"></div>
+      `;
+      messagesContainer.appendChild(typingDiv);
+      scrollToBottom();
+
+      typingTimer1 = setTimeout(() => {
+        const statusEl = document.getElementById("oaTypingStatus");
+        if (statusEl) {
+          statusEl.textContent = "Il Maître Parfumeur sta consultando l'archivio delle essenze...";
+          scrollToBottom();
+        }
+      }, 6000);
+
+      typingTimer2 = setTimeout(() => {
+        const statusEl = document.getElementById("oaTypingStatus");
+        if (statusEl) {
+          statusEl.textContent = "Stiamo riaprendo la bottega olfattiva, richiederà solo qualche istante in più...";
+          statusEl.classList.add("oa-shimmer");
+          scrollToBottom();
+        }
+      }, 20000);
+    }
+
+    function removeTyping() {
+      clearTypingTimers();
+      const typing = document.getElementById("oaTypingIndicator");
+      if (typing) typing.remove();
+    }
+
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function scrollToElementTop(el) {
+      if (!el) {
+        scrollToBottom();
+        return;
+      }
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+
+    function updateStepper(step) {
+      if (!step) {
+        stepper.classList.remove("is-visible");
+        progress.style.width = "0%";
+        return;
+      }
+      stepper.classList.add("is-visible");
+      const percentage = (step / 4) * 100;
+      progress.style.width = percentage + "%";
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    window.toggleCardSlide = function (btn) {
+      const card = btn.closest(".oa-product-card");
+      if (card) {
+        card.classList.toggle("is-open");
+        saveChatState();
+      }
+    };
+
+    window.handleAddToCart = function (e, btn) {
+      if (e) e.preventDefault();
+      if (!btn || btn.classList.contains("is-adding")) return;
+
+      const url = btn.getAttribute("href");
+
+      if (btn.classList.contains("is-added")) {
+        if (url && url !== "#") window.open(url, "_blank");
+        return;
+      }
+
+      const cartIcon = btn.querySelector(".oa-btn-cart-icon");
+      const checkIcon = btn.querySelector(".oa-btn-check-icon");
+      const textSpan = btn.querySelector(".oa-cart-btn-text");
+
+      btn.classList.add("is-adding");
+      if (cartIcon) cartIcon.style.display = "none";
+      if (checkIcon) checkIcon.style.display = "inline-block";
+      if (textSpan) textSpan.textContent = "Aggiunto!";
+
+      setTimeout(() => {
+        if (url && url !== "#") {
+          window.open(url, "_blank");
+        }
+        btn.classList.remove("is-adding");
+        btn.classList.add("is-added");
+        if (textSpan) textSpan.textContent = "Nel Carrello";
+        saveChatState();
+      }, 600);
+    };
+
+    function createProductCardHtml(prod) {
+      const name = prod.name || "Profumo Artistico";
+      const brand = prod.brand || "Profumeria Artistica";
+
+      let priceFormatted = "0,00 €";
+      if (typeof prod.price === "number") {
+        priceFormatted = new Intl.NumberFormat("it-IT", {
+          style: "currency",
+          currency: "EUR",
+        }).format(prod.price);
+      } else if (prod.price) {
+        priceFormatted = `${prod.price} €`;
+      }
+
+      const cartUrl = prod.add_to_cart_url || "#";
+      const productPageUrl = prod.product_page_url || "#";
+      const imageUrl = prod.image_url || "";
+      const familyBadge = prod.family || prod.ptype || "Profumo Artistico";
+
+      const story = prod.story || prod.description || "";
+      const cleanStory = story.replace(/^["“”']+|["“”']+$/g, "").trim();
+      const keyNotes = prod.key_notes || [];
+      const traits = prod.traits || (prod.ptype ? `${prod.ptype} • ${prod.family}` : prod.family);
+
+      const isSlideover = prod.card_type === "slideover";
+      let imageHtml = "";
+      let imageBoxClass = "oa-card-image-box";
+
+      if (imageUrl && imageUrl.startsWith("http") && !imageUrl.includes("NESSUNA")) {
+        imageBoxClass += " oa-skeleton";
+        imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onload="handleImageLoad(this)" onerror="handleImageError(this)">`;
+      } else {
+        imageHtml = `
+          <div class="oa-card-image oa-card-placeholder is-loaded">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M6 3h12l1 7H5l1-7z"></path>
+              <path d="M9 3V1h6v2"></path>
+              <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
+            </svg>
+          </div>
+        `;
+      }
+
+      const titleLinkHtml = `
+        <a href="${escapeHtml(productPageUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-title-link" title="Visualizza ${escapeHtml(name)} su Etualy">
+          ${escapeHtml(name)}
+        </a>
+      `;
+
+      const cartButtonHtml = `
+        <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn" onclick="handleAddToCart(event, this)">
+          <svg class="oa-btn-cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <svg class="oa-btn-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span class="oa-cart-btn-text">Aggiungi al Carrello</span>
+        </a>
+      `;
+
+      if (isSlideover) {
+        return `
+          <div class="oa-product-card oa-has-slideover">
+            <div class="oa-card-front">
+              <div class="oa-card-header">
+                <div class="${imageBoxClass}">${imageHtml}</div>
+                <div class="oa-card-meta">
+                  <div class="oa-card-vendor">${escapeHtml(brand)}</div>
+                  <div class="oa-card-title">${titleLinkHtml}</div>
+                  <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
+                </div>
+                <button class="oa-card-info-btn" onclick="toggleCardSlide(this)" title="Note e atmosfera">ⓘ</button>
+              </div>
+              <div class="oa-card-footer">
+                <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
+                ${cartButtonHtml}
+              </div>
+            </div>
+            <div class="oa-card-slideover">
+              <div class="oa-slide-header">
+                <div class="oa-slide-meta">
+                  <div class="oa-slide-subtitle">Profilo & Note Olfattive</div>
+                  <div class="oa-slide-title">${titleLinkHtml}</div>
+                </div>
+                <button class="oa-slide-close-btn" onclick="toggleCardSlide(this)" title="Chiudi note">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div class="oa-slide-body">
+                ${cleanStory ? `<div class="oa-slide-story">"${escapeHtml(cleanStory)}"</div>` : ""}
+                ${
+                  keyNotes.length > 0
+                    ? `
+                  <div class="oa-slide-notes-box">
+                    <div class="oa-slide-notes-label">Accordi Salienti</div>
+                    <div class="oa-notes-chips">
+                      ${keyNotes.map((n) => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join("")}
+                    </div>
+                  </div>
+                `
+                    : ""
+                }
+                ${traits ? `<div class="oa-slide-traits">${escapeHtml(traits)}</div>` : ""}
+              </div>
+              <div class="oa-slide-footer">
+                <button class="oa-slide-back-btn" onclick="toggleCardSlide(this)">← Torna alla scheda</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="oa-product-card">
+          <div class="oa-card-front">
+            <div class="oa-card-header">
+              <div class="${imageBoxClass}">${imageHtml}</div>
+              <div class="oa-card-meta">
+                <div class="oa-card-vendor">${escapeHtml(brand)}</div>
+                <div class="oa-card-title">${titleLinkHtml}</div>
+                <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
+              </div>
+            </div>
+            ${cleanStory ? `<div class="oa-card-desc">${escapeHtml(cleanStory)}</div>` : ""}
+            ${
+              keyNotes.length > 0
+                ? `
+              <div class="oa-notes-chips" style="margin-top: 2px;">
+                ${keyNotes.slice(0, 4).map((n) => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join("")}
+              </div>
+            `
+                : ""
+            }
+            <div class="oa-card-footer">
+              <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
+              ${cartButtonHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMarkdownText(rawText, hasStructuredProducts = false) {
+      if (!rawText) return "";
+      let text = rawText;
+      if (hasStructuredProducts) {
+        text = text.replace(/^\s*\*{0,2}(?:Prezzo|Price)\*{0,2}\s*:\s*[^\n\r]+/gim, "");
+        text = text.replace(/^\s*\*{0,2}\[(?:Aggiungi al Carrello\vert{}Add to Cart\vert{}Acquista)\]\([^\)]+\)\*{0,2}/gim, "");
+        text = text.replace(/^\s*\[(?:Immagine\vert{}Image\vert{}Foto)\]\([^\)]+\)/gim, "");
+      }
+      text = text.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
+        (m, label, url) =>
+          `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-black);font-weight:600;text-decoration:underline;">${escapeHtml(label)}</a>`
+      );
+      text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      const paragraphs = text
+        .split(/\n\n+/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
+      return paragraphs.map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+    }
+
+    async function executeChatQuery(text) {
+      chipsContainer.innerHTML = "";
+      showTyping();
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            session_id: sessionId,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Errore di risposta dalla boutique");
+        }
+
+        const data = await response.json();
+        removeTyping();
+
+        const botMsgDiv = document.createElement("div");
+        botMsgDiv.className = "oa-msg oa-msg-bot";
+        const hasProducts = Boolean(data.products && data.products.length > 0);
+
+        if (data.reply) {
+          botMsgDiv.innerHTML = renderMarkdownText(data.reply, hasProducts);
+        }
+
+        if (hasProducts) {
+          data.products.forEach((prod) => {
+            const cardHtml = createProductCardHtml(prod);
+            botMsgDiv.insertAdjacentHTML("beforeend", cardHtml);
+          });
+        }
+
+        messagesContainer.appendChild(botMsgDiv);
+        updateStepper(data.step);
+
+        if (data.options && data.options.length > 0) {
+          chipsContainer.innerHTML = "";
+          data.options.forEach((opt) => {
+            const btn = document.createElement("button");
+            btn.className = "oa-chip";
+            btn.textContent = opt;
+            btn.onclick = () => window.handleChipClick(opt);
+            chipsContainer.appendChild(btn);
+          });
+        } else {
+          chipsContainer.innerHTML = "";
+        }
+
+        saveChatState(data.step);
+        scrollToElementTop(botMsgDiv);
+      } catch (err) {
+        removeTyping();
+        const errDiv = document.createElement("div");
+        errDiv.className = "oa-msg oa-msg-bot oa-msg-error";
+        errDiv.id = "oaLastErrorMsg";
+        errDiv.innerHTML = `
+          <div class="oa-error-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>Avviso della Boutique</span>
+          </div>
+          <div class="oa-error-text">
+            Un'interruzione temporanea non ci consente di raggiungere l'archivio olfattivo in questo istante. Desideri che ripeta la ricerca?
+          </div>
+          <button class="oa-retry-btn" onclick="retryLastMessage(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <span>Riprova ora</span>
+          </button>
+        `;
+        messagesContainer.appendChild(errDiv);
+        scrollToBottom();
+        saveChatState();
+      }
+    }
+
+    async function sendUserMessage(text) {
+      lastUserMessage = text;
+      appendUserMessage(text);
+      await executeChatQuery(text);
+    }
+
+    window.retryLastMessage = async function (btn) {
+      if (!lastUserMessage) return;
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = "0.6";
+        btn.style.pointerEvents = "none";
+      }
+      const errDiv = btn ? btn.closest(".oa-msg-error") : document.getElementById("oaLastErrorMsg");
+      if (errDiv) errDiv.remove();
+      saveChatState();
+      await executeChatQuery(lastUserMessage);
+    };
+
+    restoreChatState();
+  })();
+</script>
