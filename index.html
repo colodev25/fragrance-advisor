@@ -440,6 +440,92 @@
       }
 
       /* =======================================================================
+         NOTIFICA ERRORE BOUTIQUE & PULSANTE RIPROVA
+         ======================================================================= */
+      .oa-msg-error {
+        background: var(--oa-white);
+        border: 1px solid var(--oa-border);
+        border-left: 3px solid var(--oa-accent-gold);
+        padding: 16px 18px;
+        border-radius: var(--oa-radius-bubble);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .oa-error-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        color: var(--oa-accent-gold);
+      }
+
+      .oa-error-header svg {
+        width: 15px;
+        height: 15px;
+        stroke: var(--oa-accent-gold);
+        flex-shrink: 0;
+      }
+
+      .oa-error-text {
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--oa-text-secondary);
+        font-style: italic;
+      }
+
+      .oa-retry-btn {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 16px;
+        background: var(--oa-white);
+        color: var(--oa-text-primary);
+        border: 1px solid var(--oa-border);
+        border-radius: var(--oa-radius-sm);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          color 0.2s ease,
+          border-color 0.2s ease,
+          transform 0.15s ease;
+        user-select: none;
+      }
+
+      .oa-retry-btn:hover {
+        background: var(--oa-black);
+        color: var(--oa-white);
+        border-color: var(--oa-black);
+        transform: translateY(-1px);
+      }
+
+      .oa-retry-btn:hover svg {
+        transform: rotate(-60deg);
+        stroke: var(--oa-white);
+      }
+
+      .oa-retry-btn svg {
+        width: 12px;
+        height: 12px;
+        stroke: var(--oa-text-primary);
+        flex-shrink: 0;
+        transition:
+          transform 0.25s ease,
+          stroke 0.2s ease;
+      }
+
+      /* =======================================================================
          SCHEDE PRODOTTO & SLIDEOVER
          ======================================================================= */
       .oa-product-card {
@@ -1507,6 +1593,7 @@
       // PERSISTENZA STATO CHAT TRA LE PAGINE (SESSIONSTORAGE)
       // =======================================================================
       let currentStepValue = null;
+      let lastUserMessage = "";
 
       function saveChatState(stepOverride) {
         try {
@@ -1518,6 +1605,10 @@
             messagesContainer.innerHTML,
           );
           sessionStorage.setItem("etualy_chat_chips", chipsContainer.innerHTML);
+          sessionStorage.setItem(
+            "etualy_last_user_message",
+            lastUserMessage || "",
+          );
           if (currentStepValue !== null) {
             sessionStorage.setItem(
               "etualy_chat_step",
@@ -1539,6 +1630,13 @@
           const savedMessages = sessionStorage.getItem("etualy_chat_messages");
           const savedChips = sessionStorage.getItem("etualy_chat_chips");
           const savedStep = sessionStorage.getItem("etualy_chat_step");
+          const savedLastMsg = sessionStorage.getItem(
+            "etualy_last_user_message",
+          );
+
+          if (savedLastMsg) {
+            lastUserMessage = savedLastMsg;
+          }
 
           if (savedMessages && savedMessages.trim().length > 0) {
             messagesContainer.innerHTML = savedMessages;
@@ -1624,7 +1722,9 @@
         sessionStorage.removeItem("etualy_chat_messages");
         sessionStorage.removeItem("etualy_chat_chips");
         sessionStorage.removeItem("etualy_chat_step");
+        sessionStorage.removeItem("etualy_last_user_message");
         currentStepValue = null;
+        lastUserMessage = "";
 
         messagesContainer.innerHTML = INITIAL_WELCOME_HTML;
         updateStepper(null);
@@ -1987,8 +2087,10 @@
           .join("");
       }
 
-      async function sendUserMessage(text) {
-        appendUserMessage(text);
+      // =======================================================================
+      // COMUNICAZIONE API & RESILIENZA (RETRY LOGIC)
+      // =======================================================================
+      async function executeChatQuery(text) {
         chipsContainer.innerHTML = "";
         showTyping();
 
@@ -2047,12 +2149,53 @@
         } catch (err) {
           removeTyping();
           const errDiv = document.createElement("div");
-          errDiv.className = "oa-msg oa-msg-bot";
-          errDiv.innerHTML = `<p style="color: #C0392B;">Si è verificata un'interruzione di rete con la boutique. Riprova tra un istante.</p>`;
+          errDiv.className = "oa-msg oa-msg-bot oa-msg-error";
+          errDiv.id = "oaLastErrorMsg";
+          errDiv.innerHTML = `
+            <div class="oa-error-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>Avviso della Boutique</span>
+            </div>
+            <div class="oa-error-text">
+              Un'interruzione temporanea non ci consente di raggiungere l'archivio olfattivo in questo istante. Desideri che ripeta la ricerca?
+            </div>
+            <button class="oa-retry-btn" onclick="retryLastMessage(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              <span>Riprova ora</span>
+            </button>
+          `;
           messagesContainer.appendChild(errDiv);
           scrollToBottom();
           saveChatState();
         }
+      }
+
+      async function sendUserMessage(text) {
+        lastUserMessage = text;
+        appendUserMessage(text);
+        await executeChatQuery(text);
+      }
+
+      async function retryLastMessage(btn) {
+        if (!lastUserMessage) return;
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = "0.6";
+          btn.style.pointerEvents = "none";
+        }
+        const errDiv = btn
+          ? btn.closest(".oa-msg-error")
+          : document.getElementById("oaLastErrorMsg");
+        if (errDiv) errDiv.remove();
+        saveChatState();
+        await executeChatQuery(lastUserMessage);
       }
 
       // Esegui il ripristino all'avvio
