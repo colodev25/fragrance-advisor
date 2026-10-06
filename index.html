@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <title>Etualy | Maître Parfumeur AI</title>
 
@@ -62,6 +62,13 @@
         padding: 24px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Blocco dello scroll di fondo quando la chat mobile è attiva */
+      body.oa-no-scroll {
+        overflow: hidden !important;
+        touch-action: none !important;
+        height: 100% !important;
       }
 
       /* =======================================================================
@@ -1528,6 +1535,7 @@
           <svg
             viewBox="0 0 24 24"
             fill="none"
+            stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -1588,6 +1596,67 @@
       const teaser = document.getElementById("oaTeaser");
       const teaserClose = document.getElementById("oaTeaserClose");
       const teaserBody = document.getElementById("oaTeaserBody");
+
+      // =======================================================================
+      // APERTURA / CHIUSURA WIDGET & SCROLL LOCK
+      // =======================================================================
+      function openWidget() {
+        dismissTeaser();
+        widget.classList.add("is-active");
+        if (window.innerWidth <= 600) {
+          document.body.classList.add("oa-no-scroll");
+        }
+        scrollToBottom();
+      }
+
+      function closeWidget() {
+        widget.classList.remove("is-active");
+        document.body.classList.remove("oa-no-scroll");
+        if (document.activeElement === input) {
+          input.blur();
+        }
+      }
+
+      window.addEventListener("resize", () => {
+        if (window.innerWidth > 600) {
+          document.body.classList.remove("oa-no-scroll");
+        } else if (widget.classList.contains("is-active")) {
+          document.body.classList.add("oa-no-scroll");
+        }
+      });
+
+      // =======================================================================
+      // TOUCH GESTURES & CONTROLLO TASTIERA MOBILE
+      // =======================================================================
+      const dismissKeyboard = () => {
+        if (document.activeElement === input) {
+          input.blur();
+        }
+      };
+
+      // Tocco o scroll nell'area dei messaggi chiude la tastiera
+      messagesContainer.addEventListener("touchstart", dismissKeyboard, {
+        passive: true,
+      });
+      messagesContainer.addEventListener("touchmove", dismissKeyboard, {
+        passive: true,
+      });
+      // Supporto per test da desktop (simulazione click / drag su DevTools)
+      messagesContainer.addEventListener("mousedown", (e) => {
+        if (e.target !== input && document.activeElement === input) {
+          input.blur();
+        }
+      });
+
+      // Auto-scroll al focus del campo input su mobile
+      input.addEventListener("focus", () => {
+        setTimeout(() => {
+          scrollToBottom();
+          if (window.innerWidth <= 600) {
+            input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }, 280);
+      });
 
       // =======================================================================
       // PERSISTENZA STATO CHAT TRA LE PAGINE (SESSIONSTORAGE)
@@ -1653,7 +1722,6 @@
               updateStepper(null);
             }
 
-            // Utente già ingaggiato: sopprimi il teaser d'invito
             sessionStorage.setItem("etualy_teaser_closed", "true");
             if (teaser) teaser.classList.remove("is-visible");
 
@@ -1687,8 +1755,7 @@
 
       if (teaserBody) {
         teaserBody.addEventListener("click", () => {
-          dismissTeaser();
-          widget.classList.add("is-active");
+          openWidget();
         });
       }
 
@@ -1700,12 +1767,11 @@
       }
 
       launcher.addEventListener("click", () => {
-        dismissTeaser();
-        widget.classList.add("is-active");
+        openWidget();
       });
 
       closeBtn.addEventListener("click", () => {
-        widget.classList.remove("is-active");
+        closeWidget();
       });
 
       // Reset Sincronizzato con Backend e Storage Locale
@@ -1718,7 +1784,6 @@
           Date.now();
         sessionStorage.setItem("etualy_advisor_session_id", sessionId);
 
-        // Pulizia cronologia memorizzata
         sessionStorage.removeItem("etualy_chat_messages");
         sessionStorage.removeItem("etualy_chat_chips");
         sessionStorage.removeItem("etualy_chat_step");
@@ -1748,10 +1813,12 @@
         const text = input.value.trim();
         if (!text) return;
         input.value = "";
+        dismissKeyboard();
         sendUserMessage(text);
       });
 
       function handleChipClick(text) {
+        dismissKeyboard();
         sendUserMessage(text);
       }
 
@@ -1892,7 +1959,7 @@
           }
           btn.classList.remove("is-adding");
           btn.classList.add("is-added");
-          if (textSpan) textSpan.textContent = "Nel Carrello";
+          if (textSpan) textSpan.textContent = "Nel Carrello ✓";
           saveChatState();
         }, 600);
       }
