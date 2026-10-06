@@ -533,7 +533,7 @@
       }
 
       /* =======================================================================
-         SCHEDE PRODOTTO & SLIDEOVER
+         SCHEDE PRODOTTO & SKELETON LOADER
          ======================================================================= */
       .oa-product-card {
         position: relative;
@@ -575,7 +575,9 @@
         position: relative;
       }
 
+      /* BOX IMMAGINE & SKELETON SHIMMER */
       .oa-card-image-box {
+        position: relative;
         width: 74px;
         height: 74px;
         border: 1px solid var(--oa-border-subtle);
@@ -589,10 +591,40 @@
         overflow: hidden;
       }
 
+      .oa-card-image-box.oa-skeleton {
+        background-color: var(--oa-accent-gold-light);
+      }
+
+      .oa-card-image-box.oa-skeleton::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.75) 50%,
+          transparent 100%
+        );
+        animation: oaImageShimmer 1.4s ease-in-out infinite;
+      }
+
+      @keyframes oaImageShimmer {
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
       .oa-card-image {
         width: 100%;
         height: 100%;
         object-fit: contain;
+        opacity: 0;
+        transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .oa-card-image.is-loaded {
+        opacity: 1;
       }
 
       .oa-card-placeholder {
@@ -601,6 +633,7 @@
         justify-content: center;
         color: var(--oa-accent-gold);
         background: var(--oa-accent-gold-light);
+        opacity: 1 !important;
       }
 
       .oa-card-placeholder svg {
@@ -1535,7 +1568,6 @@
           <svg
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -1634,21 +1666,18 @@
         }
       };
 
-      // Tocco o scroll nell'area dei messaggi chiude la tastiera
       messagesContainer.addEventListener("touchstart", dismissKeyboard, {
         passive: true,
       });
       messagesContainer.addEventListener("touchmove", dismissKeyboard, {
         passive: true,
       });
-      // Supporto per test da desktop (simulazione click / drag su DevTools)
       messagesContainer.addEventListener("mousedown", (e) => {
         if (e.target !== input && document.activeElement === input) {
           input.blur();
         }
       });
 
-      // Auto-scroll al focus del campo input su mobile
       input.addEventListener("focus", () => {
         setTimeout(() => {
           scrollToBottom();
@@ -1657,6 +1686,32 @@
           }
         }, 280);
       });
+
+      // =======================================================================
+      // GESTIONE SKELETON LOADER IMMAGINI & FADE-IN
+      // =======================================================================
+      function handleImageLoad(img) {
+        if (!img) return;
+        img.classList.add("is-loaded");
+        if (img.parentElement) {
+          img.parentElement.classList.remove("oa-skeleton");
+        }
+      }
+
+      function handleImageError(img) {
+        if (!img || !img.parentElement) return;
+        const box = img.parentElement;
+        box.classList.remove("oa-skeleton");
+        box.innerHTML = `
+          <div class="oa-card-image oa-card-placeholder is-loaded">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M6 3h12l1 7H5l1-7z"></path>
+              <path d="M9 3V1h6v2"></path>
+              <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
+            </svg>
+          </div>
+        `;
+      }
 
       // =======================================================================
       // PERSISTENZA STATO CHAT TRA LE PAGINE (SESSIONSTORAGE)
@@ -1724,6 +1779,15 @@
 
             sessionStorage.setItem("etualy_teaser_closed", "true");
             if (teaser) teaser.classList.remove("is-visible");
+
+            // Riconoscimento immediato immagini già in cache
+            messagesContainer
+              .querySelectorAll("img.oa-card-image")
+              .forEach((img) => {
+                if (img.complete && img.naturalWidth > 0) {
+                  handleImageLoad(img);
+                }
+              });
 
             scrollToBottom();
           }
@@ -1931,7 +1995,7 @@
       }
 
       // =======================================================================
-      // MICRO-INTERAZIONE & FEEDBACK CARRELLO
+      // MICRO-INTERAZIONE & FEEDBACK CARRELLO (DIRETTO A CHECKOUT)
       // =======================================================================
       function handleAddToCart(e, btn) {
         if (e) e.preventDefault();
@@ -1993,15 +2057,18 @@
         const isSlideover = prod.card_type === "slideover";
 
         let imageHtml = "";
+        let imageBoxClass = "oa-card-image-box";
+
         if (
           imageUrl &&
           imageUrl.startsWith("http") &&
           !imageUrl.includes("NESSUNA")
         ) {
-          imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.onerror=null; this.src=''; this.classList.add('oa-card-placeholder');">`;
+          imageBoxClass += " oa-skeleton";
+          imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onload="handleImageLoad(this)" onerror="handleImageError(this)">`;
         } else {
           imageHtml = `
-            <div class="oa-card-image oa-card-placeholder">
+            <div class="oa-card-image oa-card-placeholder is-loaded">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M6 3h12l1 7H5l1-7z"></path>
                 <path d="M9 3V1h6v2"></path>
@@ -2036,7 +2103,7 @@
             <div class="oa-product-card oa-has-slideover">
               <div class="oa-card-front">
                 <div class="oa-card-header">
-                  <div class="oa-card-image-box">${imageHtml}</div>
+                  <div class="${imageBoxClass}">${imageHtml}</div>
                   <div class="oa-card-meta">
                     <div class="oa-card-vendor">${escapeHtml(brand)}</div>
                     <div class="oa-card-title">${titleLinkHtml}</div>
@@ -2090,7 +2157,7 @@
           <div class="oa-product-card">
             <div class="oa-card-front">
               <div class="oa-card-header">
-                <div class="oa-card-image-box">${imageHtml}</div>
+                <div class="${imageBoxClass}">${imageHtml}</div>
                 <div class="oa-card-meta">
                   <div class="oa-card-vendor">${escapeHtml(brand)}</div>
                   <div class="oa-card-title">${titleLinkHtml}</div>
