@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Gond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
@@ -684,7 +684,6 @@
         }
       }
 
-      /* Stato transitorio: In aggiunta (click in corso) */
       .oa-card-cart-btn.is-adding {
         background: #231f1a;
         border-color: var(--oa-accent-gold);
@@ -693,7 +692,6 @@
         pointer-events: none;
       }
 
-      /* Stato persistente: Già aggiunto al carrello */
       .oa-card-cart-btn.is-added {
         background: #fbfaf8;
         border-color: var(--oa-accent-gold);
@@ -1506,6 +1504,72 @@
       const teaserBody = document.getElementById("oaTeaserBody");
 
       // =======================================================================
+      // PERSISTENZA STATO CHAT TRA LE PAGINE (SESSIONSTORAGE)
+      // =======================================================================
+      let currentStepValue = null;
+
+      function saveChatState(stepOverride) {
+        try {
+          if (stepOverride !== undefined) {
+            currentStepValue = stepOverride;
+          }
+          sessionStorage.setItem(
+            "etualy_chat_messages",
+            messagesContainer.innerHTML,
+          );
+          sessionStorage.setItem("etualy_chat_chips", chipsContainer.innerHTML);
+          if (currentStepValue !== null) {
+            sessionStorage.setItem(
+              "etualy_chat_step",
+              String(currentStepValue),
+            );
+          } else {
+            sessionStorage.removeItem("etualy_chat_step");
+          }
+        } catch (e) {
+          console.warn(
+            "[Etualy Advisor] Avviso salvataggio cronologia locale:",
+            e,
+          );
+        }
+      }
+
+      function restoreChatState() {
+        try {
+          const savedMessages = sessionStorage.getItem("etualy_chat_messages");
+          const savedChips = sessionStorage.getItem("etualy_chat_chips");
+          const savedStep = sessionStorage.getItem("etualy_chat_step");
+
+          if (savedMessages && savedMessages.trim().length > 0) {
+            messagesContainer.innerHTML = savedMessages;
+
+            if (savedChips !== null) {
+              chipsContainer.innerHTML = savedChips;
+            }
+
+            if (savedStep && !isNaN(parseInt(savedStep, 10))) {
+              currentStepValue = parseInt(savedStep, 10);
+              updateStepper(currentStepValue);
+            } else {
+              currentStepValue = null;
+              updateStepper(null);
+            }
+
+            // Utente già ingaggiato: sopprimi il teaser d'invito
+            sessionStorage.setItem("etualy_teaser_closed", "true");
+            if (teaser) teaser.classList.remove("is-visible");
+
+            scrollToBottom();
+          }
+        } catch (e) {
+          console.warn(
+            "[Etualy Advisor] Avviso ripristino cronologia locale:",
+            e,
+          );
+        }
+      }
+
+      // =======================================================================
       // LOGICA TEASER PROATTIVO
       // =======================================================================
       function dismissTeaser() {
@@ -1513,7 +1577,6 @@
         sessionStorage.setItem("etualy_teaser_closed", "true");
       }
 
-      // Mostra il teaser dopo 5 secondi solo se non è già stato chiuso e la chat è chiusa
       setTimeout(() => {
         if (
           teaser &&
@@ -1547,7 +1610,7 @@
         widget.classList.remove("is-active");
       });
 
-      // Reset Sincronizzato con il Backend
+      // Reset Sincronizzato con Backend e Storage Locale
       restartBtn.addEventListener("click", async () => {
         const oldSession = sessionId;
         sessionId =
@@ -1556,6 +1619,12 @@
           "_" +
           Date.now();
         sessionStorage.setItem("etualy_advisor_session_id", sessionId);
+
+        // Pulizia cronologia memorizzata
+        sessionStorage.removeItem("etualy_chat_messages");
+        sessionStorage.removeItem("etualy_chat_chips");
+        sessionStorage.removeItem("etualy_chat_step");
+        currentStepValue = null;
 
         messagesContainer.innerHTML = INITIAL_WELCOME_HTML;
         updateStepper(null);
@@ -1592,6 +1661,7 @@
         msgDiv.textContent = text;
         messagesContainer.appendChild(msgDiv);
         scrollToBottom();
+        saveChatState();
       }
 
       // =======================================================================
@@ -1627,7 +1697,6 @@
         messagesContainer.appendChild(typingDiv);
         scrollToBottom();
 
-        // Stadio 2: dopo 6 secondi (primo rassicuramento)
         typingTimer1 = setTimeout(() => {
           const statusEl = document.getElementById("oaTypingStatus");
           if (statusEl) {
@@ -1637,7 +1706,6 @@
           }
         }, 6000);
 
-        // Stadio 3: dopo 20 secondi (cold-start effettivo di Render)
         typingTimer2 = setTimeout(() => {
           const statusEl = document.getElementById("oaTypingStatus");
           if (statusEl) {
@@ -1691,6 +1759,7 @@
         const card = btn.closest(".oa-product-card");
         if (card) {
           card.classList.toggle("is-open");
+          saveChatState();
         }
       }
 
@@ -1703,7 +1772,6 @@
 
         const url = btn.getAttribute("href");
 
-        // Se è già stato aggiunto, un clic successivo apre direttamente la scheda del carrello
         if (btn.classList.contains("is-added")) {
           if (url && url !== "#") window.open(url, "_blank");
           return;
@@ -1713,13 +1781,11 @@
         const checkIcon = btn.querySelector(".oa-btn-check-icon");
         const textSpan = btn.querySelector(".oa-cart-btn-text");
 
-        // Fase 1: Feedback immediato di aggiunta
         btn.classList.add("is-adding");
         if (cartIcon) cartIcon.style.display = "none";
         if (checkIcon) checkIcon.style.display = "inline-block";
         if (textSpan) textSpan.textContent = "Aggiunto!";
 
-        // Fase 2: Apertura ritardata (600ms) e stabilizzazione persistente
         setTimeout(() => {
           if (url && url !== "#") {
             window.open(url, "_blank");
@@ -1727,6 +1793,7 @@
           btn.classList.remove("is-adding");
           btn.classList.add("is-added");
           if (textSpan) textSpan.textContent = "Nel Carrello";
+          saveChatState();
         }, 600);
       }
 
@@ -1975,6 +2042,7 @@
             chipsContainer.innerHTML = "";
           }
 
+          saveChatState(data.step);
           scrollToElementTop(botMsgDiv);
         } catch (err) {
           removeTyping();
@@ -1983,8 +2051,12 @@
           errDiv.innerHTML = `<p style="color: #C0392B;">Si è verificata un'interruzione di rete con la boutique. Riprova tra un istante.</p>`;
           messagesContainer.appendChild(errDiv);
           scrollToBottom();
+          saveChatState();
         }
       }
+
+      // Esegui il ripristino all'avvio
+      restoreChatState();
     </script>
   </body>
 </html>
