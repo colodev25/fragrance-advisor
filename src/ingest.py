@@ -28,6 +28,11 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from openai import OpenAI
 
+try:
+    from src.catalog_integrity import validate_catalog, atomic_write_json
+except ModuleNotFoundError:
+    from catalog_integrity import validate_catalog, atomic_write_json
+
 load_dotenv()
 
 # ---------------- CONFIGURAZIONE PERCORSI ----------------
@@ -438,8 +443,7 @@ def fetch_all_shopify_products(store_url: Optional[str] = None) -> list:
     """Scarica i prodotti dallo store Shopify gestendo la paginazione in modo sicuro."""
     site = (store_url or os.getenv("SHOPIFY_STORE_URL", "")).rstrip("/")
     if not site:
-        print("[!] SHOPIFY_STORE_URL non configurato.")
-        return []
+        raise ValueError("SHOPIFY_STORE_URL non configurato.")
 
     products = []
     page = 1
@@ -453,12 +457,12 @@ def fetch_all_shopify_products(store_url: Optional[str] = None) -> list:
 
             try:
                 res = sess.get(url, params=params, timeout=TIMEOUT)
-                if res.status_code != 200:
-                    print(f"[!] Risposta HTTP {res.status_code} alla pagina {page}: {res.text[:150]}")
-                    break
+                res.raise_for_status()
 
                 payload = res.json()
-                batch = payload.get("products", [])
+                if not isinstance(payload, dict) or not isinstance(payload.get("products"), list):
+                    raise ValueError("Risposta Shopify priva della lista products.")
+                batch = payload["products"]
                 if not batch:
                     break
 
@@ -472,8 +476,7 @@ def fetch_all_shopify_products(store_url: Optional[str] = None) -> list:
                 time.sleep(0.3)
 
             except Exception as e:
-                print(f"[!] Errore di rete alla pagina {page}: {e}")
-                break
+                raise RuntimeError(f"Acquisizione interrotta alla pagina {page}; catalogo precedente conservato.") from e
 
     return products
 
@@ -513,8 +516,8 @@ def transform_product(prod: dict, store_url: Optional[str] = None) -> dict:
 
     try:
         price = round(float(first_var.get("price", 0.0)), 2)
-    except (ValueError, TypeError):
-        price = 0.0
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"Prezzo Shopify non valido per {prod_id}.") from exc
 
     in_stock = any(v.get("available", False) for v in variants) if variants else True
 
@@ -606,8 +609,7 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     print("=== AVVIO PIPELINE DI INGESTIONE SHOPIFY ===")
     raw_products = fetch_all_shopify_products(store_url)
     if not raw_products:
-        print("[!] Nessun prodotto recuperato.")
-        return 0
+        raise ValueError("Nessun prodotto recuperato; catalogo precedente conservato.")
 
     kept_products = [p for p in raw_products if is_fragrance(p)]
     dropped_products = [p for p in raw_products if not is_fragrance(p)]
@@ -644,14 +646,11 @@ def run_ingest(store_url: Optional[str] = None) -> int:
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(catalog, f, ensure_ascii=False, indent=2)
-
-    with open(OUT_OF_STOCK_FILE, "w", encoding="utf-8") as f:
-        json.dump(out_of_stock, f, ensure_ascii=False, indent=2)
-
-    with open(DROPPED_FILE, "w", encoding="utf-8") as f:
-        json.dump(dropped_products, f, ensure_ascii=False, indent=2)
+    for warning in validate_catalog(catalog):
+        print(f"[!] {warning}")
+    atomic_write_json(OUT_OF_STOCK_FILE, out_of_stock)
+    atomic_write_json(DROPPED_FILE, dropped_products)
+    atomic_write_json(OUTPUT_FILE, catalog)
 
     print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
     print(f"Profumi disponibili salvati in {OUTPUT_FILE}: {len(catalog)}")

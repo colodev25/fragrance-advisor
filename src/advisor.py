@@ -147,26 +147,18 @@ class FragranceAdvisor:
         self.active_perfumes = {}
         self.guided_states = defaultdict(lambda: {"step": None, "answers": []})
 
-        self.catalog_products = []
+        self.catalog_products = self.search_engine.catalog_products
         self.catalog_notes = set()
 
-        if CATALOG_PATH.exists():
-            try:
-                with open(CATALOG_PATH, "r", encoding="utf-8") as f:
-                    self.catalog_products = json.load(f)
-
-                for prod in self.catalog_products:
-                    pyr = prod.get("olfactory_pyramid", {})
-                    for note in pyr.get("top", []) + pyr.get("heart", []) + pyr.get("base", []):
-                        n_clean = note.lower().strip()
-                        if len(n_clean) >= 3 and n_clean not in STOPWORDS_NOTES:
-                            self.catalog_notes.add(n_clean)
-                            for w in re.findall(r"\b[a-zA-Zàèéìòù]+\b", n_clean):
-                                if len(w) >= 4 and w not in STOPWORDS_NOTES:
-                                    self.catalog_notes.add(w)
-
-            except Exception:
-                logger.exception("Catalog loading failed.")
+        for prod in self.catalog_products:
+            pyr = prod.get("olfactory_pyramid", {})
+            for note in pyr.get("top", []) + pyr.get("heart", []) + pyr.get("base", []):
+                n_clean = note.lower().strip()
+                if len(n_clean) >= 3 and n_clean not in STOPWORDS_NOTES:
+                    self.catalog_notes.add(n_clean)
+                    for w in re.findall(r"\b[a-zA-Zàèéìòù]+\b", n_clean):
+                        if len(w) >= 4 and w not in STOPWORDS_NOTES:
+                            self.catalog_notes.add(w)
 
     @property
     def resilient_client(self) -> ResilientGroqClient:

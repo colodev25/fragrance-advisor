@@ -1,94 +1,75 @@
-"""
-reindex.py - Rigenerazione dell'indice vettoriale ChromaDB tramite motore locale ONNX
-"""
-
+"""Build and verify a new ChromaDB generation before atomic activation."""
 import json
-import os
-import shutil
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 import chromadb
 from chromadb.utils import embedding_functions
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_PATH = BASE_DIR / "data" / "catalog.json"
-CHROMA_PATH = BASE_DIR / "chroma_db"
-COLLECTION_NAME = "fragrances"
+try:
+    from src.catalog_integrity import (CATALOG_PATH, CHROMA_PATH, DOCUMENT_VERSION,
+        EMBEDDING_MODEL, MANIFEST_VERSION, atomic_write_json, catalog_fingerprint,
+        semantic_document, validate_catalog)
+except ModuleNotFoundError:
+    from catalog_integrity import (CATALOG_PATH, CHROMA_PATH, DOCUMENT_VERSION,
+        EMBEDDING_MODEL, MANIFEST_VERSION, atomic_write_json, catalog_fingerprint,
+        semantic_document, validate_catalog)
+
+DATA_PATH = CATALOG_PATH
+
+
+def build_index(catalog_path=DATA_PATH, chroma_path=CHROMA_PATH, client_factory=None, embedding_factory=None):
+    products = json.loads(Path(catalog_path).read_text(encoding="utf-8"))
+    for warning in validate_catalog(products):
+        print(f"[!] {warning}")
+    root = Path(chroma_path)
+    root.mkdir(parents=True, exist_ok=True)
+    lock = root / "reindex.lock"
+    with lock.open("x", encoding="utf-8") as stream:
+        stream.write(datetime.now(timezone.utc).isoformat())
+    try:
+        generation = uuid.uuid4().hex
+        client = (client_factory or chromadb.PersistentClient)(path=str(root))
+        embedding = (embedding_factory or embedding_functions.DefaultEmbeddingFunction)()
+        name = f"fragrances_{generation}"
+        collection = client.create_collection(name=name, embedding_function=embedding,
+                                              metadata={"hnsw:space": "cosine"})
+        ids = [product["id"] for product in products]
+        documents = [semantic_document(product) for product in products]
+        metadata = [{
+            "name": product["name"], "brand": product.get("brand", ""),
+            "price": float(product["price"]), "family": product.get("family", ""),
+            "ptype": product.get("ptype", ""), "in_stock": True,
+            "add_to_cart_url": product["urls"]["add_to_cart"],
+            "product_page_url": product["urls"]["product_page"],
+            "image_url": product["urls"].get("image_url", ""),
+        } for product in products]
+        for start in range(0, len(products), 50):
+            collection.add(ids=ids[start:start + 50], documents=documents[start:start + 50],
+                           metadatas=metadata[start:start + 50])
+        if collection.count() != len(products) or set(collection.get(include=[])["ids"]) != set(ids):
+            raise RuntimeError("Indice incompleto: la generazione precedente resta attiva.")
+        probe = collection.query(query_texts=[documents[0]], n_results=1)
+        if not probe.get("ids") or not probe["ids"][0] or probe["ids"][0][0] not in ids:
+            raise RuntimeError("Verifica ricerca fallita: indice non attivato.")
+        manifest = {
+            "manifest_version": MANIFEST_VERSION, "generation": generation,
+            "collection": name, "catalog_hash": catalog_fingerprint(products),
+            "product_count": len(products), "embedding_model": EMBEDDING_MODEL,
+            "document_version": DOCUMENT_VERSION, "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        atomic_write_json(root / "generations" / f"{generation}.json", products)
+        atomic_write_json(root / "generations" / f"{generation}.manifest.json", manifest)
+        atomic_write_json(root / "active.json", manifest)
+        print(f"[+] Attivata generazione {generation}: {len(products)} prodotti.")
+        return manifest
+    finally:
+        lock.unlink()
 
 
 def main():
-    print("[*] Avvio re-indicizzazione ChromaDB (Motore Locale ONNX - Zero chiamate API esterne)...")
-
-    if not DATA_PATH.exists():
-        print(f"[!] ERRORE: File catalogo non trovato in {DATA_PATH}")
-        return
-
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        products = json.load(f)
-
-    if not products:
-        print("[!] ATTENZIONE: Il catalogo è vuoto. Nessun dato da indicizzare.")
-        return
-
-    print(f"[*] Caricati {len(products)} prodotti da {DATA_PATH.name}")
-
-    if CHROMA_PATH.exists():
-        try:
-            shutil.rmtree(CHROMA_PATH)
-        except Exception as e:
-            print(f"[!] Avviso pulizia chroma_db: {e}")
-
-    CHROMA_PATH.mkdir(parents=True, exist_ok=True)
-
-    client = chromadb.PersistentClient(path=str(CHROMA_PATH))
-
-    emb_fn = embedding_functions.DefaultEmbeddingFunction()
-
-    collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        embedding_function=emb_fn,
-        metadata={"hnsw:space": "cosine"}
-    )
-
-    documents = []
-    metadatas = []
-    ids = []
-
-    for item in products:
-        doc_id = str(item.get("id"))
-        semantic_text = item.get("semantic_text", "")
-        if not semantic_text:
-            semantic_text = f"{item.get('name', '')} {item.get('brand', '')} {item.get('family', '')} {item.get('description', '')}"
-
-        urls = item.get("urls", {})
-
-        documents.append(semantic_text)
-        ids.append(doc_id)
-        metadatas.append({
-            "name": str(item.get("name", "")),
-            "brand": str(item.get("brand", "")),
-            "price": float(item.get("price", 0.0)),
-            "family": str(item.get("family", "")),
-            "ptype": str(item.get("ptype", "")),
-            "in_stock": bool(item.get("in_stock", True)),
-            "add_to_cart_url": str(urls.get("add_to_cart", "")),
-            "product_page_url": str(urls.get("product_page", "")),
-            "image_url": str(urls.get("image_url", ""))
-        })
-
-    batch_size = 50
-    total_docs = len(documents)
-
-    for i in range(0, total_docs, batch_size):
-        end_idx = min(i + batch_size, total_docs)
-        collection.add(
-            documents=documents[i:end_idx],
-            metadatas=metadatas[i:end_idx],
-            ids=ids[i:end_idx]
-        )
-        print(f"    Indicizzati {end_idx}/{total_docs} prodotti...")
-
-    print(f"[+] Re-indicizzazione completata con successo in {CHROMA_PATH}\n")
+    build_index()
 
 
 if __name__ == "__main__":

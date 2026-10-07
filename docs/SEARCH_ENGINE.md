@@ -10,7 +10,7 @@ Run:
 python src/reindex.py
 ```
 
-The reindexer recreates `chroma_db/`, creates the `fragrances` collection with cosine distance, and indexes each product's `semantic_text`. If that field is empty, it builds a shorter text from the product name, brand, family and description. ChromaDB's `DefaultEmbeddingFunction` produces embeddings locally; the search query uses the same default function.
+The reindexer creates a new `fragrances_<generation>` collection with cosine distance and indexes each product's `semantic_text`, falling back to name, brand, family and description. ChromaDB's `DefaultEmbeddingFunction` produces embeddings locally. The active manifest records the embedding model and document format version; search checks compatibility and uses the matching catalog snapshot. Existing collections are preserved.
 
 Each record stores the catalog identifier, semantic text and metadata used by the application, including name, brand, price, family, product type, stock status, product URL, cart URL and image URL.
 
@@ -37,7 +37,7 @@ After changing the catalog, regenerate the index:
 python src/reindex.py
 ```
 
-For a full Shopify catalog refresh, first run `python src/ingest.py`, then run the reindexer. On API startup, a missing or empty `chroma_db/` directory triggers an automatic reindex attempt from the existing local catalog. If the catalog is unavailable or empty, index creation cannot complete.
+For a full refresh, run `python src/ingest.py`, then the reindexer, then restart the backend. The API never rebuilds its index at startup. A missing or incompatible active generation prevents readiness; an updated source catalog alone does not change the running generation. See [index operations](INDEX_OPERATIONS.md) for validation, migration and recovery.
 
 ## Component boundaries
 

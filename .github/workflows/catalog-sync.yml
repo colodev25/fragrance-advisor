@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: catalog-sync-feature-new-site
+  cancel-in-progress: false
+
 jobs:
   sync-catalog:
     name: Estrazione Catalogo & Aggiornamento Repo
@@ -44,10 +48,10 @@ jobs:
 
       - name: Commit su GitHub se ci sono variazioni
         run: |
-          if [ -n "$(git status --porcelain data/catalog.json)" ]; then
+          if [ -n "$(git status --porcelain data/catalog.json data/out_of_stock.json)" ]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git add data/catalog.json data/out_of_stock.json data/scartati.json
+            git add data/catalog.json data/out_of_stock.json
             git commit -m "chore(catalog): sincronizzazione automatica catalogo [skip ci]"
             git push origin feature/new-site
           else

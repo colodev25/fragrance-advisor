@@ -38,7 +38,7 @@ Start the API:
 uvicorn src.main:app --reload
 ```
 
-The API listens at `http://127.0.0.1:8000`. On startup, it builds the local search index from `data/catalog.json` if `chroma_db/` is missing or empty.
+The API listens at `http://127.0.0.1:8000`. Run `python src/reindex.py` before starting it to create a verified catalog/index generation. See [index operations](docs/INDEX_OPERATIONS.md) for updates and Render deployment.
 
 ## Project documentation
 

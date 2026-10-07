@@ -22,7 +22,7 @@ Browser interface (index.html)
 
 ### API and interface
 
-`src/main.py` defines the FastAPI application, CORS policy, startup lifecycle, health checks, chat routes and reset routes. At startup, if `chroma_db/` is absent or empty, it attempts to create the vector index from `data/catalog.json`, then initializes the advisor. If initialization fails, `/health` reports the service as unavailable and chat requests receive a structured `503` response. The API also validates request bounds and applies an in-memory, per-client rate limit before processing public chat requests. The browser interface in `index.html` manages the chat display and a session identifier in `sessionStorage`; its API base URL is configured in the page source.
+`src/main.py` initializes the advisor from the verified active index generation. Indexing is performed before startup, never inside the API lifecycle. Missing, incompatible or incomplete generations leave `/health` at `503`; chat requests receive a structured `503` response. The API validates request bounds and applies an in-memory per-client rate limit. The browser interface in `index.html` manages the chat display and session identifier; its API base URL is configured in the page source.
 
 ### Conversation advisor
 
@@ -30,7 +30,7 @@ Browser interface (index.html)
 
 ### Search and indexing
 
-`src/search.py` queries the persistent ChromaDB collection named `fragrances`, applies price constraints and lexical checks, and returns product metadata and semantic documents. `src/reindex.py` recreates this collection from the current catalog. The default embedding function is ChromaDB's built-in `DefaultEmbeddingFunction`; the reindexer uses cosine distance.
+`src/reindex.py` builds a unique `fragrances_<generation>` collection using ChromaDB's local ONNX embedding model (`all-MiniLM-L6-v2`) and cosine distance. It validates the source catalog, checks indexed IDs/count and a search probe, writes a catalog snapshot, then atomically publishes `chroma_db/active.json`. `src/search.py` verifies this manifest and loads its collection; `src/advisor.py` uses that same catalog snapshot. Source catalog updates remain pending until indexing succeeds and the backend restarts. See [index operations](INDEX_OPERATIONS.md).
 
 ### Catalog ingestion
 

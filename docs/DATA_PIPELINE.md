@@ -51,8 +51,8 @@ python src/ingest.py
 python src/reindex.py
 ```
 
-The reindexer reads `data/catalog.json`, recreates the `chroma_db/` directory and writes the `fragrances` collection. This operation replaces the existing local vector index. The API also attempts this rebuild at startup when the index directory is missing or empty.
+The reindexer validates `data/catalog.json`, builds a new collection and activates its catalog snapshot only after verification. It preserves existing collections and snapshots; the API does not rebuild at startup. Restart the backend to load the new generation. See [index operations](INDEX_OPERATIONS.md).
 
 ## Automated synchronization
 
-`.github/workflows/catalog-sync.yml` runs every two days or through manual dispatch. It installs the ingestion dependencies, runs the Shopify import using the `SHOPIFY_STORE_URL` and optional `GROQ_API_KEY` repository secrets, then commits catalog-related JSON files to `feature/new-site` when `data/catalog.json` changes. The workflow does not rebuild or publish the ChromaDB index.
+`.github/workflows/catalog-sync.yml` runs every two days or through manual dispatch, with concurrent runs serialized. It uses `SHOPIFY_STORE_URL` and optional `GROQ_API_KEY` repository secrets and commits changes to `catalog.json` or `out_of_stock.json` on `feature/new-site`. `scartati.json` remains a local report excluded from Git. The workflow does not publish ChromaDB: Render builds the index during deployment. Shopify pagination errors or invalid/empty searchable catalogs fail the import; each JSON file is replaced atomically, with the primary catalog written last. The three reports are not a single transactional bundle.

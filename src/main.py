@@ -70,10 +70,6 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Etualy olfactive advisor API.")
 
     try:
-        if not CHROMA_DIR.exists() or not any(CHROMA_DIR.iterdir()):
-            logger.info("ChromaDB directory is missing or empty; rebuilding the local index.")
-            from src.reindex import main as build_index
-            build_index()
         from src.advisor import FragranceAdvisor
         advisor = FragranceAdvisor()
         logger.info("FragranceAdvisor is ready.")
