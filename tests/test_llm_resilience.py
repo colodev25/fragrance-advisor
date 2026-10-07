@@ -17,6 +17,111 @@ load_dotenv()
 from src.llm_resilience import ResilientGroqClient, PRIMARY_FREE_MODEL, FALLBACK_FREE_MODEL
 
 
+@pytest.mark.parametrize("content,finish_reason", [("", "stop"), ("Risposta parziale", "length")])
+def test_private_reasoning_and_truncated_answers_are_never_returned(content, finish_reason):
+    mock_client = MagicMock()
+    response = MagicMock()
+    response.choices = [MagicMock(
+        message=MagicMock(content=content, reasoning_content="Ragionamento interno privato"),
+        finish_reason=finish_reason,
+    )]
+    mock_client.chat.completions.create.return_value = response
+    resilient = ResilientGroqClient(mock_client, max_retries=0)
+    assert resilient.create_completion([], graceful_fallback_text="Riprova") == "Riprova"
+
+
+def test_invalid_selection_triggers_model_fallback():
+    from src.advisor import parse_catalog_selection
+
+    mock_client = MagicMock()
+    def response(text):
+        result = MagicMock()
+        result.choices = [MagicMock(message=MagicMock(content=text), finish_reason="stop")]
+        return result
+    mock_client.chat.completions.create.side_effect = [
+        response('{"selection":"PRODOTTO_99","reply":"Inventato"}'),
+        response('{"selection":"PRODOTTO_1","reply":"Coerente"}'),
+    ]
+    resilient = ResilientGroqClient(mock_client, max_retries=0)
+    result = resilient.create_completion(
+        [], response_validator=lambda text: parse_catalog_selection(text, {"PRODOTTO_1": {}})
+    )
+    assert parse_catalog_selection(result, {"PRODOTTO_1": {}})["selection"] == "PRODOTTO_1"
+    assert mock_client.chat.completions.create.call_args_list[1].kwargs["model"] == FALLBACK_FREE_MODEL
+
+
+@pytest.mark.parametrize("text", [
+    '[ID: PRODOTTO_1] Ottimo profumo',
+    '{"selection":[],"reply":"Testo"}',
+    '{"selection":"PRODOTTO_99","reply":"Testo"}',
+    '{"selection":null,"reply":" "}',
+    '{"selection":null,"reply":"Testo","extra":true}',
+])
+def test_catalog_selection_rejects_ambiguous_or_invalid_output(text):
+    from src.advisor import parse_catalog_selection
+    with pytest.raises(ValueError):
+        parse_catalog_selection(text, {"PRODOTTO_1": {}})
+
+
+def test_catalog_selection_allows_explicit_rejection():
+    from src.advisor import parse_catalog_selection
+    assert parse_catalog_selection('{"selection":null,"reply":"Nessun candidato adatto"}', {})["selection"] is None
+
+
+@pytest.mark.parametrize("raw,expected_cards,clears_active", [
+    ('{"selection":"PRODOTTO_1","reply":"Scelta coerente"}', 1, False),
+    ('{"selection":null,"reply":"Nessuno adatto"}', 0, True),
+    ('[ID: PRODOTTO_1] Testo non valido', 0, False),
+])
+def test_free_search_updates_state_only_for_valid_selection(raw, expected_cards, clears_active):
+    from src.advisor import FragranceAdvisor
+    advisor = FragranceAdvisor.__new__(FragranceAdvisor)
+    previous = {"name": "Precedente", "family": "Legnosa"}
+    candidate = {"name": "Nuovo", "price": 90, "document": "Note di rosa"}
+    advisor.sessions = {"test": []}
+    advisor.active_perfumes = {"test": previous}
+    advisor.catalog_products = []
+    advisor._find_mentioned_product = MagicMock(return_value=None)
+    advisor._determine_intent = MagicMock(return_value="CAMBIA")
+    advisor._extract_price_constraints = MagicMock(return_value=(None, None, "rosa"))
+    advisor._has_explicit_olfactory_redirect = MagicMock(return_value=True)
+    advisor._extract_target_notes = MagicMock(return_value=["rosa"])
+    advisor._find_keyword_matches = MagicMock(return_value=[candidate])
+    advisor.search_engine = MagicMock()
+    advisor.search_engine.search.return_value = {"ids": [[]]}
+    advisor.resilient_client = MagicMock()
+    advisor.client = advisor._resilient_client.client
+    advisor.resilient_client.create_completion.return_value = raw
+    advisor._enrich_product_payload = MagicMock(side_effect=lambda product, **kwargs: product)
+    result = advisor._handle_free_chat("Cerco rosa", "test", None)
+    assert len(result["products"]) == expected_cards
+    assert advisor.active_perfumes["test"] == (None if clears_active else candidate if expected_cards else previous)
+    assert len(advisor.sessions["test"]) == 2
+
+
+def test_history_limit_preserves_active_product_and_guided_preferences(tmp_path):
+    from src.advisor import FragranceAdvisor, MAX_HISTORY_MESSAGES
+    from src.session_store import SessionStore
+    store = SessionStore(str(tmp_path / "history.db"))
+    history = [{"role": "user" if i % 2 == 0 else "assistant", "content": str(i)} for i in range(60)]
+    product = {"name": "Attivo"}
+    store.save_session("test", history, product, {"step": None, "answers": ["Legnoso"]})
+    advisor = FragranceAdvisor.__new__(FragranceAdvisor)
+    advisor.session_store = store
+    advisor.sessions, advisor.active_perfumes, advisor.guided_states = {}, {}, {}
+    def free_chat(query, session_id, max_price):
+        assert len(advisor.sessions[session_id]) == MAX_HISTORY_MESSAGES
+        advisor.sessions[session_id].extend([{"role": "user", "content": query}, {"role": "assistant", "content": "Risposta"}])
+        return {"reply": "Risposta"}
+    advisor._handle_free_chat = free_chat
+    advisor.advise("Una domanda", "test")
+    saved = store.get_session("test")
+    assert len(saved["history"]) == MAX_HISTORY_MESSAGES
+    assert saved["history"][-1]["content"] == "Risposta"
+    assert saved["active_perfume"] == product
+    assert saved["guided_state"]["answers"] == ["Legnoso"]
+
+
 def make_rate_limit_error(msg="Rate limit superato (TPM/RPM exceeded)"):
     request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
     response = httpx.Response(status_code=429, request=request)

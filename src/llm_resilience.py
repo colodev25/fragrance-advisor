@@ -1,7 +1,7 @@
 import os
 import time
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 
 logger = logging.getLogger("fragrance_advisor.llm")
@@ -12,7 +12,7 @@ FALLBACK_FREE_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b")
 
 
 class ResilientGroqClient:
-    """Gestore resiliente per le API gratuite di Groq con Exponential Backoff, Fallback e Reasoning Recovery."""
+    """Retry e fallback Groq senza esporre il ragionamento interno."""
 
     def __init__(self, client: OpenAI, max_retries: int = 2, base_delay: float = 0.8):
         self.client = client
@@ -29,7 +29,8 @@ class ResilientGroqClient:
         graceful_fallback_text: str = (
             "Il nostro Maître Parfumeur sta ricevendo molte richieste in questo istante. "
             "Ti invitiamo a riformulare o a riprovare tra qualche secondo."
-        )
+        ),
+        response_validator: Optional[Callable[[str], Any]] = None,
     ) -> str:
         """
         Invia la richiesta al modello primario gratuito. Se incontra rate limit (429)
@@ -38,8 +39,6 @@ class ResilientGroqClient:
         models_to_try = [primary_model]
         if fallback_model and fallback_model != primary_model:
             models_to_try.append(fallback_model)
-
-        last_exception = None
 
         for model in models_to_try:
             is_fallback = (model != primary_model)
@@ -73,35 +72,31 @@ class ResilientGroqClient:
                             retry_resp = self.client.chat.completions.create(**kwargs)
                             retry_choice = retry_resp.choices[0]
                             retry_content = (retry_choice.message.content or "").strip()
-                            if retry_content:
+                            if retry_content and getattr(retry_choice, "finish_reason", None) != "length":
+                                if response_validator:
+                                    response_validator(retry_content)
                                 return retry_content
-
-                        # Fallback secondario: se disponibile, recupera il reasoning process
-                        reasoning = (
-                            getattr(choice.message, "reasoning_content", None) or 
-                            getattr(choice.message, "reasoning", None)
-                        )
-                        if reasoning and len(reasoning.strip()) > 15:
-                            logger.warning(f"[GROQ REASONING EXTRACTED] Estratto reasoning per {model} poiché content era vuoto.")
-                            return reasoning.strip()
 
                         raise ValueError(f"Il modello {model} ha restituito un testo vuoto.")
 
+                    if getattr(choice, "finish_reason", None) == "length":
+                        raise ValueError("Risposta incompleta del modello.")
+                    if response_validator:
+                        response_validator(content)
                     return content
 
                 except (RateLimitError, APITimeoutError, APIConnectionError, InternalServerError) as e:
-                    last_exception = e
                     delay = self.base_delay * (2 ** attempt)
                     logger.warning(
-                        f"[GROQ FREE LIMIT] Quota o timeout su {model} (tentativo {attempt + 1}): {e}. "
+                        f"[GROQ FREE LIMIT] Quota o timeout su {model} (tentativo {attempt + 1}). "
                         f"Attesa di {delay:.1f}s..."
                     )
-                    time.sleep(delay)
+                    if attempt < self.max_retries:
+                        time.sleep(delay)
 
                 except Exception as e:
-                    logger.error(f"[GROQ UNEXPECTED] Errore o risposta non valida su {model}: {e}")
-                    last_exception = e
+                    logger.error("Risposta non valida o errore su %s (%s).", model, type(e).__name__)
                     break
 
-        logger.error(f"[GROQ LIMIT EXCEEDED] Limiti del piano free superati su tutti i modelli gratuiti: {last_exception}")
+        logger.error("Nessuna risposta valida disponibile dai modelli configurati.")
         return graceful_fallback_text

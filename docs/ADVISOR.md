@@ -31,6 +31,8 @@ For a request that needs product recommendations, the advisor:
 
 The model explains and contextualizes catalog candidates. Product details shown in cards come from the catalog, and the advisor can return no product when the available candidates do not fit the request.
 
+Free-search and alternative recommendations require a JSON object with `selection` (a supplied candidate ID, or `null`) and a non-empty `reply`. Invalid JSON, unknown IDs and missing fields trigger the fallback model. If neither model returns a valid selection, the customer receives a retry message without product cards; the previous active fragrance is preserved. An explicit `null` selection clears the active fragrance. No product is inferred from its name or selected automatically from the first search result.
+
 ## Session state
 
 Each `session_id` stores:
@@ -42,9 +44,13 @@ Each `session_id` stores:
 
 `SessionStore` reloads persisted state for each request, so the conversation can continue after a server restart when the same session identifier is reused. `POST /reset` clears that session.
 
+The advisor retains at most 40 recent history messages (20 complete exchanges) when loading and saving a conversation. Active fragrance and guided preferences are stored separately. This limit concerns backend conversation state; widget history is managed by the frontend.
+
 ## LLM resilience
 
 `src/llm_resilience.py` calls the primary Groq model, retries transient rate-limit, timeout, connection and server errors with exponential delays, then tries the fallback model. If calls still fail, it returns a configured graceful response rather than propagating the LLM error as a generated answer. Model names can be configured with `GROQ_PRIMARY_MODEL` and `GROQ_FALLBACK_MODEL`.
+
+Empty or truncated answers are rejected. When an empty answer exhausts a supplied token budget, one attempt uses a larger budget before falling back. Internal reasoning fields are never returned to customers. Candidate-selection validation also applies to this recovery attempt. Logs omit response text and provider error bodies.
 
 ## Responsibilities
 

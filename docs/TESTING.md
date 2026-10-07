@@ -9,7 +9,7 @@ The project uses pytest. Tests cover the HTTP API, catalog parsing and advisor r
 | tests/test_api.py | Health check, chat and reset routes, response shape, request validation and CORS preflight. |
 | tests/test_parsers.py | Note cleaning, note extraction, gender and season detection, price constraints, intent routing and guided-flow steps. |
 | tests/test_session_store.py | SQLite defaults, save and load, updates, clearing, concurrent writes, restart persistence and reset through the API. |
-| tests/test_llm_resilience.py | Retry delays, fallback model, concurrent calls, graceful failure and an optional live Groq check. |
+| tests/test_llm_resilience.py | Retry delays, fallback model, concurrent calls, private reasoning protection, truncated answers, candidate selection validation, graceful failure and an optional live Groq check. |
 | tests/test_rate_limit.py | Per-client and per-route request limits. |
 | tests/test_scenarios_e2e.py | Full advisor scenarios for note and season requests, product follow-ups, cheaper alternatives, unsupported requests and guided recommendations. |
 
