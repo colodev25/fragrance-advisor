@@ -2019,7 +2019,7 @@
           }
           btn.classList.remove("is-adding");
           btn.classList.add("is-added");
-          if (textSpan) textSpan.textContent = "Nel Carrello ✓";
+          if (textSpan) textSpan.textContent = "Nel Carrello";
           saveChatState();
         }, 600);
       }
@@ -2245,7 +2245,13 @@
           });
 
           if (!response.ok) {
-            throw new Error("Errore di risposta dalla boutique");
+            const errorBody = await response.json().catch(() => null);
+            const error = new Error(
+              errorBody?.error?.message ||
+                "Un'interruzione temporanea non consente di completare la richiesta.",
+            );
+            error.retryable = response.status === 429 || response.status >= 500;
+            throw error;
           }
 
           const data = await response.json();
@@ -2288,6 +2294,10 @@
           scrollToElementTop(botMsgDiv);
         } catch (err) {
           removeTyping();
+          const errorMessage =
+            err?.message ||
+            "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo in questo istante.";
+          const canRetry = err?.retryable !== false;
           const errDiv = document.createElement("div");
           errDiv.className = "oa-msg oa-msg-bot oa-msg-error";
           errDiv.id = "oaLastErrorMsg";
@@ -2300,17 +2310,20 @@
               </svg>
               <span>Avviso della Boutique</span>
             </div>
-            <div class="oa-error-text">
-              Un'interruzione temporanea non ci consente di raggiungere l'archivio olfattivo in questo istante. Desideri che ripeta la ricerca?
-            </div>
-            <button class="oa-retry-btn" onclick="retryLastMessage(this)">
+            <div class="oa-error-text"></div>
+            ${
+              canRetry
+                ? `<button class="oa-retry-btn" onclick="retryLastMessage(this)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
               </svg>
               <span>Riprova ora</span>
-            </button>
+            </button>`
+                : ""
+            }
           `;
+          errDiv.querySelector(".oa-error-text").textContent = errorMessage;
           messagesContainer.appendChild(errDiv);
           scrollToBottom();
           saveChatState();

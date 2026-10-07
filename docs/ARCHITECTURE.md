@@ -22,7 +22,7 @@ Browser interface (index.html)
 
 ### API and interface
 
-`src/main.py` defines the FastAPI application, CORS policy, startup lifecycle, health check, chat routes and reset routes. At startup, if `chroma_db/` is absent or empty, it attempts to create the vector index from `data/catalog.json`, then initializes the advisor. The browser interface in `index.html` manages the chat display and a session identifier in `sessionStorage`; its API base URL is configured in the page source.
+`src/main.py` defines the FastAPI application, CORS policy, startup lifecycle, health checks, chat routes and reset routes. At startup, if `chroma_db/` is absent or empty, it attempts to create the vector index from `data/catalog.json`, then initializes the advisor. If initialization fails, `/health` reports the service as unavailable and chat requests receive a structured `503` response. The API also validates request bounds and applies an in-memory, per-client rate limit before processing public chat requests. The browser interface in `index.html` manages the chat display and a session identifier in `sessionStorage`; its API base URL is configured in the page source.
 
 ### Conversation advisor
 

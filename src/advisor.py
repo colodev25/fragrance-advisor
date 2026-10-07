@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import logging
 from pathlib import Path
 from collections import defaultdict
 from typing import Optional
@@ -26,6 +27,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CATALOG_PATH = BASE_DIR / "data" / "catalog.json"
+logger = logging.getLogger("fragrance_advisor.advisor")
 
 # ==============================================================================
 # MAPPATURA MACRO-CATEGORIE E FAMIGLIE OLFATTIVE DEL PERCORSO GUIDATO
@@ -137,8 +139,8 @@ class FragranceAdvisor:
                                 if len(w) >= 4 and w not in STOPWORDS_NOTES:
                                     self.catalog_notes.add(w)
 
-            except Exception as e:
-                print(f"[ADVISOR] Avviso: caricamento catalog.json fallito: {e}")
+            except Exception:
+                logger.exception("Catalog loading failed.")
 
     @property
     def resilient_client(self) -> ResilientGroqClient:
@@ -726,7 +728,7 @@ class FragranceAdvisor:
         sub_fams_str = ", ".join(sub_fams)
         clean_macro = re.sub(r"^[^\w\s]+", "", macro_label).strip()
 
-        print(f"[GUIDED SEARCH] Macro: '{macro_label}' ({sub_fams}) | Destinatario: '{gender}' | Occasione: '{occasion}' | Budget: '{budget_str}'")
+        logger.debug("Running guided fragrance search.")
 
         min_p = None
         max_p = None
@@ -866,7 +868,7 @@ class FragranceAdvisor:
             if not active_before or active_before.get("name") != mentioned_product.get("name"):
                 is_new_product_switch = True
             self.active_perfumes[session_id] = mentioned_product
-            print(f"[ENTITY MATCH] '{mentioned_product['name']}' (Nuovo switch: {is_new_product_switch})")
+            logger.debug("Matched a catalog product in the customer request.")
 
         # RAMO 1: Profumo citato per nome per la prima volta
         if is_new_product_switch and mentioned_product:
@@ -912,8 +914,7 @@ class FragranceAdvisor:
             intent = self._determine_intent(user_query, active)
             is_follow_up = (intent == "VALUTA" and active is not None)
 
-            print(f"\n[ROUTER DEBUG] Profumo attivo: '{active.get('name') if active else 'NESSUNO'}'")
-            print(f"[ROUTER DEBUG] Domanda: '{user_query}' -> Decisione: {'SEGUI PRODOTTO (VALUTA)' if is_follow_up else 'CERCA NUOVO (CAMBIA)'}")
+            logger.debug("Conversation intent resolved as %s.", "follow_up" if is_follow_up else "new_search")
 
             # RAMO 2: Chiarimento o approfondimento sullo stesso profumo attivo
             if is_follow_up:
@@ -980,7 +981,7 @@ class FragranceAdvisor:
                         query=user_query,
                         limit=4
                     )
-                    print(f"[HYBRID BOOST] Trovate {len(keyword_matches)} fragranze con note o famiglie esatte: {target_notes}")
+                    logger.debug("Keyword matching returned %s catalog candidates.", len(keyword_matches))
                 elif is_seeking_similar_alternative and active:
                     active_fam = active.get("family", "")
                     if active_fam:
@@ -992,7 +993,7 @@ class FragranceAdvisor:
                             query=user_query,
                             limit=4
                         )
-                        print(f"[HYBRID BOOST ALTERNATIVA] Trovate {len(keyword_matches)} fragranze affini per famiglia '{active_fam}' entro il budget.")
+                        logger.debug("Alternative keyword matching returned %s catalog candidates.", len(keyword_matches))
 
                 if is_seeking_similar_alternative and active:
                     active_fam = active.get("family", "")
@@ -1004,10 +1005,10 @@ class FragranceAdvisor:
 
                     notes_str = ", ".join(key_notes_list[:5]) if key_notes_list else active_fam
                     chroma_query = f"Profumo {active_fam}. Note olfattive: {notes_str}. {active.get('document', '')[:120]}"
-                    print(f"[ALTERNATIVE SEARCH] Ricerca alternativa affine a '{active['name']}' ({active_fam}) | Note: {notes_str} | Prezzo: min={effective_min_p}, max={effective_max_p}")
+                    logger.debug("Running alternative fragrance search.")
                 else:
                     chroma_query = search_query_clean
-                    print(f"[SEARCH EXEC] Query ChromaDB: '{search_query_clean}' | Prezzo: min={effective_min_p}, max={effective_max_p}")
+                    logger.debug("Running catalog search with price constraints.")
 
                 results = self.search_engine.search(
                     query=chroma_query,
@@ -1155,11 +1156,11 @@ class FragranceAdvisor:
                     if selected_id in candidates_map:
                         selected_product = candidates_map[selected_id]
                         self.active_perfumes[session_id] = selected_product
-                        print(f"[ADVISOR] Profumo attivo registrato: {candidates_map[selected_id]['name']}")
+                        logger.debug("Selected a catalog candidate for the active session.")
                     elif selected_id == "NESSUNO":
                         selected_product = None
                         self.active_perfumes[session_id] = None
-                        print("[ADVISOR] Nessun profumo pertinente identificato dal modello (Scarto esplicito).")
+                        logger.debug("The model rejected all catalog candidates.")
 
                     reply = re.sub(r"\[?ID:\s*(PRODOTTO_\d+|NESSUNO)\]?\s*|\[(NESSUNO)\]\s*", "", reply, flags=re.IGNORECASE).strip()
 
@@ -1171,7 +1172,7 @@ class FragranceAdvisor:
                         )
                 elif is_emergency:
                     selected_product = None
-                    print("[ADVISOR] Risposta di emergenza LLM: nessun prodotto assegnato.")
+                    logger.warning("LLM returned its graceful fallback response.")
                 else:
                     named_candidate = None
                     for pid, cand in candidates_map.items():
@@ -1183,7 +1184,7 @@ class FragranceAdvisor:
                     if named_candidate:
                         selected_product = named_candidate
                         self.active_perfumes[session_id] = selected_product
-                        print(f"[ADVISOR NAME MATCH] Profumo attivo registrato per citazione diretta: {named_candidate['name']}")
+                        logger.debug("Matched a catalog candidate named in the LLM response.")
                     else:
                         rejection_pattern = re.search(
                             r"\b(?:non\s+(?:abbiamo|disponiamo|trattiamo|trovo|esiste)\s+(?:a\s+catalogo|in\s+boutique|alcun|quest|profum|fragranz)|"
@@ -1195,12 +1196,12 @@ class FragranceAdvisor:
                         if rejection_pattern:
                             selected_product = None
                             self.active_perfumes[session_id] = None
-                            print("[ADVISOR] Rifiuto esplicito identificato nel testo: nessun prodotto assegnato.")
+                            logger.debug("Detected a catalog rejection in the LLM response.")
                         else:
                             selected_product = candidates_map.get("PRODOTTO_1")
                             if selected_product:
                                 self.active_perfumes[session_id] = selected_product
-                                print(f"[ADVISOR FALLBACK] Profumo attivo registrato (primo candidato): {selected_product['name']}")
+                                logger.warning("LLM response lacked a valid candidate ID; using the first candidate.")
 
                 product_payload = []
                 if selected_product:

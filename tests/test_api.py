@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src.main import app
+from src.main import CHAT_RATE_LIMIT_PER_MINUTE, app, rate_limiter
 
 MOCK_PRODUCT = {
     "name": "Acqua di Sale",
@@ -29,6 +29,7 @@ MOCK_PRODUCT = {
 @pytest.fixture
 def api_client():
     """Client di test con supporto completo al context manager per il lifespan."""
+    rate_limiter.reset()
     with TestClient(app) as client:
         yield client
 
@@ -153,13 +154,48 @@ def test_chat_endpoint_missing_required_fields(api_client):
     """Invio di un payload privo del campo 'message'."""
     response = api_client.post("/chat", json={"session_id": "only_session"})
     assert response.status_code == 422
-    assert "detail" in response.json()
+    assert response.json()["error"]["code"] == "validation_error"
 
 
 def test_reset_endpoint_missing_session_id(api_client):
     """Invio di un body vuoto all'endpoint /reset."""
     response = api_client.post("/reset", json={})
     assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
+def test_chat_endpoint_rejects_blank_or_unsafe_inputs(api_client):
+    blank_message = api_client.post("/chat", json={"message": "   "})
+    invalid_session = api_client.post(
+        "/chat",
+        json={"message": "Consigliami un profumo", "session_id": "session id con spazi"},
+    )
+
+    assert blank_message.status_code == 422
+    assert invalid_session.status_code == 422
+    assert blank_message.json()["error"]["code"] == "validation_error"
+
+
+def test_chat_endpoint_rate_limit(api_client):
+    mock_advisor = MagicMock()
+    mock_advisor.advise.return_value = {
+        "reply": "Risposta di test.",
+        "options": [],
+        "products": [],
+        "step": None,
+        "mode": "free",
+    }
+
+    with patch("src.main.advisor", mock_advisor):
+        for _ in range(CHAT_RATE_LIMIT_PER_MINUTE):
+            response = api_client.post("/chat", json={"message": "Test rate limit"})
+            assert response.status_code == 200
+
+        blocked = api_client.post("/chat", json={"message": "Test rate limit"})
+
+    assert blocked.status_code == 429
+    assert blocked.json()["error"]["code"] == "rate_limit_exceeded"
+    assert int(blocked.headers["retry-after"]) >= 1
 
 
 # ==============================================================================

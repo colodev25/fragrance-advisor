@@ -3,44 +3,87 @@ main.py - FastAPI Server per il Consulente Olfattivo Etualy
 Focalizzato unicamente su chat, reset di sessione e health-check.
 """
 
+import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, field_validator
+
+from src.rate_limit import InMemoryRateLimiter
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DIR = BASE_DIR / "chroma_db"
 
+logger = logging.getLogger("fragrance_advisor.api")
+
+SESSION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+MAX_MESSAGE_LENGTH = 2_000
+MAX_PRICE = 10_000.0
+
+
+def _read_positive_int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, default)))
+    except ValueError:
+        logger.warning("Invalid %s value; using %s.", name, default)
+        return default
+
+
+def _read_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+RATE_LIMIT_ENABLED = _read_bool("RATE_LIMIT_ENABLED", True)
+RATE_LIMIT_TRUST_PROXY_HEADERS = _read_bool("RATE_LIMIT_TRUST_PROXY_HEADERS")
+CHAT_RATE_LIMIT_PER_MINUTE = _read_positive_int("CHAT_RATE_LIMIT_PER_MINUTE", 30)
+RESET_RATE_LIMIT_PER_MINUTE = _read_positive_int("RESET_RATE_LIMIT_PER_MINUTE", 10)
+rate_limiter = InMemoryRateLimiter()
+
 advisor = None
+startup_error: Optional[str] = None
+
+
+class ApiError(Exception):
+    def __init__(self, status_code: int, code: str, message: str, headers: Optional[dict[str, str]] = None):
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+        self.headers = headers or {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Verifica e protegge l'integrità dell'indice vettoriale all'avvio del server."""
-    global advisor
-    print("[*] Avvio Consulente Olfattivo FastAPI...")
+    global advisor, startup_error
+    advisor = None
+    startup_error = None
+    logger.info("Starting Etualy olfactive advisor API.")
 
-    # Se ChromaDB non è presente sul filesystem del container, avvia il reindex automatico
-    if not CHROMA_DIR.exists() or not any(CHROMA_DIR.iterdir()):
-        print("[!] Cartella ChromaDB non trovata o vuota. Avvio generazione indice vettoriale...")
-        try:
+    try:
+        if not CHROMA_DIR.exists() or not any(CHROMA_DIR.iterdir()):
+            logger.info("ChromaDB directory is missing or empty; rebuilding the local index.")
             from src.reindex import main as build_index
             build_index()
-            print("[+] Indice ChromaDB auto-generato con successo al boot.")
-        except Exception as e:
-            print(f"[CRITICAL] Impossibile costruire l'indice vettoriale: {e}")
-
-    # Inizializza l'istanza dell'advisor con l'indice garantito
-    from src.advisor import FragranceAdvisor
-    advisor = FragranceAdvisor()
-    print("[+] FragranceAdvisor caricato e pronto a ricevere richieste.")
+        from src.advisor import FragranceAdvisor
+        advisor = FragranceAdvisor()
+        logger.info("FragranceAdvisor is ready.")
+    except Exception:
+        startup_error = "initialization_failed"
+        logger.exception("FragranceAdvisor could not be initialized.")
 
     yield
-    print("[*] Arresto Consulente Olfattivo.")
+    advisor = None
+    logger.info("Stopping Etualy olfactive advisor API.")
 
 
 app = FastAPI(title="Consulente Olfattivo AI - Etualy", lifespan=lifespan)
@@ -60,41 +103,138 @@ app.add_middleware(
 
 
 class ChatRequest(BaseModel):
-    message: str
-    session_id: Optional[str] = "default"
-    max_price: Optional[float] = None
-    step_override: Optional[int] = None
+    message: str = Field(min_length=1, max_length=MAX_MESSAGE_LENGTH)
+    session_id: Optional[str] = Field(default="default", max_length=128)
+    max_price: Optional[float] = Field(default=None, ge=0, le=MAX_PRICE)
+    step_override: Optional[int] = Field(default=None, ge=1, le=4)
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Il messaggio non può essere vuoto.")
+        return value
+
+    @field_validator("session_id")
+    @classmethod
+    def validate_session_id(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if not SESSION_ID_PATTERN.fullmatch(value):
+            raise ValueError("session_id può contenere solo lettere, numeri, trattini e underscore.")
+        return value
 
 
 class ResetRequest(BaseModel):
-    session_id: str
+    session_id: str = Field(min_length=1, max_length=128)
+
+    @field_validator("session_id")
+    @classmethod
+    def validate_session_id(cls, value: str) -> str:
+        if not SESSION_ID_PATTERN.fullmatch(value):
+            raise ValueError("session_id può contenere solo lettere, numeri, trattini e underscore.")
+        return value
+
+
+@app.exception_handler(ApiError)
+async def api_error_handler(_: Request, exc: ApiError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": {"code": exc.code, "message": exc.message}},
+        headers=exc.headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(_: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "validation_error",
+                "message": "La richiesta non contiene dati validi.",
+            }
+        },
+    )
+
+
+def _client_identifier(request: Request) -> str:
+    if RATE_LIMIT_TRUST_PROXY_HEADERS:
+        forwarded_for = request.headers.get("x-forwarded-for", "")
+        if forwarded_for:
+            return forwarded_for.split(",", 1)[0].strip()
+
+    return request.client.host if request.client else "unknown"
+
+
+def _enforce_rate_limit(request: Request, route: str, limit: int) -> None:
+    if not RATE_LIMIT_ENABLED:
+        return
+
+    allowed, retry_after = rate_limiter.allow(f"{route}:{_client_identifier(request)}", limit)
+    if not allowed:
+        raise ApiError(
+            status_code=429,
+            code="rate_limit_exceeded",
+            message="Hai inviato troppe richieste. Riprova tra qualche istante.",
+            headers={"Retry-After": str(retry_after)},
+        )
 
 
 @app.get("/")
 def health_check():
-    return {"status": "ok", "service": "Etualy Olfactive Advisor API"}
+    return {
+        "status": "ok" if advisor is not None else "degraded",
+        "service": "Etualy Olfactive Advisor API",
+    }
+
+
+@app.get("/health")
+def readiness_check():
+    if advisor is None:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "code": startup_error or "service_starting",
+                    "message": "Il servizio non è ancora pronto.",
+                }
+            },
+        )
+    return {"status": "ready", "service": "Etualy Olfactive Advisor API"}
 
 
 @app.post("/chat")
 @app.post("/chat/")
-def chat_endpoint(req: ChatRequest):
+def chat_endpoint(req: ChatRequest, request: Request):
+    _enforce_rate_limit(request, "chat", CHAT_RATE_LIMIT_PER_MINUTE)
     if advisor is None:
-        return {"reply": "Il servizio è in fase di avvio, riprova tra qualche secondo.", "products": []}
+        raise ApiError(503, startup_error or "service_starting", "Il servizio è in fase di avvio. Riprova tra qualche secondo.")
 
-    return advisor.advise(
-        user_query=req.message,
-        session_id=req.session_id,
-        max_price=req.max_price,
-        step_override=req.step_override
-    )
+    try:
+        return advisor.advise(
+            user_query=req.message,
+            session_id=req.session_id,
+            max_price=req.max_price,
+            step_override=req.step_override,
+        )
+    except Exception:
+        logger.exception("Chat request failed.")
+        raise ApiError(503, "advisor_unavailable", "La consulenza non è disponibile in questo momento. Riprova tra qualche istante.")
 
 
 @app.post("/reset")
 @app.post("/reset/")
-def reset_endpoint(req: ResetRequest):
+def reset_endpoint(req: ResetRequest, request: Request):
     """Cancella lo stato della sessione su SQLite per ricominciare da zero."""
+    _enforce_rate_limit(request, "reset", RESET_RATE_LIMIT_PER_MINUTE)
     if advisor is not None:
-        advisor.reset_session(req.session_id)
+        try:
+            advisor.reset_session(req.session_id)
+        except Exception:
+            logger.exception("Session reset failed.")
+            raise ApiError(503, "session_reset_failed", "Non è stato possibile reimpostare la sessione. Riprova.")
     return {"status": "ok", "session_id": req.session_id, "message": "Sessione azzerata"}
 
 
