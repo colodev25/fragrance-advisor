@@ -16,6 +16,7 @@ Uso come modulo Python:
 """
 
 import html
+import copy
 import json
 import os
 import re
@@ -30,10 +31,10 @@ from openai import OpenAI
 
 try:
     from src.catalog_enrichment import (enrich_catalog_fields, EnrichmentBatch,
-        enrichment_signature, reusable_enrichment, cache_enrichment)
+        enrichment_signature, reusable_enrichment, cache_enrichment, enrichment_tags)
 except ModuleNotFoundError:
     from catalog_enrichment import (enrich_catalog_fields, EnrichmentBatch,
-        enrichment_signature, reusable_enrichment, cache_enrichment)
+        enrichment_signature, reusable_enrichment, cache_enrichment, enrichment_tags)
 
 try:
     from src.catalog_integrity import validate_catalog, atomic_write_json
@@ -478,7 +479,27 @@ def is_fragrance(prod: dict) -> bool:
     return True if not p_type else False
 
 
-def transform_product(prod: dict, store_url: Optional[str] = None, previous_product=None, enrichment_batch=None) -> dict:
+def build_semantic_text(product):
+    parts = [f"Profumo {product['name']} di {product.get('brand', '')}.", f"Tipologia: {product.get('ptype', '')}."]
+    if product.get("family"):
+        parts.append(f"Famiglia olfattiva: {product['family']}.")
+    elif product.get("family_inference"):
+        parts.append(f"Classificazione olfattiva suggerita (dedotta): {product['family_inference']['value']}.")
+    if product.get("tags"):
+        parts.append(f"Tag: {', '.join(product['tags'])}.")
+    for section, label in (("top", "testa"), ("heart", "cuore"), ("base", "fondo")):
+        notes = product.get("olfactory_pyramid", {}).get(section, [])
+        if notes:
+            parts.append(f"Note di {label}: {', '.join(notes)}.")
+    if product.get("unpositioned_notes"):
+        parts.append(f"Note citate senza posizione dichiarata: {', '.join(product['unpositioned_notes'])}.")
+    context = (product.get("usage_profile") or product.get("description", ""))[:300]
+    if context:
+        parts.append(f"Carattere, contesto d'uso e occasioni: {context}")
+    return " ".join(parts)
+
+
+def transform_product(prod: dict, store_url: Optional[str] = None, previous_product=None, enrichment_batch=None, allow_llm=True) -> dict:
     """Mappa il prodotto Shopify completando le informazioni mancanti tramite i Tag."""
     site = (store_url or os.getenv("SHOPIFY_STORE_URL", "")).rstrip("/")
     prod_id = f"sh_{prod['id']}"
@@ -526,19 +547,26 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
     family_inference = None
     enrichment_cache = None
     missing_sections = {section for section in pyramid if not pyramid[section]}
+    signature = enrichment_signature(title, brand, raw_clean_all, tags_list, pyramid, family, KNOWN_FAMILIES)
+    enrichment_input = {
+        "name": title, "brand": brand, "description": raw_clean_all[:6000], "tags": enrichment_tags(tags_list),
+        "pyramid": copy.deepcopy(pyramid), "family": family,
+        "provenance": copy.deepcopy(provenance), "signature": signature,
+    }
     if missing_sections or not family:
-        signature = enrichment_signature(title, brand, raw_clean_all, tags_list, pyramid, family, KNOWN_FAMILIES)
         recovery = reusable_enrichment(previous_product, signature, raw_clean_all, tags_list, KNOWN_FAMILIES)
         if recovery is not None:
             enrichment_cache = previous_product["enrichment_cache"]
             if enrichment_batch is not None:
                 enrichment_batch.cached += 1
-        else:
+        elif allow_llm:
             arguments = (_get_groq_client(), title, brand, raw_clean_all, tags_list, pyramid, family, KNOWN_FAMILIES)
             recovery = (enrich_catalog_fields(*arguments, enrichment_batch)
                         if enrichment_batch is not None else enrich_catalog_fields(*arguments))
             if recovery.get("successful"):
                 enrichment_cache = cache_enrichment(signature, recovery)
+        else:
+            recovery = {"notes": [], "family": None}
         existing_notes = {note.casefold() for notes in pyramid.values() for note in notes}
         for note in recovery["notes"]:
             name = clean_single_note(note["name"])
@@ -588,24 +616,7 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
         "image_url": image_url
     }
 
-    context_str = usage_profile[:300] if usage_profile else parsed["description"][:300]
-    parts = [f"Profumo {title} di {brand}.", f"Tipologia: {ptype}."]
-    if family:
-        parts.append(f"Famiglia olfattiva: {family}.")
-    elif family_inference:
-        parts.append(f"Classificazione olfattiva suggerita (dedotta): {family_inference['value']}.")
-    if tags_list:
-        parts.append(f"Tag: {', '.join(tags_list)}.")
-    for section, label in (("top", "testa"), ("heart", "cuore"), ("base", "fondo")):
-        if pyramid[section]:
-            parts.append(f"Note di {label}: {', '.join(pyramid[section])}.")
-    if unpositioned_notes:
-        parts.append(f"Note citate senza posizione dichiarata: {', '.join(unpositioned_notes)}.")
-    if context_str:
-        parts.append(f"Carattere, contesto d'uso e occasioni: {context_str}")
-    semantic_text = " ".join(parts)
-
-    return {
+    product = {
         "id": prod_id,
         "shopify_product_id": prod["id"],
         "name": title,
@@ -621,12 +632,14 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
         "family_inference": family_inference,
         "data_provenance": provenance,
         "enrichment_cache": enrichment_cache,
+        "enrichment_input": enrichment_input,
         "ptype": ptype,
         "usage_profile": usage_profile,
         "description": parsed["description"],
         "urls": urls,
-        "semantic_text": semantic_text
     }
+    product["semantic_text"] = build_semantic_text(product)
+    return product
 
 def run_ingest(store_url: Optional[str] = None) -> int:
     """
@@ -664,7 +677,7 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     inferred_families = 0
 
     for i, p in enumerate(kept_products, 1):
-        item = transform_product(p, store_url, previous_products.get(f"sh_{p['id']}"), enrichment_batch)
+        item = transform_product(p, store_url, previous_products.get(f"sh_{p['id']}"), enrichment_batch, False)
         if item.get("in_stock", True):
             catalog.append(item)
         else:
@@ -694,6 +707,11 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     atomic_write_json(OUT_OF_STOCK_FILE, out_of_stock)
     atomic_write_json(DROPPED_FILE, dropped_products)
     atomic_write_json(OUTPUT_FILE, catalog)
+    try:
+        from src.catalog_jobs import refresh_queue
+    except ModuleNotFoundError:
+        from catalog_jobs import refresh_queue
+    refresh_queue(OUTPUT_FILE.parent, catalog, out_of_stock)
 
     print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
     print(f"Profumi disponibili salvati in {OUTPUT_FILE}: {len(catalog)}")

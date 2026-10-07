@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: catalog-sync-feature-new-site
+  group: catalog-maintenance-feature-new-site
   cancel-in-progress: false
 
 jobs:
@@ -42,16 +42,15 @@ jobs:
       - name: Esecuzione Ingestion da Shopify
         env:
           SHOPIFY_STORE_URL: ${{ secrets.SHOPIFY_STORE_URL }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           python src/ingest.py
 
       - name: Commit su GitHub se ci sono variazioni
         run: |
-          if [ -n "$(git status --porcelain data/catalog.json data/out_of_stock.json)" ]; then
+          if [ -n "$(git status --porcelain data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json)" ]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git add data/catalog.json data/out_of_stock.json
+            git add data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json
             git commit -m "chore(catalog): sincronizzazione automatica catalogo [skip ci]"
             git push origin feature/new-site
           else

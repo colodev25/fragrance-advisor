@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     from llm_resilience import ResilientGroqClient
 
 logger = logging.getLogger("fragrance_advisor.catalog")
-ENRICHMENT_VERSION = 2
+ENRICHMENT_VERSION = 3
 STAGE_CUES = {
     "top": r"\b(?:testa|apertura|apre|aprono|top)\b",
     "heart": r"\b(?:cuore|heart|middle)\b",
@@ -23,6 +23,12 @@ STAGE_CUES = {
 
 def normalized(text):
     return " ".join(text.casefold().split())
+
+
+def enrichment_tags(tags):
+    """Commercial/size tags must not invalidate olfactory extraction."""
+    return sorted({tag.strip() for tag in tags if isinstance(tag, str) and tag.strip()
+                   and not re.search(r"\d\s*(?:ml|cl|oz|€|eur|%)|\b(?:sconto|sconti|sale|promo|sold.?out|out.?of.?stock)\b", tag, re.I)})[:100]
 
 
 def supported_evidence(evidence, description, tags):
@@ -84,7 +90,7 @@ def enrichment_signature(name, brand, description, tags, pyramid, family, famili
     model, tokens, _ = enrichment_settings()
     payload = {"version": ENRICHMENT_VERSION, "model": model, "tokens": tokens,
                "name": name, "brand": brand, "description": description[:6000],
-               "tags": tags[:100], "pyramid": pyramid, "family": family, "families": families}
+               "tags": enrichment_tags(tags), "pyramid": pyramid, "family": family, "families": families}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
 
 
@@ -96,7 +102,7 @@ def reusable_enrichment(previous, signature, description, tags, families):
     if not isinstance(cache, dict) or cache.get("signature") != signature:
         return None
     try:
-        return parse_enrichment(json.dumps(cache["response"]), description[:6000], tags[:100], families)
+        return parse_enrichment(json.dumps(cache["response"]), description[:6000], enrichment_tags(tags), families)
     except (ValueError, TypeError, KeyError):
         return None
 
@@ -155,7 +161,7 @@ def enrich_catalog_fields(client, name, brand, description, tags, pyramid, famil
         return {"notes": [], "family": None}
     # Evidence must come from exactly the same bounded context the model receives.
     description = description[:6000]
-    tags = tags[:100]
+    tags = enrichment_tags(tags)
     model, tokens, _ = enrichment_settings()
     if batch is not None and not batch.before_request():
         return {"notes": [], "family": None, "successful": False}
@@ -183,6 +189,8 @@ def enrich_catalog_fields(client, name, brand, description, tags, pyramid, famil
         reasoning_effort="low" if model in ("openai/gpt-oss-20b", "openai/gpt-oss-120b") else None,
         recover_truncated=False,
         failure_callback=batch.on_failure if batch else None,
+        request_callback=getattr(batch, "reserve_request", None) if batch else None,
+        usage_callback=getattr(batch, "record_usage", None) if batch else None,
         response_validator=validate, graceful_fallback_text="{}",
     )
     try:

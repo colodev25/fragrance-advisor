@@ -61,6 +61,8 @@ class ResilientGroqClient:
         recover_truncated: bool = True,
         max_retry_delay: float = 30.0,
         failure_callback: Optional[Callable[[str, Optional[float]], None]] = None,
+        request_callback: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        usage_callback: Optional[Callable[[Any], None]] = None,
     ) -> str:
         """
         Invia la richiesta al modello primario gratuito. Se incontra rate limit (429)
@@ -87,7 +89,11 @@ class ResilientGroqClient:
                     if reasoning_effort is not None:
                         kwargs["reasoning_effort"] = reasoning_effort
 
+                    if request_callback and not request_callback(kwargs):
+                        raise InvalidCompletion("budget_exhausted")
                     response = self.client.chat.completions.create(**kwargs)
+                    if usage_callback:
+                        usage_callback(response)
                     choice = response.choices[0]
                     content = (choice.message.content or "").strip()
 
@@ -101,7 +107,11 @@ class ResilientGroqClient:
                                 f"nella catena di pensiero. Riprovo con budget esteso a {extended_tokens}..."
                             )
                             kwargs["max_tokens"] = extended_tokens
+                            if request_callback and not request_callback(kwargs):
+                                raise InvalidCompletion("budget_exhausted")
                             retry_resp = self.client.chat.completions.create(**kwargs)
+                            if usage_callback:
+                                usage_callback(retry_resp)
                             retry_choice = retry_resp.choices[0]
                             retry_content = (retry_choice.message.content or "").strip()
                             if retry_content and getattr(retry_choice, "finish_reason", None) != "length":

@@ -24,7 +24,7 @@ python src/ingest.py
 
 The store URL is read from `SHOPIFY_STORE_URL`. The script loads a root `.env` file for local use; alternatively, set the environment variable in the process environment. The ingestion client paginates through the Shopify JSON products endpoint and filters product types and keywords to focus on fragrances.
 
-The transformation extracts or derives product name, brand, SKU, price, currency, availability, tags, fragrance family, product type, usage profile, description, olfactory pyramid, URLs and semantic text. HTML sections are used first; regex fills only empty pyramid sections, and recognized tags supply a missing family. Set `GROQ_API_KEY` to enable grounded LLM enrichment for remaining gaps, including partial pyramids.
+The transformation extracts or derives product name, brand, SKU, price, currency, availability, tags, fragrance family, product type, usage profile, description, olfactory pyramid, URLs and semantic text. HTML sections are used first; regex fills only empty pyramid sections, and recognized tags supply a missing family. `run_ingest` never calls Groq, even when an API key is present. Validated cached enrichment is preserved across price changes and transitions out of stock and back into stock. Remaining gaps enter a persistent queue for separate nightly processing.
 
 ## Grounded enrichment
 
@@ -34,11 +34,33 @@ An explicit family recovered from the source populates `family`. A model classif
 
 Missing notes never generate generic citrus/floral/woody defaults. Unpositioned supported notes are included in the semantic document and advisor note vocabulary. Existing catalogs remain compatible, but the new fields and clean search documents appear only after ingestion, reindexing and backend restart.
 
-Enrichment runs during ingestion, not customer requests. It uses a bounded description (6,000 characters), up to 100 tags and a 20-second client timeout. GPT-OSS models use `reasoning_effort: low`; the configurable `GROQ_CATALOG_MAX_TOKENS` defaults to 2,048 (allowed range 512–8,192). Catalog extraction never automatically doubles this budget after truncation. Validate settings on a small sample before increasing them.
+Enrichment runs separately through `src/catalog_jobs.py`. It uses a bounded description (6,000 characters), up to 100 relevant tags and a 20-second client timeout. GPT-OSS models use `reasoning_effort: low`; the configurable `GROQ_CATALOG_MAX_TOKENS` defaults to 2,048 (allowed range 512–8,192). Catalog extraction never automatically doubles this budget after truncation. The nightly workflow fixes the completion allowance at 2,048.
 
-Each product request can retry a transient error once. Numeric or HTTP-date `Retry-After` headers are respected, with a maximum inline wait of 30 seconds. Longer rate-limit delays suspend enrichment for this ingestion instead of retrying early. The batch spaces product requests using `GROQ_CATALOG_INTERVAL_SECONDS` (default 2, range 0–30); after an exhausted rate-limit retry it also applies the supplied cooldown, or 15 seconds when absent. Three consecutive failed product requests, authentication/configuration errors, or a long rate-limit delay suspend further LLM requests. Deterministic extraction and valid cached results continue. Logs distinguish rate limits, timeouts, connection/server errors, truncated/empty answers and invalid responses; provider bodies are not logged.
+Each product request can retry a transient error once. Numeric or HTTP-date `Retry-After` headers are respected, with a maximum inline wait of 30 seconds. Longer delays, three consecutive failed products or authentication/configuration errors suspend the batch. Nightly request pacing and persistent reservations apply before every API call, including retries. Failed products keep their original data and retry on later nights. Logs distinguish rate limits, timeouts, connection/server errors, truncated/empty answers and invalid responses; provider bodies are not logged.
 
-Successful supported results, including valid empty results, are stored in each product's `enrichment_cache`. Subsequent ingestion loads cache from both availability datasets and revalidates evidence before reuse. The signature includes name, brand, bounded description/tags, deterministic pyramid/family, model, token budget and extraction policy version. Price and stock changes do not invalidate extraction; source or policy changes do. Failed results are not cached. Existing records without this cache need one successful extraction before reuse is possible. The summary reports requests per product (retries excluded), cache reuse, failures and deferred products.
+Successful supported results, including valid empty results, are stored in each product's `enrichment_cache`. Subsequent ingestion loads cache from both availability datasets and revalidates evidence before reuse. The signature includes name, brand, bounded description/tags, deterministic pyramid/family, model, completion budget and extraction policy version. Price and stock changes do not invalidate extraction; source or policy changes do. Recognized discount, price, size and stock tags are excluded from the extraction signature; other tag changes can invalidate it. Failed results are not cached. A policy change can require a fresh extraction of previously enriched products.
+
+## Persistent queue and nightly budget
+
+Each synchronized product stores `enrichment_input`: source description, relevant tags and deterministic fields before LLM extraction. `data/catalog_enrichment_state.json` tracks queue status, retry dates and token reservations. Deleted products leave the queue; unavailable products are skipped while their cache remains available. Legacy products without `enrichment_input` wait for the first synchronization.
+
+```bash
+python -m src.catalog_jobs --max-products 30 --token-budget 40000 --max-minutes 20
+```
+
+Only incomplete available products whose retry date is due can call Groq. `GROQ_API_KEY` is required when work is available. Untouched products take priority over failures, which rotate through the queue and retry after 1, 2, 4 and then 7 days, or a longer provider cooldown. Valid empty results finish processing until source or policy changes. Successful products are saved individually.
+
+The limits are ceilings, not a promise to complete 30 products:
+
+- At most 30 product attempts and 20 minutes per run.
+- At most 40,000 conservatively reserved tokens in a rolling 24-hour window, retained across manual reruns.
+- Pacing targets 4,000 reserved tokens per minute and checks an 8,000-token rolling minute allowance.
+- Reservations use a conservative UTF-8 byte estimate of the prompt plus the completion allowance, including reasoning. Failed calls and retries retain their reservations; reported actual usage is recorded separately.
+- Inputs whose conservative estimate exceeds 8,000 tokens are marked `needs_review` without calling the provider.
+
+The initial backlog drains over successive nights; routine price and stock updates require no LLM work. The ledger covers catalog jobs only: customer conversations or other applications on the same account can still cause Groq rate limits. Those limits defer enrichment without blocking Shopify synchronization or the existing catalog.
+
+Local checkpoint writes are atomic. GitHub publishes progress after processing, including ordinary failures. A forcibly terminated runner or a failed Git push can lose unpublished checkpoints; inspect failed runs before manually repeating them. Do not delete the state file to reset the budget or run local synchronization and enrichment concurrently against the same data directory.
 
 ## Small preview
 
@@ -47,7 +69,7 @@ python -m src.preview_catalog_enrichment --limit 3
 python -m src.preview_catalog_enrichment --limit 3 --live
 ```
 
-The first command only lists incomplete products from the existing local catalog. `--live` enables real Groq calls and prints supported results for up to ten products. Neither command downloads Shopify data, writes datasets or changes the active index. This is a preview of supplied catalog descriptions/tags, not a full ingestion or a quality guarantee for the entire catalog. After evaluating it, run ingestion, reindexing and restart as usual.
+The first command only lists incomplete products from the existing local catalog. `--live` enables real Groq calls and prints supported results for up to ten products. Neither command downloads Shopify data, writes datasets or changes the active index. Preview calls do not use the nightly ledger and consume the same provider quota. After evaluating it, run synchronization, optional nightly enrichment, reindexing and restart.
 
 ## Output datasets
 
@@ -55,6 +77,7 @@ The first command only lists incomplete products from the existing local catalog
 | ------------------------ | --------------------------------------------------------------------------------------------- |
 | `data/catalog.json`      | Products considered available and eligible for recommendations.                               |
 | `data/out_of_stock.json` | Eligible fragrance products that are currently unavailable.                                   |
+| `data/catalog_enrichment_state.json` | Persistent queue, retry dates and token reservations. |
 | `data/scartati.json`     | Products excluded from the searchable catalog during processing. This file is ignored by Git. |
 
 The catalog is the source of truth for runtime search. Product identifiers are derived from Shopify IDs, and product records contain `semantic_text` for indexing.
@@ -67,7 +90,7 @@ After ingestion, rebuild the persistent ChromaDB collection:
 python src/reindex.py
 ```
 
-Run the two stages in sequence for a complete local refresh:
+Run synchronization and indexing in sequence for a local refresh. Optionally run `python -m src.catalog_jobs` between them to enrich due products; commercial updates do not depend on enrichment:
 
 ```bash
 python src/ingest.py
@@ -78,4 +101,11 @@ The reindexer validates `data/catalog.json`, builds a new collection and activat
 
 ## Automated synchronization
 
-`.github/workflows/catalog-sync.yml` runs every two days or through manual dispatch, with concurrent runs serialized. It uses `SHOPIFY_STORE_URL` and optional `GROQ_API_KEY` repository secrets and commits changes to `catalog.json` or `out_of_stock.json` on `feature/new-site`. `scartati.json` remains a local report excluded from Git. The workflow does not publish ChromaDB: Render builds the index during deployment. Shopify pagination errors or invalid/empty searchable catalogs fail the import; each JSON file is replaced atomically, with the primary catalog written last. The three reports are not a single transactional bundle.
+| Workflow | Schedule (UTC) | Secret |
+| --- | --- | --- |
+| `catalog-sync.yml` | `0 3 */2 * *`: 03:00 on alternating days of the month | `SHOPIFY_STORE_URL` |
+| `catalog-enrich.yml` | `35 3 * * *`: daily at 03:35 | `GROQ_API_KEY` |
+
+Both support manual dispatch and share a concurrency group to prevent overlapping writes. They check out and publish catalog/queue changes to `feature/new-site`. In Italy, these schedules correspond to 04:00/04:35 in winter and 05:00/05:35 in summer. Scheduled workflows must also exist on the repository's default branch; checking out another branch inside a job does not activate its schedule.
+
+`scartati.json` remains a local report excluded from Git. Neither workflow publishes ChromaDB: Render builds the index during deployment. A commit containing only queue progress may also trigger deployment, depending on Render's build filters; excluding `data/catalog_enrichment_state.json` from deployment triggers can avoid unnecessary rebuilds. Shopify pagination errors or invalid/empty searchable catalogs fail the import; files are replaced atomically, with the primary catalog written after the other reports and before the queue. These writes are not a single transaction: rerunning synchronization or the nightly job reconciles the queue from the datasets.

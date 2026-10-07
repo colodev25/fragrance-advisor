@@ -34,7 +34,7 @@ Browser interface (index.html)
 
 ### Catalog ingestion
 
-`src/ingest.py` reads a Shopify store's public `/products.json` endpoint, cleans and transforms product fields, extracts fragrance data from product sections and tags, and writes the catalog plus availability and rejected-product datasets. When configured, Groq can help extract fragrance pyramid data if other extraction methods do not find it.
+`src/ingest.py` reads Shopify's public `/products.json`, normalizes commercial data and extracts fragrance fields deterministically, without LLM requests. Valid cached enrichment is preserved across price and availability changes. `src/catalog_jobs.py` maintains a persistent queue and processes incomplete available products separately, with token reservations, request pacing and deferred retries. `src/catalog_enrichment.py` validates source evidence and distinguishes explicit fragrance information from inferred classifications. See [catalog pipeline](DATA_PIPELINE.md).
 
 ### Session persistence
 
@@ -59,7 +59,7 @@ Browser → FastAPI → FragranceAdvisor → Search → ChromaDB
                            └── SessionStore → SQLite
 ```
 
-The GitHub Actions catalog workflow runs ingestion on a schedule or manual dispatch and pushes changes to `feature/new-site`. It does not rebuild ChromaDB. The CI test workflow separately builds an index from the checked-out catalog before running its selected tests.
+Separate GitHub Actions workflows synchronize Shopify and progressively enrich the catalog. They share a concurrency group, publish catalog/queue changes to `feature/new-site` and do not rebuild ChromaDB. Render builds the index during deployment. The CI workflow independently builds an index before its selected tests.
 
 ## Repository map
 
@@ -70,6 +70,8 @@ The GitHub Actions catalog workflow runs ingestion on a schedule or manual dispa
 | `src/search.py`         | Runtime semantic retrieval and filtering         |
 | `src/reindex.py`        | ChromaDB index generation                        |
 | `src/ingest.py`         | Shopify product ingestion and normalization      |
+| `src/catalog_jobs.py`   | Persistent enrichment queue and nightly budgets  |
+| `src/catalog_enrichment.py` | Source evidence validation and extraction cache |
 | `src/session_store.py`  | SQLite session persistence                       |
 | `src/llm_resilience.py` | LLM retry and model fallback                     |
 | `data/`                 | Product JSON datasets and local session database |

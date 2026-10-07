@@ -2,7 +2,7 @@
 
 ## Update lifecycle
 
-1. `python src/ingest.py` downloads the complete Shopify catalog and validates available fragrances before replacing `data/catalog.json`.
+1. `python src/ingest.py` downloads the complete Shopify catalog without LLM calls, preserves valid cached enrichment and refreshes its queue. Optionally run `python -m src.catalog_jobs` to process due enrichment before indexing; commercial updates do not depend on this step. See [catalog pipeline](DATA_PIPELINE.md).
 2. `python src/reindex.py` validates the source, creates a unique collection, checks product IDs/count and executes a local search probe.
 3. The builder writes the catalog snapshot and manifest under `chroma_db/generations/`, then atomically replaces `chroma_db/active.json`.
 4. Restart the backend to load the selected generation. Running processes keep their previously loaded catalog and collection.
