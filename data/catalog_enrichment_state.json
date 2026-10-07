@@ -413,8 +413,9 @@
     },
     "sh_10355251511630": {
       "signature": "00685332dd31847afd31ff4e0f74902588c2ccf544f7a3791d1513cc4a9df102",
-      "status": "pending",
-      "attempts": 0
+      "status": "no_information",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-07T17:22:40.179747+00:00"
     },
     "sh_10178695659854": {
       "signature": "2ad4cdf35dd1083513505e03d4d22bab78270c6f0de6f5a1b572e828580eab12",
@@ -423,8 +424,9 @@
     },
     "sh_10178532737358": {
       "signature": "0256a223e2aa2b6b12db86e88b5e62455c0312496ec83e964cf901a40e42cec0",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-07T17:21:23.962107+00:00"
     },
     "sh_5847545249952": {
       "signature": "196e8d9ece77c87faef9b60caae029b692871f1d8200df95644e207d9a0ecf56",
@@ -453,28 +455,33 @@
     },
     "sh_10136533696846": {
       "signature": "aa5313ba555721da5779daa192b8c7835aa9091dfa0bbac26e6b49be21470fad",
-      "status": "pending",
-      "attempts": 0
+      "status": "no_information",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-07T17:20:22.751633+00:00"
     },
     "sh_10128276652366": {
       "signature": "4aea8eef1cf6415d9aae13a9dca4b28d0e7aabd04edd8e0303fd4a3d7f9645f3",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-07T17:19:01.974682+00:00"
     },
     "sh_10128252830030": {
       "signature": "a726c4e0850d81cce51bfb8c1706e1fc1bf8d4aea4afb837706fc0c2bedeb59d",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-07T17:17:37.381281+00:00"
     },
     "sh_10128191881550": {
       "signature": "a8f1773943bd6db5f8cdf9c5d57fbda4822a52bb7b06aad94abdfc8ade495672",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-07T17:16:14.801621+00:00"
     },
     "sh_10128178807118": {
       "signature": "a22e858e8cdd605316d1896094aa2a99fc2db750e46927d81ff0f7dd71132135",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-07T17:14:55.222077+00:00"
     },
     "sh_10128168911182": {
       "signature": "f00a828d88980bb81085e9cfd57cc9c9f26f7756ce075ae05c27a7ab328d2960",
@@ -4607,5 +4614,41 @@
       "attempts": 0
     }
   },
-  "reservations": []
+  "reservations": [
+    {
+      "at": "2026-10-07T17:14:54.566101+00:00",
+      "tokens": 5298,
+      "actual_tokens": 1310
+    },
+    {
+      "at": "2026-10-07T17:16:14.036613+00:00",
+      "tokens": 5508,
+      "actual_tokens": 1469
+    },
+    {
+      "at": "2026-10-07T17:17:36.657223+00:00",
+      "tokens": 5651,
+      "actual_tokens": 1477
+    },
+    {
+      "at": "2026-10-07T17:19:01.422897+00:00",
+      "tokens": 5401,
+      "actual_tokens": 1139
+    },
+    {
+      "at": "2026-10-07T17:20:22.438490+00:00",
+      "tokens": 3871,
+      "actual_tokens": 556
+    },
+    {
+      "at": "2026-10-07T17:21:22.438952+00:00",
+      "tokens": 5162,
+      "actual_tokens": 1348
+    },
+    {
+      "at": "2026-10-07T17:22:39.869553+00:00",
+      "tokens": 5474,
+      "actual_tokens": 966
+    }
+  ]
 }

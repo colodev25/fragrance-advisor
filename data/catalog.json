@@ -9307,7 +9307,14 @@
       },
       "llm_notes": []
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "00685332dd31847afd31ff4e0f74902588c2ccf544f7a3791d1513cc4a9df102",
+      "version": 3,
+      "response": {
+        "notes": [],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "RISVELIUM",
       "brand": "Orto Parisi",
@@ -9517,7 +9524,11 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Tiaré",
+      "Ylang-Ylang",
+      "Legni Preziosi"
+    ],
     "family": "Fruttata, Verde",
     "family_inference": null,
     "data_provenance": {
@@ -9531,9 +9542,71 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Tiaré",
+          "position": null,
+          "evidence": "dolcezza avvolgente del tiaré",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ylang-Ylang",
+          "position": null,
+          "evidence": "dolcezza avvolgente del tiaré e dello ylang-ylang",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Legni Preziosi",
+          "position": null,
+          "evidence": "Note : Legni preziosi",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "0256a223e2aa2b6b12db86e88b5e62455c0312496ec83e964cf901a40e42cec0",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Sale Marino",
+            "position": null,
+            "evidence": "un’esplosione di margarita al lime, sale marino"
+          },
+          {
+            "name": "Menta",
+            "position": null,
+            "evidence": "un’esplosione di margarita al lime, sale marino e menta fresca"
+          },
+          {
+            "name": "Tiaré",
+            "position": null,
+            "evidence": "dolcezza avvolgente del tiaré"
+          },
+          {
+            "name": "Ylang-Ylang",
+            "position": null,
+            "evidence": "dolcezza avvolgente del tiaré e dello ylang-ylang"
+          },
+          {
+            "name": "Legni Preziosi",
+            "position": null,
+            "evidence": "Note : Legni preziosi"
+          }
+        ],
+        "family": {
+          "name": "Fruttata",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Fruttata, Verde"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "TULUM JUNGLESCAPE",
       "brand": "Simone Andreoli",
@@ -9582,7 +9655,7 @@
       "add_to_cart": "https://etualy.com/cart/51263724683598:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/simone-andreoli-tulum-junglescape-edp-100-ml_1.png?v=1741253410"
     },
-    "semantic_text": "Profumo TULUM JUNGLESCAPE di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Fruttata, Verde. Tag: 100 ml, Agrumata, da 101€ a 200€, Eau de Parfum, Floreale, Gourmand, Per lei, Per lui, Simone Andreoli, Verde. Note di testa: Lime, Sale Marino, Menta, Frutti Esotici. Carattere, contesto d'uso e occasioni: Tulum Junglescape è perfetto per chi ama le fragranze fresche, verdi e avvolgenti, che evocano la natura incontaminata e la libertà dei tropici. Ideale per chi cerca un profumo energizzante ma raffinato, che trasmetta benessere e armonia. Si adatta splendidamente alle stagioni calde, dalla primavera"
+    "semantic_text": "Profumo TULUM JUNGLESCAPE di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Fruttata, Verde. Tag: 100 ml, Agrumata, da 101€ a 200€, Eau de Parfum, Floreale, Gourmand, Per lei, Per lui, Simone Andreoli, Verde. Note di testa: Lime, Sale Marino, Menta, Frutti Esotici. Note citate senza posizione dichiarata: Tiaré, Ylang-Ylang, Legni Preziosi. Carattere, contesto d'uso e occasioni: Tulum Junglescape è perfetto per chi ama le fragranze fresche, verdi e avvolgenti, che evocano la natura incontaminata e la libertà dei tropici. Ideale per chi cerca un profumo energizzante ma raffinato, che trasmetta benessere e armonia. Si adatta splendidamente alle stagioni calde, dalla primavera"
   },
   {
     "id": "sh_5847545249952",
@@ -10235,7 +10308,14 @@
       "family": null,
       "llm_notes": []
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "aa5313ba555721da5779daa192b8c7835aa9091dfa0bbac26e6b49be21470fad",
+      "version": 3,
+      "response": {
+        "notes": [],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "🎁 Not a perfume EDP (100% off)",
       "brand": "Juliette Has a Gun",
@@ -10292,7 +10372,13 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Ciliegia",
+      "Cognac",
+      "Vaniglia",
+      "Pepe Nero",
+      "Pepe Rosa"
+    ],
     "family": "Gourmand",
     "family_inference": null,
     "data_provenance": {
@@ -10301,9 +10387,87 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Ciliegia",
+          "position": null,
+          "evidence": "un tocco di ciliegia succosa e carnosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cognac",
+          "position": null,
+          "evidence": "avvolto in un sorso di Cognac",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vaniglia",
+          "position": null,
+          "evidence": "Baccello di Vaniglia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Pepe Nero",
+          "position": null,
+          "evidence": "Pepe Nero",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Pepe Rosa",
+          "position": null,
+          "evidence": "Pepe Rosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "4aea8eef1cf6415d9aae13a9dca4b28d0e7aabd04edd8e0303fd4a3d7f9645f3",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Ciliegia",
+            "position": null,
+            "evidence": "un tocco di ciliegia succosa e carnosa"
+          },
+          {
+            "name": "Cognac",
+            "position": null,
+            "evidence": "avvolto in un sorso di Cognac"
+          },
+          {
+            "name": "Vaniglia",
+            "position": null,
+            "evidence": "Baccello di Vaniglia"
+          },
+          {
+            "name": "Pepe Nero",
+            "position": null,
+            "evidence": "Pepe Nero"
+          },
+          {
+            "name": "Pepe Rosa",
+            "position": null,
+            "evidence": "Pepe Rosa"
+          }
+        ],
+        "family": {
+          "name": "Gourmand",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Gourmand"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Narcotic Delight EDP 90 ml",
       "brand": "Initio",
@@ -10342,7 +10506,7 @@
       "add_to_cart": "https://etualy.com/cart/51031001825614:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/initio-narcotic-delight-edp-90-ml.png?v=1738840773"
     },
-    "semantic_text": "Profumo Narcotic Delight EDP 90 ml di Initio. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Gourmand. Tag: 200€ e oltre, 90 ml, Eau de Parfum, Gourmand, Initio, Legnosa, Per lei, Per lui, Speziata, Vanigliata. Carattere, contesto d'uso e occasioni: Narcotic Delight di Initio è un profumo dolce e sensuale, perfetto per chi cerca una fragranza avvolgente, intensa e carnale. Le sue note di vaniglia, pepe rosa, cognac e sigaro lo rendono particolarmente adatto a chi ama i profumi ricchi e indulgenti, con una forte componente orientale e gourmand. "
+    "semantic_text": "Profumo Narcotic Delight EDP 90 ml di Initio. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Gourmand. Tag: 200€ e oltre, 90 ml, Eau de Parfum, Gourmand, Initio, Legnosa, Per lei, Per lui, Speziata, Vanigliata. Note citate senza posizione dichiarata: Ciliegia, Cognac, Vaniglia, Pepe Nero, Pepe Rosa. Carattere, contesto d'uso e occasioni: Narcotic Delight di Initio è un profumo dolce e sensuale, perfetto per chi cerca una fragranza avvolgente, intensa e carnale. Le sue note di vaniglia, pepe rosa, cognac e sigaro lo rendono particolarmente adatto a chi ama i profumi ricchi e indulgenti, con una forte componente orientale e gourmand. "
   },
   {
     "id": "sh_10128252830030",
@@ -10372,7 +10536,23 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Cade",
+      "Semi di Carota",
+      "Incenso",
+      "Osmanthus",
+      "Peonia",
+      "Geranio",
+      "Magnolia",
+      "Labdanum",
+      "Ambra",
+      "Vetiver",
+      "Patchouli",
+      "Cedro",
+      "Sandalo",
+      "Musk",
+      "Cuoio"
+    ],
     "family": "Legnosa",
     "family_inference": null,
     "data_provenance": {
@@ -10381,9 +10561,217 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Cade",
+          "position": null,
+          "evidence": "Cade creano un’apertura profonda",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Semi di Carota",
+          "position": null,
+          "evidence": "Semi di Carota",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Incenso",
+          "position": null,
+          "evidence": "Incenso",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Osmanthus",
+          "position": null,
+          "evidence": "un cuore di Osmanthus",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Peonia",
+          "position": null,
+          "evidence": "Peonia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Geranio",
+          "position": null,
+          "evidence": "Geranio",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Magnolia",
+          "position": null,
+          "evidence": "Magnolia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Labdanum",
+          "position": null,
+          "evidence": "sfumature di Labdanum",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambra",
+          "position": null,
+          "evidence": "Ambra",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vetiver",
+          "position": null,
+          "evidence": "Vetiver",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Patchouli",
+          "position": null,
+          "evidence": "Patchouli",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cedro",
+          "position": null,
+          "evidence": "Cedro",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Sandalo",
+          "position": null,
+          "evidence": "Sandalo",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Musk",
+          "position": null,
+          "evidence": "Musk",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cuoio",
+          "position": null,
+          "evidence": "Cuoio",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "a726c4e0850d81cce51bfb8c1706e1fc1bf8d4aea4afb837706fc0c2bedeb59d",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Cade",
+            "position": null,
+            "evidence": "Cade creano un’apertura profonda"
+          },
+          {
+            "name": "Semi di Carota",
+            "position": null,
+            "evidence": "Semi di Carota"
+          },
+          {
+            "name": "Incenso",
+            "position": null,
+            "evidence": "Incenso"
+          },
+          {
+            "name": "Osmanthus",
+            "position": null,
+            "evidence": "un cuore di Osmanthus"
+          },
+          {
+            "name": "Peonia",
+            "position": null,
+            "evidence": "Peonia"
+          },
+          {
+            "name": "Geranio",
+            "position": null,
+            "evidence": "Geranio"
+          },
+          {
+            "name": "Magnolia",
+            "position": null,
+            "evidence": "Magnolia"
+          },
+          {
+            "name": "Labdanum",
+            "position": null,
+            "evidence": "sfumature di Labdanum"
+          },
+          {
+            "name": "Ambra",
+            "position": null,
+            "evidence": "Ambra"
+          },
+          {
+            "name": "Vetiver",
+            "position": null,
+            "evidence": "Vetiver"
+          },
+          {
+            "name": "Patchouli",
+            "position": null,
+            "evidence": "Patchouli"
+          },
+          {
+            "name": "Cedro",
+            "position": null,
+            "evidence": "Cedro"
+          },
+          {
+            "name": "Sandalo",
+            "position": null,
+            "evidence": "Sandalo"
+          },
+          {
+            "name": "Musk",
+            "position": null,
+            "evidence": "Musk"
+          },
+          {
+            "name": "Cuoio",
+            "position": null,
+            "evidence": "Cuoio"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Legnosa"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Buio Extrait de Parfum 100 ml",
       "brand": "Meo Fusciuni",
@@ -10424,7 +10812,7 @@
       "add_to_cart": "https://etualy.com/cart/51030908567886:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/meo-fusciuni-buio-extrait-de-parfum-100-ml.png?v=1738840077"
     },
-    "semantic_text": "Profumo Buio Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 200€ e oltre, Ambrata, Aromatica, Cuoiata, Extrait de parfum, Legnosa, Meo Fusciuni, Muschiata, Per lei, Per lui, Speziata. Carattere, contesto d'uso e occasioni: Buio di Meo Fusciuni è un profumo intenso e misterioso, perfetto per chi cerca una fragranza profonda, avvolgente e un po' enigmatica. Le sue note legnose, speziate e orientali creano una sensazione di intensità e intimità, ideale per chi ama i profumi che raccontano storie. Perfetto per chi ama le "
+    "semantic_text": "Profumo Buio Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 200€ e oltre, Ambrata, Aromatica, Cuoiata, Extrait de parfum, Legnosa, Meo Fusciuni, Muschiata, Per lei, Per lui, Speziata. Note citate senza posizione dichiarata: Cade, Semi di Carota, Incenso, Osmanthus, Peonia, Geranio, Magnolia, Labdanum, Ambra, Vetiver, Patchouli, Cedro, Sandalo, Musk, Cuoio. Carattere, contesto d'uso e occasioni: Buio di Meo Fusciuni è un profumo intenso e misterioso, perfetto per chi cerca una fragranza profonda, avvolgente e un po' enigmatica. Le sue note legnose, speziate e orientali creano una sensazione di intensità e intimità, ideale per chi ama i profumi che raccontano storie. Perfetto per chi ama le "
   },
   {
     "id": "sh_10128191881550",
@@ -10453,7 +10841,34 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Immortelle",
+      "Camomilla",
+      "Artemisia",
+      "Lauro",
+      "Pino Canadese",
+      "Galbano",
+      "Alga Fucus",
+      "Mate",
+      "Hay",
+      "Cisto",
+      "Costus",
+      "Vetiver",
+      "Labdanum",
+      "Sandalo",
+      "Patchouli",
+      "Oakmoss",
+      "Tabacco",
+      "Cedro",
+      "Guaiaco",
+      "Musk",
+      "Betulla",
+      "Mirra",
+      "Olibano",
+      "Leather",
+      "Oud",
+      "Castoreum"
+    ],
     "family": "Legnosa",
     "family_inference": null,
     "data_provenance": {
@@ -10462,9 +10877,360 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Immortelle",
+          "position": null,
+          "evidence": "Immortelle",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Camomilla",
+          "position": null,
+          "evidence": "Camomilla",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Artemisia",
+          "position": null,
+          "evidence": "Artemisia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Lauro",
+          "position": null,
+          "evidence": "Lauro",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Pino Canadese",
+          "position": null,
+          "evidence": "Pino Canadese",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Galbano",
+          "position": null,
+          "evidence": "Galbano",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Alga Fucus",
+          "position": null,
+          "evidence": "Alga Fucus",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Mate",
+          "position": null,
+          "evidence": "Mate",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Hay",
+          "position": null,
+          "evidence": "Hay",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cisto",
+          "position": null,
+          "evidence": "Cisto",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Costus",
+          "position": null,
+          "evidence": "Costus",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vetiver",
+          "position": null,
+          "evidence": "Vetiver",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Labdanum",
+          "position": null,
+          "evidence": "Labdanum",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Sandalo",
+          "position": null,
+          "evidence": "Sandalo",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Patchouli",
+          "position": null,
+          "evidence": "Patchouli",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Oakmoss",
+          "position": null,
+          "evidence": "Oakmoss",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Tabacco",
+          "position": null,
+          "evidence": "Tabacco",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cedro",
+          "position": null,
+          "evidence": "Cedro",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Guaiaco",
+          "position": null,
+          "evidence": "Guaiaco",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Musk",
+          "position": null,
+          "evidence": "Musk",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Betulla",
+          "position": null,
+          "evidence": "Betulla",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Mirra",
+          "position": null,
+          "evidence": "Mirra",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Olibano",
+          "position": null,
+          "evidence": "Olibano",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Leather",
+          "position": null,
+          "evidence": "Leather",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Oud",
+          "position": null,
+          "evidence": "Oud",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Castoreum",
+          "position": null,
+          "evidence": "Castoreum",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "a8f1773943bd6db5f8cdf9c5d57fbda4822a52bb7b06aad94abdfc8ade495672",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Immortelle",
+            "position": null,
+            "evidence": "Immortelle"
+          },
+          {
+            "name": "Camomilla",
+            "position": null,
+            "evidence": "Camomilla"
+          },
+          {
+            "name": "Artemisia",
+            "position": null,
+            "evidence": "Artemisia"
+          },
+          {
+            "name": "Lauro",
+            "position": null,
+            "evidence": "Lauro"
+          },
+          {
+            "name": "Pino Canadese",
+            "position": null,
+            "evidence": "Pino Canadese"
+          },
+          {
+            "name": "Galbano",
+            "position": null,
+            "evidence": "Galbano"
+          },
+          {
+            "name": "Alga Fucus",
+            "position": null,
+            "evidence": "Alga Fucus"
+          },
+          {
+            "name": "Mate",
+            "position": null,
+            "evidence": "Mate"
+          },
+          {
+            "name": "Hay",
+            "position": null,
+            "evidence": "Hay"
+          },
+          {
+            "name": "Cisto",
+            "position": null,
+            "evidence": "Cisto"
+          },
+          {
+            "name": "Costus",
+            "position": null,
+            "evidence": "Costus"
+          },
+          {
+            "name": "Vetiver",
+            "position": null,
+            "evidence": "Vetiver"
+          },
+          {
+            "name": "Labdanum",
+            "position": null,
+            "evidence": "Labdanum"
+          },
+          {
+            "name": "Sandalo",
+            "position": null,
+            "evidence": "Sandalo"
+          },
+          {
+            "name": "Patchouli",
+            "position": null,
+            "evidence": "Patchouli"
+          },
+          {
+            "name": "Oakmoss",
+            "position": null,
+            "evidence": "Oakmoss"
+          },
+          {
+            "name": "Tabacco",
+            "position": null,
+            "evidence": "Tabacco"
+          },
+          {
+            "name": "Cedro",
+            "position": null,
+            "evidence": "Cedro"
+          },
+          {
+            "name": "Guaiaco",
+            "position": null,
+            "evidence": "Guaiaco"
+          },
+          {
+            "name": "Musk",
+            "position": null,
+            "evidence": "Musk"
+          },
+          {
+            "name": "Betulla",
+            "position": null,
+            "evidence": "Betulla"
+          },
+          {
+            "name": "Mirra",
+            "position": null,
+            "evidence": "Mirra"
+          },
+          {
+            "name": "Olibano",
+            "position": null,
+            "evidence": "Olibano"
+          },
+          {
+            "name": "Leather",
+            "position": null,
+            "evidence": "Leather"
+          },
+          {
+            "name": "Oud",
+            "position": null,
+            "evidence": "Oud"
+          },
+          {
+            "name": "Castoreum",
+            "position": null,
+            "evidence": "Castoreum"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "Last Season Extrait de Parfum: famiglia olfattiva Legnosa"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Last Season Extrait de Parfum 100 ml",
       "brand": "Meo Fusciuni",
@@ -10504,7 +11270,7 @@
       "add_to_cart": "https://etualy.com/cart/51030657696078:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/meo-fusciuni-last-season-extrait-de-parfum-100-ml.png?v=1738838973"
     },
-    "semantic_text": "Profumo Last Season Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 200€ e oltre, Aromatica, Cuoiata, Extrait de parfum, Legnosa, Meo Fusciuni, Per lei, Per lui, Speziata, Verde. Carattere, contesto d'uso e occasioni: Last Season di Meo Fusciuni è un profumo unisex che racconta il passaggio del tempo, con un mix di note fresche e avvolgenti. È adatto a chi cerca un profumo sofisticato e riflessivo, che evochi sensazioni di nostalgia e cambiamento. Le sue note di testa fresche e agrumate si fondono con un cuore di"
+    "semantic_text": "Profumo Last Season Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 200€ e oltre, Aromatica, Cuoiata, Extrait de parfum, Legnosa, Meo Fusciuni, Per lei, Per lui, Speziata, Verde. Note citate senza posizione dichiarata: Immortelle, Camomilla, Artemisia, Lauro, Pino Canadese, Galbano, Alga Fucus, Mate, Hay, Cisto, Costus, Vetiver, Labdanum, Sandalo, Patchouli, Oakmoss, Tabacco, Cedro, Guaiaco, Musk, Betulla, Mirra, Olibano, Leather, Oud, Castoreum. Carattere, contesto d'uso e occasioni: Last Season di Meo Fusciuni è un profumo unisex che racconta il passaggio del tempo, con un mix di note fresche e avvolgenti. È adatto a chi cerca un profumo sofisticato e riflessivo, che evochi sensazioni di nostalgia e cambiamento. Le sue note di testa fresche e agrumate si fondono con un cuore di"
   },
   {
     "id": "sh_10128178807118",
@@ -10531,7 +11297,21 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Cassis",
+      "Vetiver",
+      "Patchouli",
+      "Incenso",
+      "Iris",
+      "Mughetto",
+      "Gelsomino",
+      "Rosa",
+      "Ylang Ylang",
+      "Sandalo",
+      "Muschio di Quercia",
+      "Vaniglia",
+      "Muschio Black Violets"
+    ],
     "family": "Floreale",
     "family_inference": null,
     "data_provenance": {
@@ -10540,9 +11320,191 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Cassis",
+          "position": null,
+          "evidence": "L’apertura frizzante del Cassis",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vetiver",
+          "position": null,
+          "evidence": "Vetiver, Patchouli e Incenso radicano il profumo alla terra umida",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Patchouli",
+          "position": null,
+          "evidence": "Vetiver, Patchouli e Incenso radicano il profumo alla terra umida",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Incenso",
+          "position": null,
+          "evidence": "Vetiver, Patchouli e Incenso radicano il profumo alla terra umida",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Iris",
+          "position": null,
+          "evidence": "Il cuore di Violetta, Iris e fiori porta luce ed eleganza",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Mughetto",
+          "position": null,
+          "evidence": "Mughetto",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Gelsomino",
+          "position": null,
+          "evidence": "Gelsomino",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Rosa",
+          "position": null,
+          "evidence": "Rosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ylang Ylang",
+          "position": null,
+          "evidence": "Ylang Ylang",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Sandalo",
+          "position": null,
+          "evidence": "Sandalo",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio di Quercia",
+          "position": null,
+          "evidence": "Muschio di Quercia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vaniglia",
+          "position": null,
+          "evidence": "Vaniglia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio Black Violets",
+          "position": null,
+          "evidence": "Muschio Black Violets",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "a22e858e8cdd605316d1896094aa2a99fc2db750e46927d81ff0f7dd71132135",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Cassis",
+            "position": null,
+            "evidence": "L’apertura frizzante del Cassis"
+          },
+          {
+            "name": "Vetiver",
+            "position": null,
+            "evidence": "Vetiver, Patchouli e Incenso radicano il profumo alla terra umida"
+          },
+          {
+            "name": "Patchouli",
+            "position": null,
+            "evidence": "Vetiver, Patchouli e Incenso radicano il profumo alla terra umida"
+          },
+          {
+            "name": "Incenso",
+            "position": null,
+            "evidence": "Vetiver, Patchouli e Incenso radicano il profumo alla terra umida"
+          },
+          {
+            "name": "Iris",
+            "position": null,
+            "evidence": "Il cuore di Violetta, Iris e fiori porta luce ed eleganza"
+          },
+          {
+            "name": "Mughetto",
+            "position": null,
+            "evidence": "Mughetto"
+          },
+          {
+            "name": "Gelsomino",
+            "position": null,
+            "evidence": "Gelsomino"
+          },
+          {
+            "name": "Rosa",
+            "position": null,
+            "evidence": "Rosa"
+          },
+          {
+            "name": "Ylang Ylang",
+            "position": null,
+            "evidence": "Ylang Ylang"
+          },
+          {
+            "name": "Sandalo",
+            "position": null,
+            "evidence": "Sandalo"
+          },
+          {
+            "name": "Muschio di Quercia",
+            "position": null,
+            "evidence": "Muschio di Quercia"
+          },
+          {
+            "name": "Vaniglia",
+            "position": null,
+            "evidence": "Vaniglia"
+          },
+          {
+            "name": "Muschio Black Violets",
+            "position": null,
+            "evidence": "Muschio Black Violets"
+          }
+        ],
+        "family": {
+          "name": "Floreale",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Floreale"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Viole Nere Extrait de Parfum 100 ml",
       "brand": "Meo Fusciuni",
@@ -10580,7 +11542,7 @@
       "add_to_cart": "https://etualy.com/cart/51030589342030:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/meo-fusciuni-viole-nere-extrait-de-parfum-100-ml.png?v=1738835668"
     },
-    "semantic_text": "Profumo Viole Nere Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Floreale. Tag: 100 ml, 200€ e oltre, Extrait de parfum, Legnosa, Meo Fusciuni, Muschiata, Per lei, Per lui, Talcata. Carattere, contesto d'uso e occasioni: Viole Nere di Meo Fusciuni è un profumo profondo e malinconico, che intreccia la delicatezza della viola con la sensualità oscura del cuoio e delle spezie. È una fragranza intensa, evocativa e introspettiva, perfetta per chi ama profumi con un’anima misteriosa e avvolgente. Adatto a chi cerca una fr"
+    "semantic_text": "Profumo Viole Nere Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Floreale. Tag: 100 ml, 200€ e oltre, Extrait de parfum, Legnosa, Meo Fusciuni, Muschiata, Per lei, Per lui, Talcata. Note citate senza posizione dichiarata: Cassis, Vetiver, Patchouli, Incenso, Iris, Mughetto, Gelsomino, Rosa, Ylang Ylang, Sandalo, Muschio di Quercia, Vaniglia, Muschio Black Violets. Carattere, contesto d'uso e occasioni: Viole Nere di Meo Fusciuni è un profumo profondo e malinconico, che intreccia la delicatezza della viola con la sensualità oscura del cuoio e delle spezie. È una fragranza intensa, evocativa e introspettiva, perfetta per chi ama profumi con un’anima misteriosa e avvolgente. Adatto a chi cerca una fr"
   },
   {
     "id": "sh_10128168911182",
