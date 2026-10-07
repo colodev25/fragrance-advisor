@@ -152,7 +152,7 @@ class FragranceAdvisor:
 
         for prod in self.catalog_products:
             pyr = prod.get("olfactory_pyramid", {})
-            for note in pyr.get("top", []) + pyr.get("heart", []) + pyr.get("base", []):
+            for note in pyr.get("top", []) + pyr.get("heart", []) + pyr.get("base", []) + prod.get("unpositioned_notes", []):
                 n_clean = note.lower().strip()
                 if len(n_clean) >= 3 and n_clean not in STOPWORDS_NOTES:
                     self.catalog_notes.add(n_clean)

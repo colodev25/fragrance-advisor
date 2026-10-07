@@ -12,6 +12,7 @@ The project uses pytest. Tests cover the HTTP API, catalog parsing and advisor r
 | tests/test_llm_resilience.py | Retry delays, fallback model, concurrent calls, private reasoning protection, truncated answers, candidate selection validation, graceful failure and an optional live Groq check. |
 | tests/test_rate_limit.py | Per-client and per-route request limits. |
 | tests/test_catalog_integrity.py | Catalog validation, atomic writes, generation activation, failed builds, removed products and interrupted ingestion, without external services. |
+| tests/test_catalog_enrichment.py | Source evidence, partial merges, unpositioned notes, explicit versus inferred families, cache reuse/invalidation, quota cooldowns, failure suspension and removal of generic notes, without external calls. |
 | tests/test_scenarios_e2e.py | Full advisor scenarios for note and season requests, product follow-ups, cheaper alternatives, unsupported requests and guided recommendations. |
 
 ## Run tests
@@ -33,9 +34,9 @@ The API tests run the application lifespan, which initializes the real advisor; 
 
 .github/workflows/tests.yml uses Python 3.11, installs project dependencies and pytest, builds a local ChromaDB index, then runs:
 
-    pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py tests/test_catalog_integrity.py -v
+    pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py tests/test_catalog_integrity.py tests/test_catalog_enrichment.py tests/test_llm_resilience.py -m "not e2e" -v
 
-The workflow passes GROQ_API_KEY from a repository secret and sets SESSIONS_DB_PATH=:memory:. It does not run test_llm_resilience.py or test_scenarios_e2e.py.
+The workflow passes GROQ_API_KEY from a repository secret and sets SESSIONS_DB_PATH=:memory:. It includes mocked LLM resilience tests, excludes the live e2e model check and does not run test_scenarios_e2e.py.
 
 ## Adding coverage
 

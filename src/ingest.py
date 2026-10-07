@@ -29,6 +29,13 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 try:
+    from src.catalog_enrichment import (enrich_catalog_fields, EnrichmentBatch,
+        enrichment_signature, reusable_enrichment, cache_enrichment)
+except ModuleNotFoundError:
+    from catalog_enrichment import (enrich_catalog_fields, EnrichmentBatch,
+        enrichment_signature, reusable_enrichment, cache_enrichment)
+
+try:
     from src.catalog_integrity import validate_catalog, atomic_write_json
 except ModuleNotFoundError:
     from catalog_integrity import validate_catalog, atomic_write_json
@@ -105,7 +112,7 @@ def _get_groq_client() -> Optional[OpenAI]:
     """Istanzia il client OpenAI/Groq in modo dinamico."""
     key = os.getenv("GROQ_API_KEY")
     if key:
-        return OpenAI(base_url="https://api.groq.com/openai/v1", api_key=key)
+        return OpenAI(base_url="https://api.groq.com/openai/v1", api_key=key, timeout=20.0, max_retries=0)
     return None
 
 
@@ -404,38 +411,12 @@ def extract_pyramid_regex_fallback(text: str) -> dict:
 
 
 def extract_pyramid_llm_fallback(name: str, brand: str, text: str) -> dict:
-    """Fallback tramite Groq per schede puramente narrative."""
+    """Compatibility helper: only source-supported, positioned notes are returned."""
     empty = {"top": [], "heart": [], "base": []}
-    groq_client = _get_groq_client()
-    if not groq_client or not text or len(text.strip()) < 30:
-        return empty
-
-    prompt = (
-        f"Profumo: '{name}' di '{brand}'.\n"
-        f"Testo: \"\"\"{text[:1100]}\"\"\"\n\n"
-        "Estrai la piramide olfattiva in JSON escludendo formati, ml, verbi e parole di marketing.\n"
-        "Restituisci solo sostantivi di materie prime (1-3 parole):\n"
-        "{\"top\": [\"nota1\"], \"heart\": [\"nota2\"], \"base\": [\"nota3\"]}\n"
-        "Rispondi ESCLUSIVAMENTE con il JSON."
-    )
-
-    try:
-        res = groq_client.chat.completions.create(
-            model="openai/gpt-oss-20b",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.0,
-            max_tokens=220
-        )
-        m = re.search(r"\{.*\}", res.choices[0].message.content, re.DOTALL)
-        if m:
-            data = json.loads(m.group(0))
-            return {
-                "top": [n for x in data.get("top", []) for n in clean_note_items(str(x))],
-                "heart": [n for x in data.get("heart", []) for n in clean_note_items(str(x))],
-                "base": [n for x in data.get("base", []) for n in clean_note_items(str(x))]
-            }
-    except Exception:
-        pass
+    result = enrich_catalog_fields(_get_groq_client(), name, brand, text, [], empty, "", KNOWN_FAMILIES)
+    for note in result["notes"]:
+        if note["position"] and is_valid_note_item(note["name"]):
+            empty[note["position"]].append(clean_single_note(note["name"]))
     return empty
 
 
@@ -497,7 +478,7 @@ def is_fragrance(prod: dict) -> bool:
     return True if not p_type else False
 
 
-def transform_product(prod: dict, store_url: Optional[str] = None) -> dict:
+def transform_product(prod: dict, store_url: Optional[str] = None, previous_product=None, enrichment_batch=None) -> dict:
     """Mappa il prodotto Shopify completando le informazioni mancanti tramite i Tag."""
     site = (store_url or os.getenv("SHOPIFY_STORE_URL", "")).rstrip("/")
     prod_id = f"sh_{prod['id']}"
@@ -529,17 +510,57 @@ def transform_product(prod: dict, store_url: Optional[str] = None) -> dict:
         "base": parsed["base"]
     }
 
-    total_notes = len(pyramid["top"]) + len(pyramid["heart"]) + len(pyramid["base"])
-    if total_notes == 0:
-        raw_clean_all = clean_text(prod.get("body_html", ""))
-        pyramid = extract_pyramid_regex_fallback(raw_clean_all)
-        total_notes = len(pyramid["top"]) + len(pyramid["heart"]) + len(pyramid["base"])
-
-    if total_notes == 0:
-        desc_sample = parsed["description"] or parsed["usage_profile"] or clean_text(prod.get("body_html", ""))
-        pyramid = extract_pyramid_llm_fallback(title, brand, desc_sample)
-
     family = parsed["family"] or extract_family_from_tags(tags_list)
+    provenance = {"pyramid": {section: {"source": "html", "kind": "explicit"}
+                              for section in pyramid if pyramid[section]},
+                  "family": {"source": "html" if parsed["family"] else "tags", "kind": "explicit"} if family else None,
+                  "llm_notes": []}
+    raw_clean_all = clean_text(prod.get("body_html", ""))
+    if not all(pyramid.values()):
+        regex_pyramid = extract_pyramid_regex_fallback(raw_clean_all)
+        for section in pyramid:
+            if not pyramid[section] and regex_pyramid[section]:
+                pyramid[section] = regex_pyramid[section]
+                provenance["pyramid"][section] = {"source": "html_regex", "kind": "explicit"}
+    unpositioned_notes = []
+    family_inference = None
+    enrichment_cache = None
+    missing_sections = {section for section in pyramid if not pyramid[section]}
+    if missing_sections or not family:
+        signature = enrichment_signature(title, brand, raw_clean_all, tags_list, pyramid, family, KNOWN_FAMILIES)
+        recovery = reusable_enrichment(previous_product, signature, raw_clean_all, tags_list, KNOWN_FAMILIES)
+        if recovery is not None:
+            enrichment_cache = previous_product["enrichment_cache"]
+            if enrichment_batch is not None:
+                enrichment_batch.cached += 1
+        else:
+            arguments = (_get_groq_client(), title, brand, raw_clean_all, tags_list, pyramid, family, KNOWN_FAMILIES)
+            recovery = (enrich_catalog_fields(*arguments, enrichment_batch)
+                        if enrichment_batch is not None else enrich_catalog_fields(*arguments))
+            if recovery.get("successful"):
+                enrichment_cache = cache_enrichment(signature, recovery)
+        existing_notes = {note.casefold() for notes in pyramid.values() for note in notes}
+        for note in recovery["notes"]:
+            name = clean_single_note(note["name"])
+            if not is_valid_note_item(name) or name.casefold() in existing_notes:
+                continue
+            section = note["position"]
+            if section is None:
+                unpositioned_notes.append(name)
+            elif section in missing_sections:
+                pyramid[section].append(name)
+                provenance["pyramid"][section] = {"source": "llm", "kind": "extracted"}
+            else:
+                continue
+            existing_notes.add(name.casefold())
+            provenance["llm_notes"].append(dict(note, name=name, method="llm", kind="extracted"))
+        recovered_family = recovery["family"]
+        if not family and recovered_family:
+            if recovered_family["kind"] == "explicit":
+                family = recovered_family["value"]
+                provenance["family"] = dict(recovered_family, method="llm")
+            else:
+                family_inference = dict(recovered_family, method="llm")
 
     usage_profile = parsed["usage_profile"]
     if not usage_profile or len(usage_profile.strip()) < 10:
@@ -567,20 +588,22 @@ def transform_product(prod: dict, store_url: Optional[str] = None) -> dict:
         "image_url": image_url
     }
 
-    tags_str = ", ".join(tags_list) if tags_list else "Artistico"
-    top_str = ", ".join(pyramid["top"]) if pyramid["top"] else "fresche/agrumate"
-    heart_str = ", ".join(pyramid["heart"]) if pyramid["heart"] else "floreali/speziate"
-    base_str = ", ".join(pyramid["base"]) if pyramid["base"] else "legnose/ambrate"
-    family_str = family or "Profumeria Artistica"
     context_str = usage_profile[:300] if usage_profile else parsed["description"][:300]
-
-    semantic_text = (
-        f"Profumo {title} di {brand}. "
-        f"Tipologia: {ptype}. "
-        f"Famiglia olfattiva: {family_str}. Tag: {tags_str}. "
-        f"Note di testa: {top_str}. Note di cuore: {heart_str}. Note di fondo: {base_str}. "
-        f"Carattere, contesto d'uso e occasioni: {context_str}"
-    )
+    parts = [f"Profumo {title} di {brand}.", f"Tipologia: {ptype}."]
+    if family:
+        parts.append(f"Famiglia olfattiva: {family}.")
+    elif family_inference:
+        parts.append(f"Classificazione olfattiva suggerita (dedotta): {family_inference['value']}.")
+    if tags_list:
+        parts.append(f"Tag: {', '.join(tags_list)}.")
+    for section, label in (("top", "testa"), ("heart", "cuore"), ("base", "fondo")):
+        if pyramid[section]:
+            parts.append(f"Note di {label}: {', '.join(pyramid[section])}.")
+    if unpositioned_notes:
+        parts.append(f"Note citate senza posizione dichiarata: {', '.join(unpositioned_notes)}.")
+    if context_str:
+        parts.append(f"Carattere, contesto d'uso e occasioni: {context_str}")
+    semantic_text = " ".join(parts)
 
     return {
         "id": prod_id,
@@ -593,7 +616,11 @@ def transform_product(prod: dict, store_url: Optional[str] = None) -> dict:
         "in_stock": in_stock,
         "tags": tags_list,
         "olfactory_pyramid": pyramid,
+        "unpositioned_notes": unpositioned_notes,
         "family": family,
+        "family_inference": family_inference,
+        "data_provenance": provenance,
+        "enrichment_cache": enrichment_cache,
         "ptype": ptype,
         "usage_profile": usage_profile,
         "description": parsed["description"],
@@ -607,6 +634,16 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     Scarica i dati, genera data/catalog.json e restituisce il numero di profumi in-stock.
     """
     print("=== AVVIO PIPELINE DI INGESTIONE SHOPIFY ===")
+    # Both availability datasets retain cache for products whose stock changes.
+    previous_products = {}
+    for source in (OUTPUT_FILE, OUT_OF_STOCK_FILE):
+        try:
+            previous = json.loads(source.read_text(encoding="utf-8"))
+            if isinstance(previous, list):
+                previous_products.update({item["id"]: item for item in previous if isinstance(item, dict) and isinstance(item.get("id"), str)})
+        except (OSError, ValueError):
+            pass
+    enrichment_batch = EnrichmentBatch()
     raw_products = fetch_all_shopify_products(store_url)
     if not raw_products:
         raise ValueError("Nessun prodotto recuperato; catalogo precedente conservato.")
@@ -623,9 +660,11 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     families_found = 0
     ptypes_found = 0
     usage_found = 0
+    unpositioned_found = 0
+    inferred_families = 0
 
     for i, p in enumerate(kept_products, 1):
-        item = transform_product(p, store_url)
+        item = transform_product(p, store_url, previous_products.get(f"sh_{p['id']}"), enrichment_batch)
         if item.get("in_stock", True):
             catalog.append(item)
         else:
@@ -640,6 +679,10 @@ def run_ingest(store_url: Optional[str] = None) -> int:
             ptypes_found += 1
         if item["usage_profile"]:
             usage_found += 1
+        if item.get("unpositioned_notes"):
+            unpositioned_found += 1
+        if item.get("family_inference"):
+            inferred_families += 1
 
         if i % 50 == 0 or i == len(kept_products):
             print(f"    Elaborati {i}/{len(kept_products)} profumi...")
@@ -656,10 +699,14 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     print(f"Profumi disponibili salvati in {OUTPUT_FILE}: {len(catalog)}")
     print(f"Profumi esauriti salvati in {OUT_OF_STOCK_FILE}: {len(out_of_stock)}")
     print(f"  - Piramidi olfattive estratte:  {pyramids_found}/{len(kept_products)}")
-    print(f"  - Famiglie olfattive presenti:  {families_found}/{len(kept_products)} (da HTML o Tags)")
+    print(f"  - Famiglie olfattive esplicite: {families_found}/{len(kept_products)}")
+    print(f"  - Famiglie solo dedotte:       {inferred_families}/{len(kept_products)}")
+    print(f"  - Note senza posizione:       {unpositioned_found}/{len(kept_products)}")
     print(f"  - Tipologie (ptype) presenti:   {ptypes_found}/{len(kept_products)}")
     print(f"  - Profili d'uso presenti:       {usage_found}/{len(kept_products)} (da HTML o Tags)")
     print(f"Articoli scartati in {DROPPED_FILE}: {len(dropped_products)}")
+    print(f"Arricchimento: {enrichment_batch.requests} richieste prodotto, {enrichment_batch.cached} risultati riutilizzati, "
+          f"{enrichment_batch.failed} fallimenti, {enrichment_batch.skipped} prodotti rinviati.")
 
     print(f"\n[+] Catalogo salvato in {OUTPUT_FILE}: {len(catalog)} prodotti disponibili.")
     return len(catalog)

@@ -69,9 +69,17 @@ def validate_catalog(products):
             notes = pyramid.get(section, [])
             if not isinstance(notes, list) or any(not isinstance(note, str) or not note.strip() for note in notes):
                 raise ValueError(f"{identifier}: note {section} non valide.")
+        unpositioned = product.get("unpositioned_notes", [])
+        if not isinstance(unpositioned, list) or any(not isinstance(note, str) or not note.strip() for note in unpositioned):
+            raise ValueError(f"{identifier}: note senza posizione non valide.")
+        inference = product.get("family_inference")
+        if inference is not None and (not isinstance(inference, dict)
+                or not isinstance(inference.get("value"), str) or not inference["value"].strip()
+                or inference.get("kind") != "inferred"):
+            raise ValueError(f"{identifier}: classificazione dedotta non valida.")
         if not product.get("family"):
-            warnings.append(f"{identifier}: famiglia assente.")
-        if not any(pyramid.get(section) for section in ("top", "heart", "base")):
+            warnings.append(f"{identifier}: famiglia solo dedotta." if inference else f"{identifier}: famiglia assente.")
+        if not any(pyramid.get(section) for section in ("top", "heart", "base")) and not unpositioned:
             warnings.append(f"{identifier}: note assenti.")
     return warnings
 

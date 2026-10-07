@@ -128,6 +128,52 @@ def make_rate_limit_error(msg="Rate limit superato (TPM/RPM exceeded)"):
     return RateLimitError(message=msg, response=response, body=None)
 
 
+def test_no_retry_does_not_announce_a_sleep(monkeypatch, caplog):
+    client = MagicMock()
+    client.chat.completions.create.side_effect = make_rate_limit_error()
+    sleep = MagicMock()
+    monkeypatch.setattr("src.llm_resilience.time.sleep", sleep)
+    ResilientGroqClient(client, max_retries=0).create_completion([])
+    sleep.assert_not_called()
+    assert "GROQ RATE_LIMIT" in caplog.text
+    assert "attendo" not in caplog.text
+
+
+def test_retry_after_is_respected(monkeypatch):
+    client = MagicMock()
+    error = make_rate_limit_error()
+    error.response.headers["retry-after"] = "12"
+    success = MagicMock()
+    success.choices = [MagicMock(message=MagicMock(content="OK"), finish_reason="stop")]
+    client.chat.completions.create.side_effect = [error, success]
+    sleep = MagicMock()
+    monkeypatch.setattr("src.llm_resilience.time.sleep", sleep)
+    assert ResilientGroqClient(client, max_retries=1).create_completion([]) == "OK"
+    sleep.assert_called_once_with(12.0)
+
+
+def test_long_retry_after_defers_instead_of_retrying_early(monkeypatch):
+    client = MagicMock()
+    error = make_rate_limit_error()
+    error.response.headers["retry-after"] = "3600"
+    client.chat.completions.create.side_effect = error
+    observer, sleep = MagicMock(), MagicMock()
+    monkeypatch.setattr("src.llm_resilience.time.sleep", sleep)
+    ResilientGroqClient(client, max_retries=1).create_completion([], fallback_model=PRIMARY_FREE_MODEL, failure_callback=observer)
+    assert client.chat.completions.create.call_count == 1
+    observer.assert_called_once_with("rate_limit", 3600.0)
+    sleep.assert_not_called()
+
+
+def test_timeout_has_distinct_diagnostic(caplog):
+    client = MagicMock()
+    client.chat.completions.create.side_effect = APITimeoutError(request=MagicMock())
+    observer = MagicMock()
+    ResilientGroqClient(client, max_retries=0).create_completion([], fallback_model=PRIMARY_FREE_MODEL, failure_callback=observer)
+    assert "GROQ TIMEOUT" in caplog.text
+    observer.assert_called_once_with("timeout", None)
+
+
 # ==============================================================================
 # 1. BACKOFF TEMPORALE E AUTO-RIPRISTINO SUL MODELLO 120B
 # ==============================================================================

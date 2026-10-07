@@ -24,7 +24,30 @@ python src/ingest.py
 
 The store URL is read from `SHOPIFY_STORE_URL`. The script loads a root `.env` file for local use; alternatively, set the environment variable in the process environment. The ingestion client paginates through the Shopify JSON products endpoint and filters product types and keywords to focus on fragrances.
 
-The transformation extracts or derives product name, brand, SKU, price, currency, availability, tags, fragrance family, product type, usage profile, description, olfactory pyramid, URLs and semantic text. It cleans HTML and note descriptions; it can use Groq as a fallback for extracting the olfactory pyramid when the structured product content does not provide it. Set `GROQ_API_KEY` to enable this fallback.
+The transformation extracts or derives product name, brand, SKU, price, currency, availability, tags, fragrance family, product type, usage profile, description, olfactory pyramid, URLs and semantic text. HTML sections are used first; regex fills only empty pyramid sections, and recognized tags supply a missing family. Set `GROQ_API_KEY` to enable grounded LLM enrichment for remaining gaps, including partial pyramids.
+
+## Grounded enrichment
+
+`src/catalog_enrichment.py` sends description, tags and existing fields to the model configured by `GROQ_CATALOG_MODEL` (default `openai/gpt-oss-20b`). Every accepted note must occur in a quoted source excerpt. A pyramid position requires a matching explicit stage cue; ambiguous or unpositioned mentions go to `unpositioned_notes`. Existing sections and explicit family values are preserved. Source quotes establish traceability, not an absolute guarantee of semantic accuracy.
+
+An explicit family recovered from the source populates `family`. A model classification based on the described accords is stored separately in `family_inference`, with evidence and `kind: inferred`. The search document labels it as a suggested classification; deterministic family filters continue to use the explicit `family` field. `data_provenance` records HTML, tag, regex and LLM origins, including individual LLM note evidence.
+
+Missing notes never generate generic citrus/floral/woody defaults. Unpositioned supported notes are included in the semantic document and advisor note vocabulary. Existing catalogs remain compatible, but the new fields and clean search documents appear only after ingestion, reindexing and backend restart.
+
+Enrichment runs during ingestion, not customer requests. It uses a bounded description (6,000 characters), up to 100 tags and a 20-second client timeout. GPT-OSS models use `reasoning_effort: low`; the configurable `GROQ_CATALOG_MAX_TOKENS` defaults to 2,048 (allowed range 512–8,192). Catalog extraction never automatically doubles this budget after truncation. Validate settings on a small sample before increasing them.
+
+Each product request can retry a transient error once. Numeric or HTTP-date `Retry-After` headers are respected, with a maximum inline wait of 30 seconds. Longer rate-limit delays suspend enrichment for this ingestion instead of retrying early. The batch spaces product requests using `GROQ_CATALOG_INTERVAL_SECONDS` (default 2, range 0–30); after an exhausted rate-limit retry it also applies the supplied cooldown, or 15 seconds when absent. Three consecutive failed product requests, authentication/configuration errors, or a long rate-limit delay suspend further LLM requests. Deterministic extraction and valid cached results continue. Logs distinguish rate limits, timeouts, connection/server errors, truncated/empty answers and invalid responses; provider bodies are not logged.
+
+Successful supported results, including valid empty results, are stored in each product's `enrichment_cache`. Subsequent ingestion loads cache from both availability datasets and revalidates evidence before reuse. The signature includes name, brand, bounded description/tags, deterministic pyramid/family, model, token budget and extraction policy version. Price and stock changes do not invalidate extraction; source or policy changes do. Failed results are not cached. Existing records without this cache need one successful extraction before reuse is possible. The summary reports requests per product (retries excluded), cache reuse, failures and deferred products.
+
+## Small preview
+
+```bash
+python -m src.preview_catalog_enrichment --limit 3
+python -m src.preview_catalog_enrichment --limit 3 --live
+```
+
+The first command only lists incomplete products from the existing local catalog. `--live` enables real Groq calls and prints supported results for up to ten products. Neither command downloads Shopify data, writes datasets or changes the active index. This is a preview of supplied catalog descriptions/tags, not a full ingestion or a quality guarantee for the entire catalog. After evaluating it, run ingestion, reindexing and restart as usual.
 
 ## Output datasets
 
