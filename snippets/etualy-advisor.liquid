@@ -86,13 +86,13 @@
   }
 
   /* ===========================================================================
-     TEASER PROATTIVO SUL LAUNCHER
+     TEASER PROATTIVO SUL LAUNCHER (A SINISTRA DELLA BOLLA)
      =========================================================================== */
   .oa-teaser {
     position: fixed;
-    bottom: calc(clamp(20px, 3.2vh, 32px) + 64px);
-    right: clamp(20px, 2.5vw, 36px);
-    max-width: 290px;
+    bottom: 85px;
+    right: 86px;
+    max-width: 280px;
     background: var(--oa-white);
     border: 1px solid var(--oa-border);
     border-radius: var(--oa-radius-md);
@@ -106,7 +106,7 @@
     z-index: 2147483640;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(10px);
+    transform: translateX(10px);
     transition:
       opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
       transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -116,20 +116,21 @@
   .oa-teaser::after {
     content: "";
     position: absolute;
-    bottom: -6px;
-    right: 30px;
+    top: 50%;
+    right: -6px;
+    margin-top: -5px;
     width: 10px;
     height: 10px;
     background: var(--oa-white);
+    border-top: 1px solid var(--oa-border);
     border-right: 1px solid var(--oa-border);
-    border-bottom: 1px solid var(--oa-border);
     transform: rotate(45deg);
   }
 
   .oa-teaser.is-visible {
     opacity: 1;
     pointer-events: all;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 
   .oa-teaser-body {
@@ -184,23 +185,24 @@
   }
 
   /* ===========================================================================
-     LAUNCHER FLUTTUANTE (DESKTOP & TABLET)
+     LAUNCHER FLUTTUANTE CIRCOLARE (FAB 54x54px IMPILATO SOPRA WHATSAPP)
      =========================================================================== */
   .oa-launcher-btn {
     position: fixed;
-    bottom: clamp(20px, 3.2vh, 32px);
-    right: clamp(20px, 2.5vw, 36px);
-    height: 52px;
-    padding: 0 24px;
+    bottom: 86px;
+    right: 20px;
+    width: 54px;
+    height: 54px;
+    padding: 0;
     background: var(--oa-black);
     color: var(--oa-white);
     border: 1px solid #222222;
-    border-radius: var(--oa-radius-md);
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
     cursor: pointer;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
     transition:
       transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
       box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
@@ -211,27 +213,19 @@
 
   .oa-launcher-btn:hover {
     background: #222222;
-    transform: translateY(-2px);
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+    transform: scale(1.06);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
   }
 
   .oa-launcher-btn:active {
-    transform: translateY(0);
+    transform: scale(0.96);
   }
 
   .oa-launcher-icon {
-    width: 19px;
-    height: 19px;
+    width: 22px;
+    height: 22px;
     stroke: var(--oa-accent-gold);
     flex-shrink: 0;
-  }
-
-  .oa-launcher-text {
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    white-space: nowrap;
   }
 
   /* ===========================================================================
@@ -1264,28 +1258,31 @@
      =========================================================================== */
   @media (max-width: 600px) {
     .oa-teaser {
-      bottom: calc(max(16px, env(safe-area-inset-bottom, 16px)) + 58px);
-      right: max(16px, env(safe-area-inset-right, 16px));
-      max-width: calc(100vw - 32px);
-      padding: 11px 13px;
+      bottom: calc(max(16px, env(safe-area-inset-bottom, 16px)) + 64px);
+      right: calc(max(16px, env(safe-area-inset-right, 16px)) + 62px);
+      max-width: calc(100vw - 100px);
+      padding: 10px 12px;
     }
 
     .oa-teaser::after {
-      right: 32px;
+      top: 50%;
+      right: -5px;
+      margin-top: -5px;
     }
 
     .oa-launcher-btn {
-      bottom: max(16px, env(safe-area-inset-bottom, 16px));
+      bottom: calc(max(16px, env(safe-area-inset-bottom, 16px)) + 64px);
       right: max(16px, env(safe-area-inset-right, 16px));
-      height: 48px;
-      padding: 0 18px;
-      border-radius: 24px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      padding: 0;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     }
 
-    .oa-launcher-text {
-      font-size: 11px;
-      letter-spacing: 1.2px;
+    .oa-launcher-icon {
+      width: 21px;
+      height: 21px;
     }
 
     .oa-widget-container {
@@ -1452,13 +1449,18 @@
   </button>
 </div>
 
-<button class="oa-launcher-btn" id="oaLauncher" aria-label="Apri Maître Parfumeur">
+<!-- LAUNCHER FLUTTUANTE CIRCOLARE (FAB 54x54) -->
+<button
+  class="oa-launcher-btn"
+  id="oaLauncher"
+  aria-label="Apri Maître Parfumeur"
+  title="Etualy • Maître Parfumeur"
+>
   <svg class="oa-launcher-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M6 3h12l1 7H5l1-7z"></path>
     <path d="M9 3V1h6v2"></path>
     <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
   </svg>
-  <span class="oa-launcher-text">Etualy • Maître Parfumeur</span>
 </button>
 
 <div class="oa-widget-container" id="oaWidget">
@@ -1901,7 +1903,7 @@
         }
         btn.classList.remove("is-adding");
         btn.classList.add("is-added");
-        if (textSpan) textSpan.textContent = "Nel Carrello";
+        if (textSpan) textSpan.textContent = "Nel Carrello ✓";
         saveChatState();
       }, 600);
     };
