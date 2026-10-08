@@ -14,6 +14,7 @@ The project uses pytest. Tests cover the HTTP API, catalog parsing and advisor r
 | tests/test_catalog_integrity.py | Catalog validation, atomic writes, generation activation, failed builds, removed products and interrupted ingestion, without external services. |
 | tests/test_catalog_enrichment.py | Source evidence, partial merges, unpositioned notes, explicit versus inferred families, cache reuse/invalidation, quota cooldowns, failure suspension and removal of generic notes, without external calls. |
 | tests/test_catalog_jobs.py | Synchronization without Groq, stock transitions, queue lifecycle, empty results, deferred retries and persistent token reservations, using temporary datasets and mocked clients. |
+| tests/test_widget_security.cjs | Real-browser checks for both widgets: hostile text and URLs, product cards, images, JSON history, restored option/retry actions, legacy-state removal and reset. All network requests are intercepted. |
 | tests/test_scenarios_e2e.py | Full advisor scenarios for note and season requests, product follow-ups, cheaper alternatives, unsupported requests and guided recommendations. |
 
 ## Run tests
@@ -38,6 +39,18 @@ The API tests run the application lifespan, which initializes the real advisor; 
     pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py tests/test_catalog_integrity.py tests/test_catalog_enrichment.py tests/test_catalog_jobs.py tests/test_llm_resilience.py -m "not e2e" -v
 
 The workflow passes GROQ_API_KEY from a repository secret and sets SESSIONS_DB_PATH=:memory:. It includes mocked LLM resilience tests, excludes the live e2e model check and does not run test_scenarios_e2e.py.
+
+## Widget browser checks
+
+The separate JavaScript suite uses Node.js and Playwright with a Chromium-based browser. It runs the actual scripts from `index.html` and `snippets/etualy-advisor.liquid`. Test-only hooks are injected in memory; the production files do not expose them. The HTML fixture is served as UTF-8, as required by the storefront document.
+
+```sh
+node --test --test-reporter=spec tests/test_widget_security.cjs
+```
+
+Playwright must be resolvable by Node. If using an existing runtime rather than a project installation, set `WIDGET_PLAYWRIGHT_MODULE` to its Playwright package directory. Set `WIDGET_BROWSER_EXECUTABLE` to an installed Chromium, Chrome or Edge executable; otherwise Playwright uses its installed Chromium. These variables are for tests only. The local verification used Playwright 1.62.1 and headless Edge.
+
+All page requests are intercepted: HTML, API responses and a sample image are supplied locally; other requests are blocked. No Groq key, Shopify access or running backend is required. Browser contexts and temporary profiles close after the run. This suite contains 27 checks and is currently separate from the Python CI command above; CI integration remains part of the test-maintenance work.
 
 ## Adding coverage
 

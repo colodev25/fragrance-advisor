@@ -1583,19 +1583,518 @@
         "",
       );
 
-      const INITIAL_WELCOME_HTML = `
-        <div class="oa-msg oa-msg-bot">
-          <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
-          <p>Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.</p>
-        </div>
-      `;
+      // BEGIN WIDGET SAFE RENDERING
+      // Remote data and stored data are rendered only through DOM properties.
+      const CHAT_STATE_KEY = "etualy_chat_state_v1";
+      const LEGACY_CHAT_KEYS = [
+        "etualy_chat_messages",
+        "etualy_chat_chips",
+        "etualy_chat_step",
+        "etualy_last_user_message",
+      ];
+      const INITIAL_OPTIONS = [
+        "🎯 Guidami nella scelta",
+        "💬 Fai una domanda libera",
+      ];
+      const cardRecords = new WeakMap();
+      const messageRecords = new WeakMap();
 
-      const INITIAL_CHIPS_HTML = `
-        <button class="oa-chip" onclick="handleChipClick('🎯 Guidami nella scelta')">🎯 Guidami nella scelta</button>
-        <button class="oa-chip" onclick="handleChipClick('💬 Fai una domanda libera')">💬 Fai una domanda libera</button>
-      `;
+      function plainText(value, limit = 20000) {
+        return typeof value === "string" ? value.slice(0, limit) : "";
+      }
 
-      // Gestione Sessione Persistente durante la navigazione sul sito
+      function safeHttpUrl(value) {
+        if (typeof value !== "string") return "";
+        const candidate = value.trim();
+        if (
+          !/^https?:\/\//i.test(candidate) ||
+          /[\u0000-\u0020\u007f"'<>\\]/.test(candidate)
+        )
+          return "";
+        try {
+          const url = new URL(candidate);
+          if (
+            !["https:", "http:"].includes(url.protocol) ||
+            !url.hostname ||
+            url.username ||
+            url.password
+          )
+            return "";
+          return url.href;
+        } catch (_) {
+          return "";
+        }
+      }
+
+      function dom(tag, className = "", text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      }
+
+      function icon(kind, className = "") {
+        const drawings = {
+          bottle: [
+            ["path", { d: "M6 3h12l1 7H5l1-7z" }],
+            ["path", { d: "M9 3V1h6v2" }],
+            ["path", { d: "M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10" }],
+          ],
+          cart: [
+            ["circle", { cx: "9", cy: "21", r: "1" }],
+            ["circle", { cx: "20", cy: "21", r: "1" }],
+            [
+              "path",
+              {
+                d: "M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6",
+              },
+            ],
+          ],
+          check: [["polyline", { points: "20 6 9 17 4 12" }]],
+          close: [
+            ["line", { x1: "18", y1: "6", x2: "6", y2: "18" }],
+            ["line", { x1: "6", y1: "6", x2: "18", y2: "18" }],
+          ],
+          warning: [
+            ["circle", { cx: "12", cy: "12", r: "10" }],
+            ["line", { x1: "12", y1: "8", x2: "12", y2: "12" }],
+            ["line", { x1: "12", y1: "16", x2: "12.01", y2: "16" }],
+          ],
+          retry: [
+            ["polyline", { points: "23 4 23 10 17 10" }],
+            ["path", { d: "M20.49 15a9 9 0 1 1-2.12-9.36L23 10" }],
+          ],
+        };
+        const ns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(ns, "svg");
+        const attrs = {
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
+          "stroke-width": kind === "bottle" ? "1.5" : "1.8",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+        };
+        Object.entries(attrs).forEach(([name, value]) =>
+          svg.setAttribute(name, value),
+        );
+        if (className) svg.setAttribute("class", className);
+        drawings[kind].forEach(([tag, attributes]) => {
+          const child = document.createElementNS(ns, tag);
+          Object.entries(attributes).forEach(([name, value]) =>
+            child.setAttribute(name, value),
+          );
+          svg.appendChild(child);
+        });
+        return svg;
+      }
+
+      function imagePlaceholder() {
+        const placeholder = dom(
+          "div",
+          "oa-card-image oa-card-placeholder is-loaded",
+        );
+        placeholder.appendChild(icon("bottle"));
+        return placeholder;
+      }
+
+      function externalLink(url, text, className = "") {
+        const safeUrl = safeHttpUrl(url);
+        const link = dom(safeUrl ? "a" : "span", className, text);
+        if (safeUrl) {
+          link.href = safeUrl;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+        }
+        return link;
+      }
+
+      function normalizeProduct(value) {
+        const source =
+          value && typeof value === "object" && !Array.isArray(value)
+            ? value
+            : {};
+        const product = {};
+        [
+          "name",
+          "brand",
+          "family",
+          "ptype",
+          "story",
+          "description",
+          "traits",
+        ].forEach((key) => {
+          product[key] = plainText(
+            source[key],
+            key === "story" || key === "description" ? 10000 : 1000,
+          );
+        });
+        ["add_to_cart_url", "product_page_url", "image_url"].forEach((key) => {
+          product[key] = safeHttpUrl(source[key]);
+        });
+        product.price =
+          typeof source.price === "number" &&
+          Number.isFinite(source.price) &&
+          source.price >= 0
+            ? source.price
+            : plainText(source.price, 100);
+        product.key_notes = Array.isArray(source.key_notes)
+          ? source.key_notes
+              .filter((note) => typeof note === "string")
+              .slice(0, 32)
+              .map((note) => plainText(note, 500))
+          : [];
+        product.card_type =
+          source.card_type === "slideover" ? "slideover" : "standard";
+        product.is_open = source.is_open === true;
+        product.cart_added = source.cart_added === true;
+        return product;
+      }
+
+      function appendInlineMarkdown(parent, text) {
+        const tokenPattern = /\*\*([^*\n]+)\*\*|\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+        let offset = 0;
+        for (const match of text.matchAll(tokenPattern)) {
+          parent.appendChild(
+            document.createTextNode(text.slice(offset, match.index)),
+          );
+          if (match[1] !== undefined) {
+            parent.appendChild(dom("strong", "", match[1]));
+          } else {
+            const link = externalLink(match[3], match[2]);
+            if (link.tagName === "A") {
+              link.style.color = "var(--oa-black)";
+              link.style.fontWeight = "600";
+              link.style.textDecoration = "underline";
+            }
+            parent.appendChild(link);
+          }
+          offset = match.index + match[0].length;
+        }
+        parent.appendChild(document.createTextNode(text.slice(offset)));
+      }
+
+      function renderMarkdownText(rawText, hasStructuredProducts = false) {
+        let text = plainText(rawText);
+        if (hasStructuredProducts) {
+          text = text.replace(
+            /^\s*\*{0,2}(?:Prezzo|Price)\*{0,2}\s*:\s*[^\n\r]+/gim,
+            "",
+          );
+          text = text.replace(
+            /^\s*\*{0,2}\[(?:Aggiungi al Carrello|Add to Cart|Acquista|Immagine|Image|Foto)\]\([^)]+\)\*{0,2}/gim,
+            "",
+          );
+        }
+        const fragment = document.createDocumentFragment();
+        text
+          .split(/\n\n+/)
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .forEach((part) => {
+            const paragraph = dom("p");
+            part.split("\n").forEach((line, index) => {
+              if (index) paragraph.appendChild(dom("br"));
+              appendInlineMarkdown(paragraph, line);
+            });
+            fragment.appendChild(paragraph);
+          });
+        return fragment;
+      }
+
+      function createProductCard(product) {
+        const prod = normalizeProduct(product);
+        const name = prod.name || "Profumo Artistico";
+        const brand = prod.brand || "Profumeria Artistica";
+        const price =
+          typeof prod.price === "number"
+            ? new Intl.NumberFormat("it-IT", {
+                style: "currency",
+                currency: "EUR",
+              }).format(prod.price)
+            : prod.price
+              ? prod.price + " €"
+              : "0,00 €";
+        const story = (prod.story || prod.description)
+          .replace(/^["“”']+|["“”']+$/g, "")
+          .trim();
+        const traits =
+          prod.traits ||
+          (prod.ptype ? prod.ptype + " • " + prod.family : prod.family);
+        const isSlideover = prod.card_type === "slideover";
+        const card = dom(
+          "div",
+          "oa-product-card" + (isSlideover ? " oa-has-slideover" : ""),
+        );
+        card.classList.toggle("is-open", isSlideover && prod.is_open);
+        cardRecords.set(card, product);
+        const title = () => {
+          const link = externalLink(
+            prod.product_page_url,
+            name,
+            "oa-card-title-link",
+          );
+          link.title = "Visualizza " + name + " su Etualy";
+          return link;
+        };
+        const notes = (limit) => {
+          const row = dom("div", "oa-notes-chips");
+          prod.key_notes
+            .slice(0, limit)
+            .forEach((note) =>
+              row.appendChild(dom("span", "oa-note-pill", note)),
+            );
+          return row;
+        };
+
+        const front = dom("div", "oa-card-front");
+        const header = dom("div", "oa-card-header");
+        const imageBox = dom("div", "oa-card-image-box");
+        if (prod.image_url) {
+          imageBox.classList.add("oa-skeleton");
+          const image = dom("img", "oa-card-image");
+          image.alt = name;
+          image.loading = "lazy";
+          image.addEventListener("load", () => handleImageLoad(image));
+          image.addEventListener("error", () => handleImageError(image));
+          image.src = prod.image_url;
+          imageBox.appendChild(image);
+        } else {
+          imageBox.appendChild(imagePlaceholder());
+        }
+        const meta = dom("div", "oa-card-meta");
+        const titleBox = dom("div", "oa-card-title");
+        titleBox.appendChild(title());
+        meta.append(
+          dom("div", "oa-card-vendor", brand),
+          titleBox,
+          dom(
+            "div",
+            "oa-card-badge",
+            prod.family || prod.ptype || "Profumo Artistico",
+          ),
+        );
+        header.append(imageBox, meta);
+        if (isSlideover) {
+          const info = dom("button", "oa-card-info-btn", "ⓘ");
+          info.type = "button";
+          info.title = "Note e atmosfera";
+          info.addEventListener("click", () => toggleCardSlide(info));
+          header.appendChild(info);
+        }
+        front.appendChild(header);
+        if (!isSlideover) {
+          if (story) front.appendChild(dom("div", "oa-card-desc", story));
+          if (prod.key_notes.length) {
+            const row = notes(4);
+            row.style.marginTop = "2px";
+            front.appendChild(row);
+          }
+        }
+        const footer = dom("div", "oa-card-footer");
+        footer.appendChild(dom("div", "oa-card-price", price));
+        const cart = dom(
+          prod.add_to_cart_url ? "a" : "button",
+          "oa-card-cart-btn",
+        );
+        if (prod.add_to_cart_url) {
+          cart.href = prod.add_to_cart_url;
+          cart.target = "_blank";
+          cart.rel = "noopener noreferrer";
+          cart.addEventListener("click", (event) =>
+            handleAddToCart(event, cart),
+          );
+        } else {
+          cart.type = "button";
+          cart.disabled = true;
+          cart.setAttribute("aria-disabled", "true");
+        }
+        const cartIcon = icon("cart", "oa-btn-cart-icon");
+        const checkIcon = icon("check", "oa-btn-check-icon");
+        cartIcon.style.display = prod.cart_added ? "none" : "";
+        checkIcon.style.display = prod.cart_added ? "inline-block" : "none";
+        if (prod.cart_added) cart.classList.add("is-added");
+        cart.append(
+          cartIcon,
+          checkIcon,
+          dom(
+            "span",
+            "oa-cart-btn-text",
+            prod.cart_added ? "Nel Carrello" : "Aggiungi al Carrello",
+          ),
+        );
+        footer.appendChild(cart);
+        front.appendChild(footer);
+        card.appendChild(front);
+
+        if (isSlideover) {
+          const slide = dom("div", "oa-card-slideover");
+          const slideHeader = dom("div", "oa-slide-header");
+          const slideMeta = dom("div", "oa-slide-meta");
+          const slideTitle = dom("div", "oa-slide-title");
+          slideTitle.appendChild(title());
+          slideMeta.append(
+            dom("div", "oa-slide-subtitle", "Profilo & Note Olfattive"),
+            slideTitle,
+          );
+          const close = dom("button", "oa-slide-close-btn");
+          close.type = "button";
+          close.title = "Chiudi note";
+          close.appendChild(icon("close"));
+          close.addEventListener("click", () => toggleCardSlide(close));
+          slideHeader.append(slideMeta, close);
+          const body = dom("div", "oa-slide-body");
+          if (story)
+            body.appendChild(dom("div", "oa-slide-story", '"' + story + '"'));
+          if (prod.key_notes.length) {
+            const box = dom("div", "oa-slide-notes-box");
+            box.append(
+              dom("div", "oa-slide-notes-label", "Accordi Salienti"),
+              notes(32),
+            );
+            body.appendChild(box);
+          }
+          if (traits) body.appendChild(dom("div", "oa-slide-traits", traits));
+          const slideFooter = dom("div", "oa-slide-footer");
+          const back = dom(
+            "button",
+            "oa-slide-back-btn",
+            "← Torna alla scheda",
+          );
+          back.type = "button";
+          back.addEventListener("click", () => toggleCardSlide(back));
+          slideFooter.appendChild(back);
+          slide.append(slideHeader, body, slideFooter);
+          card.appendChild(slide);
+        }
+        return card;
+      }
+
+      function normalizeMessage(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          return null;
+        if (value.kind === "welcome") return { kind: "welcome" };
+        if (value.kind === "user")
+          return { kind: "user", text: plainText(value.text) };
+        if (value.kind === "bot") {
+          return {
+            kind: "bot",
+            reply: plainText(value.reply),
+            products: Array.isArray(value.products)
+              ? value.products.slice(0, 12).map(normalizeProduct)
+              : [],
+          };
+        }
+        if (value.kind === "error") {
+          return {
+            kind: "error",
+            text: plainText(value.text),
+            retryable: value.retryable === true,
+          };
+        }
+        return null;
+      }
+
+      function renderMessage(record) {
+        const message = dom(
+          "div",
+          "oa-msg " + (record.kind === "user" ? "oa-msg-user" : "oa-msg-bot"),
+        );
+        messageRecords.set(message, record);
+        if (record.kind === "welcome") {
+          const first = dom("p");
+          first.append(
+            document.createTextNode("Benvenuto nella boutique olfattiva di "),
+            dom("strong", "", "Etualy"),
+            document.createTextNode("."),
+          );
+          message.append(
+            first,
+            dom(
+              "p",
+              "",
+              "Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.",
+            ),
+          );
+        } else if (record.kind === "user") {
+          message.textContent = record.text;
+        } else if (record.kind === "bot") {
+          message.appendChild(
+            renderMarkdownText(record.reply, record.products.length > 0),
+          );
+          record.products.forEach((product) =>
+            message.appendChild(createProductCard(product)),
+          );
+        } else if (record.kind === "error") {
+          message.classList.add("oa-msg-error");
+          message.id = "oaLastErrorMsg";
+          const header = dom("div", "oa-error-header");
+          header.append(
+            icon("warning"),
+            dom("span", "", "Avviso della Boutique"),
+          );
+          message.append(header, dom("div", "oa-error-text", record.text));
+          if (record.retryable) {
+            const retry = dom("button", "oa-retry-btn");
+            retry.type = "button";
+            retry.append(icon("retry"), dom("span", "", "Riprova ora"));
+            retry.addEventListener("click", () => retryLastMessage(retry));
+            message.appendChild(retry);
+          }
+        }
+        return message;
+      }
+
+      function renderOptions(options) {
+        currentOptions = Array.isArray(options)
+          ? options
+              .filter((option) => typeof option === "string")
+              .map((option) => plainText(option, 1000))
+          : [];
+        chipsContainer.replaceChildren();
+        currentOptions.forEach((option) => {
+          const button = dom("button", "oa-chip", option);
+          button.type = "button";
+          button.addEventListener("click", () => handleChipClick(option));
+          chipsContainer.appendChild(button);
+        });
+      }
+
+      function appendChatRecord(record) {
+        chatMessages.push(record);
+        const message = renderMessage(record);
+        messagesContainer.appendChild(message);
+        return message;
+      }
+
+      function removeChatMessage(message) {
+        const record = messageRecords.get(message);
+        chatMessages = chatMessages.filter((entry) => entry !== record);
+        message.remove();
+      }
+
+      function clearLegacyChat() {
+        LEGACY_CHAT_KEYS.forEach((key) => sessionStorage.removeItem(key));
+      }
+
+      function resetLocalChat(rotateSession = false) {
+        if (rotateSession) {
+          sessionId =
+            "sess_" +
+            Math.random().toString(36).substring(2, 11) +
+            "_" +
+            Date.now();
+          sessionStorage.setItem("etualy_advisor_session_id", sessionId);
+        }
+        chatMessages = [{ kind: "welcome" }];
+        currentStepValue = null;
+        lastUserMessage = "";
+        messagesContainer.replaceChildren(renderMessage(chatMessages[0]));
+        renderOptions(INITIAL_OPTIONS);
+        updateStepper(null);
+      }
+      // END WIDGET SAFE RENDERING
+
       function getOrCreateSessionId() {
         let sid = sessionStorage.getItem("etualy_advisor_session_id");
         if (!sid) {
@@ -1697,17 +2196,8 @@
 
       function handleImageError(img) {
         if (!img || !img.parentElement) return;
-        const box = img.parentElement;
-        box.classList.remove("oa-skeleton");
-        box.innerHTML = `
-          <div class="oa-card-image oa-card-placeholder is-loaded">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M6 3h12l1 7H5l1-7z"></path>
-              <path d="M9 3V1h6v2"></path>
-              <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
-            </svg>
-          </div>
-        `;
+        img.parentElement.classList.remove("oa-skeleton");
+        img.parentElement.replaceChildren(imagePlaceholder());
       }
 
       // =======================================================================
@@ -1715,83 +2205,93 @@
       // =======================================================================
       let currentStepValue = null;
       let lastUserMessage = "";
+      let chatMessages = [{ kind: "welcome" }];
+      let currentOptions = [...INITIAL_OPTIONS];
 
       function saveChatState(stepOverride) {
         try {
           if (stepOverride !== undefined) {
-            currentStepValue = stepOverride;
+            currentStepValue =
+              Number.isInteger(stepOverride) &&
+              stepOverride >= 1 &&
+              stepOverride <= 4
+                ? stepOverride
+                : null;
           }
           sessionStorage.setItem(
-            "etualy_chat_messages",
-            messagesContainer.innerHTML,
+            CHAT_STATE_KEY,
+            JSON.stringify({
+              version: 1,
+              session_id: sessionId,
+              messages: chatMessages,
+              options: currentOptions,
+              step: currentStepValue,
+              last_message: lastUserMessage,
+            }),
           );
-          sessionStorage.setItem("etualy_chat_chips", chipsContainer.innerHTML);
-          sessionStorage.setItem(
-            "etualy_last_user_message",
-            lastUserMessage || "",
-          );
-          if (currentStepValue !== null) {
-            sessionStorage.setItem(
-              "etualy_chat_step",
-              String(currentStepValue),
-            );
-          } else {
-            sessionStorage.removeItem("etualy_chat_step");
-          }
-        } catch (e) {
+          clearLegacyChat();
+        } catch (error) {
           console.warn(
             "[Etualy Advisor] Avviso salvataggio cronologia locale:",
-            e,
+            error,
           );
         }
       }
 
       function restoreChatState() {
         try {
-          const savedMessages = sessionStorage.getItem("etualy_chat_messages");
-          const savedChips = sessionStorage.getItem("etualy_chat_chips");
-          const savedStep = sessionStorage.getItem("etualy_chat_step");
-          const savedLastMsg = sessionStorage.getItem(
-            "etualy_last_user_message",
+          const serialized = sessionStorage.getItem(CHAT_STATE_KEY);
+          const hasLegacy = LEGACY_CHAT_KEYS.some(
+            (key) => sessionStorage.getItem(key) !== null,
           );
-
-          if (savedLastMsg) {
-            lastUserMessage = savedLastMsg;
-          }
-
-          if (savedMessages && savedMessages.trim().length > 0) {
-            messagesContainer.innerHTML = savedMessages;
-
-            if (savedChips !== null) {
-              chipsContainer.innerHTML = savedChips;
+          if (serialized) {
+            const state = JSON.parse(serialized);
+            if (
+              !state ||
+              state.version !== 1 ||
+              state.session_id !== sessionId ||
+              !Array.isArray(state.messages) ||
+              !Array.isArray(state.options)
+            ) {
+              throw new Error("Stato locale non compatibile.");
             }
-
-            if (savedStep && !isNaN(parseInt(savedStep, 10))) {
-              currentStepValue = parseInt(savedStep, 10);
-              updateStepper(currentStepValue);
-            } else {
-              currentStepValue = null;
-              updateStepper(null);
+            const records = state.messages.map(normalizeMessage);
+            if (!records.length || records.some((record) => record === null)) {
+              throw new Error("Cronologia locale non valida.");
             }
-
+            chatMessages = records;
+            currentStepValue =
+              Number.isInteger(state.step) && state.step >= 1 && state.step <= 4
+                ? state.step
+                : null;
+            lastUserMessage = plainText(state.last_message);
+            messagesContainer.replaceChildren();
+            chatMessages.forEach((record) =>
+              messagesContainer.appendChild(renderMessage(record)),
+            );
+            renderOptions(state.options);
+            updateStepper(currentStepValue);
             sessionStorage.setItem("etualy_teaser_closed", "true");
             if (teaser) teaser.classList.remove("is-visible");
-
-            messagesContainer
-              .querySelectorAll("img.oa-card-image")
-              .forEach((img) => {
-                if (img.complete && img.naturalWidth > 0) {
-                  handleImageLoad(img);
-                }
-              });
-
-            scrollToBottom();
+          } else {
+            // Never parse or reinsert the previous HTML-based history.
+            resetLocalChat(hasLegacy);
           }
-        } catch (e) {
+          saveChatState();
+          scrollToBottom();
+        } catch (error) {
           console.warn(
             "[Etualy Advisor] Avviso ripristino cronologia locale:",
-            e,
+            error,
           );
+          try {
+            sessionStorage.removeItem(CHAT_STATE_KEY);
+            clearLegacyChat();
+            resetLocalChat(true);
+            saveChatState();
+          } catch (_) {
+            resetLocalChat();
+          }
         }
       }
 
@@ -1837,23 +2337,9 @@
       // Reset Sincronizzato con Backend e Storage Locale
       restartBtn.addEventListener("click", async () => {
         const oldSession = sessionId;
-        sessionId =
-          "sess_" +
-          Math.random().toString(36).substring(2, 11) +
-          "_" +
-          Date.now();
-        sessionStorage.setItem("etualy_advisor_session_id", sessionId);
-
-        sessionStorage.removeItem("etualy_chat_messages");
-        sessionStorage.removeItem("etualy_chat_chips");
-        sessionStorage.removeItem("etualy_chat_step");
-        sessionStorage.removeItem("etualy_last_user_message");
-        currentStepValue = null;
-        lastUserMessage = "";
-
-        messagesContainer.innerHTML = INITIAL_WELCOME_HTML;
-        updateStepper(null);
-        chipsContainer.innerHTML = INITIAL_CHIPS_HTML;
+        resetLocalChat(true);
+        clearLegacyChat();
+        saveChatState();
         input.value = "";
         scrollToBottom();
 
@@ -1883,10 +2369,7 @@
       }
 
       function appendUserMessage(text) {
-        const msgDiv = document.createElement("div");
-        msgDiv.className = "oa-msg oa-msg-user";
-        msgDiv.textContent = text;
-        messagesContainer.appendChild(msgDiv);
+        appendChatRecord({ kind: "user", text: plainText(text) });
         scrollToBottom();
         saveChatState();
       }
@@ -1975,263 +2458,45 @@
         progress.style.width = percentage + "%";
       }
 
-      function escapeHtml(text) {
-        if (!text) return "";
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
-      }
-
       function toggleCardSlide(btn) {
         const card = btn.closest(".oa-product-card");
         if (card) {
           card.classList.toggle("is-open");
+          const product = cardRecords.get(card);
+          if (product) product.is_open = card.classList.contains("is-open");
           saveChatState();
         }
       }
 
-      // =======================================================================
-      // MICRO-INTERAZIONE & FEEDBACK CARRELLO (DIRETTO A CHECKOUT)
-      // =======================================================================
-      function handleAddToCart(e, btn) {
-        if (e) e.preventDefault();
+      function handleAddToCart(event, btn) {
+        if (event) event.preventDefault();
         if (!btn || btn.classList.contains("is-adding")) return;
-
-        const url = btn.getAttribute("href");
-
+        const url = safeHttpUrl(btn.getAttribute("href"));
+        if (!url) return;
         if (btn.classList.contains("is-added")) {
-          if (url && url !== "#") window.open(url, "_blank");
+          window.open(url, "_blank", "noopener,noreferrer");
           return;
         }
-
         const cartIcon = btn.querySelector(".oa-btn-cart-icon");
         const checkIcon = btn.querySelector(".oa-btn-check-icon");
-        const textSpan = btn.querySelector(".oa-cart-btn-text");
-
+        const label = btn.querySelector(".oa-cart-btn-text");
         btn.classList.add("is-adding");
         if (cartIcon) cartIcon.style.display = "none";
         if (checkIcon) checkIcon.style.display = "inline-block";
-        if (textSpan) textSpan.textContent = "Aggiunto!";
-
+        if (label) label.textContent = "Aggiunto!";
         setTimeout(() => {
-          if (url && url !== "#") {
-            window.open(url, "_blank");
-          }
+          window.open(url, "_blank", "noopener,noreferrer");
           btn.classList.remove("is-adding");
           btn.classList.add("is-added");
-          if (textSpan) textSpan.textContent = "Nel Carrello";
+          if (label) label.textContent = "Nel Carrello";
+          const product = cardRecords.get(btn.closest(".oa-product-card"));
+          if (product) product.cart_added = true;
           saveChatState();
         }, 600);
       }
 
-      function createProductCardHtml(prod) {
-        const name = prod.name || "Profumo Artistico";
-        const brand = prod.brand || "Profumeria Artistica";
-
-        let priceFormatted = "0,00 €";
-        if (typeof prod.price === "number") {
-          priceFormatted = new Intl.NumberFormat("it-IT", {
-            style: "currency",
-            currency: "EUR",
-          }).format(prod.price);
-        } else if (prod.price) {
-          priceFormatted = `${prod.price} €`;
-        }
-
-        const cartUrl = prod.add_to_cart_url || "#";
-        const productPageUrl = prod.product_page_url || "#";
-        const imageUrl = prod.image_url || "";
-        const familyBadge = prod.family || prod.ptype || "Profumo Artistico";
-
-        const story = prod.story || prod.description || "";
-        const cleanStory = story.replace(/^["“”']+|["“”']+$/g, "").trim();
-        const keyNotes = prod.key_notes || [];
-        const traits =
-          prod.traits ||
-          (prod.ptype ? `${prod.ptype} • ${prod.family}` : prod.family);
-
-        const isSlideover = prod.card_type === "slideover";
-
-        let imageHtml = "";
-        let imageBoxClass = "oa-card-image-box";
-
-        if (
-          imageUrl &&
-          imageUrl.startsWith("http") &&
-          !imageUrl.includes("NESSUNA")
-        ) {
-          imageBoxClass += " oa-skeleton";
-          imageHtml = `<img class="oa-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onload="handleImageLoad(this)" onerror="handleImageError(this)">`;
-        } else {
-          imageHtml = `
-            <div class="oa-card-image oa-card-placeholder is-loaded">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M6 3h12l1 7H5l1-7z"></path>
-                <path d="M9 3V1h6v2"></path>
-                <path d="M5 10v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10"></path>
-              </svg>
-            </div>
-          `;
-        }
-
-        const titleLinkHtml = `
-          <a href="${escapeHtml(productPageUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-title-link" title="Visualizza ${escapeHtml(name)} su Etualy">
-            ${escapeHtml(name)}
-          </a>
-        `;
-
-        const cartButtonHtml = `
-          <a href="${escapeHtml(cartUrl)}" target="_blank" rel="noopener noreferrer" class="oa-card-cart-btn" onclick="handleAddToCart(event, this)">
-            <svg class="oa-btn-cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-            <svg class="oa-btn-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            <span class="oa-cart-btn-text">Aggiungi al Carrello</span>
-          </a>
-        `;
-
-        if (isSlideover) {
-          return `
-            <div class="oa-product-card oa-has-slideover">
-              <div class="oa-card-front">
-                <div class="oa-card-header">
-                  <div class="${imageBoxClass}">${imageHtml}</div>
-                  <div class="oa-card-meta">
-                    <div class="oa-card-vendor">${escapeHtml(brand)}</div>
-                    <div class="oa-card-title">${titleLinkHtml}</div>
-                    <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
-                  </div>
-                  <button class="oa-card-info-btn" onclick="toggleCardSlide(this)" title="Note e atmosfera">ⓘ</button>
-                </div>
-                <div class="oa-card-footer">
-                  <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
-                  ${cartButtonHtml}
-                </div>
-              </div>
-              <div class="oa-card-slideover">
-                <div class="oa-slide-header">
-                  <div class="oa-slide-meta">
-                    <div class="oa-slide-subtitle">Profilo & Note Olfattive</div>
-                    <div class="oa-slide-title">${titleLinkHtml}</div>
-                  </div>
-                  <button class="oa-slide-close-btn" onclick="toggleCardSlide(this)" title="Chiudi note">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                </div>
-                <div class="oa-slide-body">
-                  ${cleanStory ? `<div class="oa-slide-story">"${escapeHtml(cleanStory)}"</div>` : ""}
-                  ${
-                    keyNotes.length > 0
-                      ? `
-                    <div class="oa-slide-notes-box">
-                      <div class="oa-slide-notes-label">Accordi Salienti</div>
-                      <div class="oa-notes-chips">
-                        ${keyNotes.map((n) => `<span class="oa-note-pill">${escapeHtml(n)}</span>`).join("")}
-                      </div>
-                    </div>
-                  `
-                      : ""
-                  }
-                  ${traits ? `<div class="oa-slide-traits">${escapeHtml(traits)}</div>` : ""}
-                </div>
-                <div class="oa-slide-footer">
-                  <button class="oa-slide-back-btn" onclick="toggleCardSlide(this)">← Torna alla scheda</button>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-
-        return `
-          <div class="oa-product-card">
-            <div class="oa-card-front">
-              <div class="oa-card-header">
-                <div class="${imageBoxClass}">${imageHtml}</div>
-                <div class="oa-card-meta">
-                  <div class="oa-card-vendor">${escapeHtml(brand)}</div>
-                  <div class="oa-card-title">${titleLinkHtml}</div>
-                  <div class="oa-card-badge">${escapeHtml(familyBadge)}</div>
-                </div>
-              </div>
-              ${cleanStory ? `<div class="oa-card-desc">${escapeHtml(cleanStory)}</div>` : ""}
-              ${
-                keyNotes.length > 0
-                  ? `
-                <div class="oa-notes-chips" style="margin-top: 2px;">
-                  ${keyNotes
-                    .slice(0, 4)
-                    .map(
-                      (n) =>
-                        `<span class="oa-note-pill">${escapeHtml(n)}</span>`,
-                    )
-                    .join("")}
-                </div>
-              `
-                  : ""
-              }
-              <div class="oa-card-footer">
-                <div class="oa-card-price">${escapeHtml(priceFormatted)}</div>
-                ${cartButtonHtml}
-              </div>
-            </div>
-          </div>
-        `;
-      }
-
-      function renderMarkdownText(rawText, hasStructuredProducts = false) {
-        if (!rawText) return "";
-        let text = rawText;
-        if (hasStructuredProducts) {
-          text = text.replace(
-            /^\s*\*{0,2}(?:Prezzo|Price)\*{0,2}\s*:\s*[^\n\r]+/gim,
-            "",
-          );
-          text = text.replace(
-            /^\s*\*{0,2}\[(?:Aggiungi al Carrello\vert{}Add to Cart\vert{}Acquista)\]\([^\)]+\)\*{0,2}/gim,
-            "",
-          );
-          text = text.replace(
-            /^\s*\[(?:Immagine\vert{}Image\vert{}Foto)\]\([^\)]+\)/gim,
-            "",
-          );
-        }
-        const links = [];
-        text = text.replace(
-          /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/gi,
-          (match, label, url) => {
-            const token = `@@OA_LINK_${links.length}@@`;
-            links.push({ label, url });
-            return token;
-          },
-        );
-        text = escapeHtml(text);
-        text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-        text = text.replace(/@@OA_LINK_(\d+)@@/g, (match, index) => {
-          const link = links[Number(index)];
-          if (!link) return "";
-          return `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--oa-black);font-weight:600;text-decoration:underline;">${escapeHtml(link.label)}</a>`;
-        });
-        const paragraphs = text
-          .split(/\n\n+/)
-          .map((p) => p.trim())
-          .filter((p) => p.length > 0);
-        return paragraphs
-          .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
-          .join("");
-      }
-
-      // =======================================================================
-      // COMUNICAZIONE API & RESILIENZA (RETRY LOGIC)
-      // =======================================================================
       async function executeChatQuery(text) {
-        chipsContainer.innerHTML = "";
+        renderOptions([]);
         showTyping();
 
         try {
@@ -2257,39 +2522,14 @@
           const data = await response.json();
           removeTyping();
 
-          const botMsgDiv = document.createElement("div");
-          botMsgDiv.className = "oa-msg oa-msg-bot";
-          const hasProducts = Boolean(
-            data.products && data.products.length > 0,
-          );
-
-          if (data.reply) {
-            botMsgDiv.innerHTML = renderMarkdownText(data.reply, hasProducts);
-          }
-
-          if (hasProducts) {
-            data.products.forEach((prod) => {
-              const cardHtml = createProductCardHtml(prod);
-              botMsgDiv.insertAdjacentHTML("beforeend", cardHtml);
-            });
-          }
-
-          messagesContainer.appendChild(botMsgDiv);
+          const record = normalizeMessage({
+            kind: "bot",
+            reply: data.reply,
+            products: data.products,
+          });
+          const botMsgDiv = appendChatRecord(record);
           updateStepper(data.step);
-
-          if (data.options && data.options.length > 0) {
-            chipsContainer.innerHTML = "";
-            data.options.forEach((opt) => {
-              const btn = document.createElement("button");
-              btn.className = "oa-chip";
-              btn.textContent = opt;
-              btn.onclick = () => handleChipClick(opt);
-              chipsContainer.appendChild(btn);
-            });
-          } else {
-            chipsContainer.innerHTML = "";
-          }
-
+          renderOptions(data.options);
           saveChatState(data.step);
           scrollToElementTop(botMsgDiv);
         } catch (err) {
@@ -2298,33 +2538,11 @@
             err?.message ||
             "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo in questo istante.";
           const canRetry = err?.retryable !== false;
-          const errDiv = document.createElement("div");
-          errDiv.className = "oa-msg oa-msg-bot oa-msg-error";
-          errDiv.id = "oaLastErrorMsg";
-          errDiv.innerHTML = `
-            <div class="oa-error-header">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <span>Avviso della Boutique</span>
-            </div>
-            <div class="oa-error-text"></div>
-            ${
-              canRetry
-                ? `<button class="oa-retry-btn" onclick="retryLastMessage(this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-              </svg>
-              <span>Riprova ora</span>
-            </button>`
-                : ""
-            }
-          `;
-          errDiv.querySelector(".oa-error-text").textContent = errorMessage;
-          messagesContainer.appendChild(errDiv);
+          appendChatRecord({
+            kind: "error",
+            text: plainText(errorMessage),
+            retryable: canRetry,
+          });
           scrollToBottom();
           saveChatState();
         }
@@ -2346,7 +2564,7 @@
         const errDiv = btn
           ? btn.closest(".oa-msg-error")
           : document.getElementById("oaLastErrorMsg");
-        if (errDiv) errDiv.remove();
+        if (errDiv) removeChatMessage(errDiv);
         saveChatState();
         await executeChatQuery(lastUserMessage);
       }

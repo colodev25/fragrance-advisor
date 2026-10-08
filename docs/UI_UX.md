@@ -7,7 +7,7 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Proactive entry point:** a floating launcher opens the advisor; a short invitation appears after a delay and can be dismissed.
 - **Two ways to get started:** customers can follow the four-step guided consultation or begin with a free-form question about notes, fragrances or occasions.
 - **Quick replies and progress:** contextual choice chips make guided answers easy to select, while a progress bar indicates the current step.
-- **Chat continuity:** the session identifier, conversation markup, quick replies, guided step and last message are saved in sessionStorage. This restores the conversation while navigating between pages in the same browser tab. Restarting the consultation clears the local chat state and asks the backend to reset the previous session.
+- **Chat continuity:** the session identifier, structured messages, product data, quick replies, guided step and last message are saved in sessionStorage. Restoring the conversation recreates its elements and actions while navigating between pages in the same browser tab. Restarting clears local state and asks the backend to reset the previous session. Expanded card panels and cart feedback are also retained.
 - **Natural chat feedback:** message bubbles, smooth scrolling and an animated typing indicator keep the conversation readable. Longer waits show progressive status messages for requests that may be delayed by a backend cold start.
 
 ## Product exploration
@@ -23,6 +23,13 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Responsive layout:** the desktop widget opens as a floating panel; on small screens it becomes a full-screen view with safe-area spacing.
 - **Mobile keyboard and touch handling:** focusing the input brings it into view; interacting with or scrolling the conversation dismisses the keyboard. Opening the mobile widget locks background-page scrolling.
 - **Reduced-motion support:** system preferences for reduced motion are respected by limiting transitions, animations and smooth scrolling.
+
+## Content safety
+
+- **Text and cards:** customer messages, model responses and product fields are inserted through DOM text and attribute properties. Received content cannot supply HTML elements or event handlers. The supported response formatting remains paragraphs, line breaks, bold text and links.
+- **Links and images:** only absolute HTTP(S) URLs without credentials, whitespace, control characters or unsafe delimiters are accepted. Invalid links become plain text, invalid product links become inactive, and invalid images use the placeholder.
+- **Stored conversation:** `etualy_chat_state_v1` contains versioned JSON tied to the current session. Restored fields are normalized and rendered through the same safe path; saved HTML is never reinserted. Invalid states are cleared. On the first load after upgrading, the previous HTML-based history is discarded and a new local session starts; this is not a deletion of every backend session.
+- **Shopify integration:** `snippets/etualy-advisor.liquid` contains the same safe renderer as the standalone page. Updating `index.html` alone does not update a snippet already installed in a Shopify theme; publish the revised snippet there as well.
 
 ## Visual language
 
