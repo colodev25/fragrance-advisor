@@ -1,0 +1,11 @@
+# Direct runtime dependencies. Regenerate the root requirements.txt after editing.
+numpy==1.26.4
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5
+openai==3.14.1
+chromadb==1.5.9
+python-dotenv==1.2.3
+httpx==0.28.1
+requests==2.34.2
+beautifulsoup4==4.15.0

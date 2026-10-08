@@ -16,6 +16,8 @@ The project uses pytest. Tests cover the HTTP API, catalog parsing and advisor r
 | tests/test_chat_budget.py | Shared deadlines and call allowance, SDK retries disabled using an in-memory transport, fast replies without added waits, reduced timeouts, completion ceilings, short and long provider cooldowns, failed-state rollback, guided-card fallback and retryable HTTP errors. No external services. |
 | tests/test_llm_resilience.py | Retry delays, fallback model, concurrent calls, private reasoning protection, truncated answers, candidate selection validation, graceful failure and an optional live Groq check. |
 | tests/test_rate_limit.py | Per-client and per-route request limits. |
+| tests/test_offline_policy.py | Dummy credentials, isolated session database, blocked external DNS/IP connections and allowed local loopback. |
+| tests/test_maintenance_config.py | Exact dependency versions, shared runtime/catalog/dev pins, npm lock consistency and offline CI discovery/browser jobs. |
 | tests/test_catalog_integrity.py | Catalog validation, atomic writes, generation activation, failed builds, removed products and interrupted ingestion, without external services. |
 | tests/test_catalog_enrichment.py | Source evidence, partial merges, unpositioned notes, explicit versus inferred families, cache reuse/invalidation, quota cooldowns, failure suspension, generic-note removal and olfactory versus promotional salt tags, without external calls. |
 | tests/test_catalog_jobs.py | Synchronization without Groq, stock transitions, queue lifecycle, empty results, deferred retries and persistent token reservations, using temporary datasets and mocked clients. |
@@ -24,44 +26,63 @@ The project uses pytest. Tests cover the HTTP API, catalog parsing and advisor r
 
 ## Run tests
 
-Install the project dependencies and pytest, then run:
+Use Python 3.11 (`.python-version`) and install the pinned test dependencies:
 
-    pytest
+    python -m pip install -r requirements/dev.txt
+    python src/reindex.py
+    python -m pytest tests -m "not e2e"
+
+Index preparation uses the local catalog and can download the public embedding model on its first run. It does not call Groq or Shopify. If a verified index already exists, rebuilding it is unnecessary for normal test runs.
 
 Run a single test module with:
 
     pytest tests/test_api.py
     pytest tests/test_session_store.py
 
-pytest.ini registers the e2e marker. Tests in test_scenarios_e2e.py are skipped unless a Groq API key, data/catalog.json and chroma_db/ are available. The live model check in test_llm_resilience.py is also skipped when GROQ_API_KEY is unset. That live check makes external API calls.
+Tests are offline by default, including plain `pytest`: `tests/conftest.py` supplies a dummy Groq credential, puts the application database under pytest's temporary directory and blocks external DNS resolution and socket connections. Loopback remains available for the HTTP test client. Model/search transports used by individual tests are mocked as needed. The ordinary suite still exercises the existing local search index.
 
-The API tests run the application lifespan, which initializes the real advisor; the parser tests also initialize the advisor. Both therefore need a valid GROQ_API_KEY even though test requests or LLM calls are mocked after initialization. A local .env can provide the key through the advisor's load_dotenv() call, or set it in the shell.
+Real Groq tests require an explicit opt-in, a real key and the catalog/index:
+
+    python -m pytest tests --live-services -m e2e
+
+This option disables the offline network and credential policy and can consume quota. It is not used in CI. The `e2e` marker is registered in `pytest.ini`; without `--live-services`, marked tests are skipped even if a real key is present in `.env`.
+
+`SessionStore` uses a new, closed connection for each operation. Plain SQLite `:memory:` would lose its schema between operations and is therefore rejected with an explicit error, whether supplied directly or through `SESSIONS_DB_PATH`. Use a temporary database file, as the fixtures and CI do; these tests include concurrent writes and restart recovery.
 
 ## Continuous integration
 
-.github/workflows/tests.yml uses Python 3.11, installs project dependencies and pytest, builds a local ChromaDB index, then runs:
+.github/workflows/tests.yml runs two independent jobs on pushes and pull requests to `feature/new-site` or `main`, plus manual dispatch:
 
-    pytest tests/test_api.py tests/test_parsers.py tests/test_product_cards.py tests/test_session_store.py tests/test_conversation_requests.py tests/test_session_lifecycle.py tests/test_recommendation_preferences.py tests/test_chat_budget.py tests/test_catalog_integrity.py tests/test_catalog_enrichment.py tests/test_catalog_jobs.py tests/test_llm_resilience.py -m "not e2e" -v
+- **Python:** installs `requirements/dev.txt`, checks dependency compatibility, prepares the local index and discovers all Python tests under `tests/`, excluding `e2e`. This includes rate-limit and future test modules without maintaining a filename list. The session database and test files are under the runner's temporary directory.
+- **Browser:** uses the Node version in `.node-version`, installs from `tools/widget-tests/package-lock.json` with `npm --prefix tools/widget-tests ci`, installs Chromium and runs `npm --prefix tools/widget-tests run test:widget`. This checks the two tracked widget variants; the ignored DevTools preview is tested locally when present.
 
-The workflow passes GROQ_API_KEY from a repository secret and sets SESSIONS_DB_PATH to a SQLite file in the runner's temporary directory. This retains state across separately opened connections; the current store does not support plain `:memory:` for that lifecycle. It includes mocked LLM resilience tests, excludes the live e2e model check and does not run test_scenarios_e2e.py. Rate-limit tests and browser CI integration remain separate maintenance items.
+Neither test job needs Groq or Shopify secrets. Dependency/browser/model installation can access public download servers; test calls to external services are blocked. Each job has a 15-minute ceiling and the workflow has read-only repository permissions. These are test jobs; Render's automatic deploy remains separately configured.
 
 ## Widget browser checks
 
-The separate JavaScript suite uses Node.js and Playwright with a Chromium-based browser. It runs the actual scripts from `index.html` and `snippets/etualy-advisor.liquid`, plus the ignored local `snippet.txt` when available. A fresh clone without that preview still runs the two tracked widget variants; only preview-specific coverage is skipped. Test-only hooks are injected in memory; the production files do not expose them. The HTML fixture is served as UTF-8, as required by the storefront document.
+The JavaScript suite uses Node.js 24 and pinned Playwright with a Chromium-based browser. It runs the actual scripts from `index.html` and `snippets/etualy-advisor.liquid`, plus the ignored local `snippet.txt` when available. A fresh clone without that preview still runs the two tracked widget variants; only preview-specific coverage is skipped. Test-only hooks are injected in memory; the production files do not expose them. The HTML fixture is served as UTF-8, as required by the storefront document.
 
 ```sh
-node --test --test-reporter=spec tests/test_widget_security.cjs
+npm --prefix tools/widget-tests ci --ignore-scripts --no-audit --no-fund
+npm --prefix tools/widget-tests run browser:install
+npm --prefix tools/widget-tests run test:widget
 ```
 
 Playwright must be resolvable by Node. If using an existing runtime rather than a project installation, set `WIDGET_PLAYWRIGHT_MODULE` to its Playwright package directory. Set `WIDGET_BROWSER_EXECUTABLE` to an installed Chromium, Chrome or Edge executable; otherwise Playwright uses its installed Chromium. These variables are for tests only. The local verification used Playwright 1.62.1 and headless Edge.
 
-All page requests are intercepted: HTML, API responses and a sample image are supplied locally; other requests are blocked. No Groq key, Shopify access or running backend is required. Browser contexts and temporary profiles close after the run. The current local suite contains 165 checks when the DevTools preview is present and is currently separate from the Python CI command above; browser CI integration remains part of the test-maintenance work.
+All page requests are intercepted: HTML, API responses and a sample image are supplied locally; other requests are blocked. No Groq key, Shopify access or running backend is required. Browser contexts and temporary profiles close after the run. The local suite contains 165 checks with the DevTools preview; a clean clone runs 110 checks on the two tracked variants. Browser tests now have a separate job in the same CI workflow.
 
 Card-detail checks cover both card types, complete and partial pyramids, separate additional notes, duplicates, missing data, legacy summaries, safe normalization, focus and restored standard-card panels. Profile checks use simulated HTTP responses and old saved history to verify that the type excludes the recipient and the season omits the derivation suffix. Mobile checks verify wrapping, bounded panel height, internal scrolling and reachable close actions. Selected-card checks open the first, middle and last recommendation, then reopen the first, on desktop and mobile (including a short viewport and reduced motion). They verify that the expanded card remains inside the message viewport, long notes scroll internally and the host page does not scroll. Setting the test-only `WIDGET_SCREENSHOT_DIR` saves an example detail-panel screenshot there during the standalone-page check.
 
 Request-coordination checks deliberately deliver both successful and failed responses after cancellation, while a new session is waiting. They also simulate navigation before a response arrives and verify recovery with the original request identifier and a single customer message.
 
 ## Latest local verification
+
+After regrouping the files on 8 October 2026, **9 maintenance-configuration tests** passed in the existing local Python environment. Pip successfully parsed all five relocated input/lock files, including relative runtime and constraint references. An offline `npm ci` from the relocated lock succeeded, and `npm --prefix tools/widget-tests run test:widget` passed **165 browser checks** with Node 24.19.0 and headless Edge, without a `WIDGET_PLAYWRIGHT_MODULE` override. This verifies module resolution from the new tools directory. Temporary reports and the test-installed `node_modules` were removed after success; no external provider calls were made. The complete Python suite was not rerun for this file reorganization; its preceding result is recorded below.
+
+On 8 October 2026, the maintenance changes passed **309 Python tests** (6 real-service tests deselected) in a fresh Python 3.11.14 environment installed from `requirements/dev.txt`, plus **165 browser checks** with Node 24.19.0, Playwright installed using the npm lock and headless Edge. A normal run without a marker filter also passed 26 checks and skipped all 6 real-service tests automatically. Dependency checks passed; a Linux/Python 3.11 binary-package resolution succeeded, and a new verified 643-product index was built in a temporary directory with the locked dependencies. These are local checks; Linux execution and remote GitHub/Render outcomes remain to be observed after pushing. The isolated environment, test index and reports were removed after successful verification.
+
+A browser run reproduced the earlier consecutive-card visibility failure. Card toggles now cancel a previous smooth scroll before changing height, and the message area disables automatic browser scroll anchoring. All 12 targeted geometry checks and the subsequent full 165-check run passed after that correction. The three widget variants, including the local DevTools preview, contain the same change.
 
 On 8 October 2026, the subsequent selected-card scrolling correction passed the complete **165-check browser suite** on all three widget variants. The added checks repeatedly opened the first, middle and last card on desktop, mobile and a short mobile viewport, also with reduced motion. No backend code changed and Python tests were not rerun for this UI correction. An initial full run had one mobile visibility timeout; the targeted repeat and the full run with additional open/close cycles passed. Its original cause was not established.
 

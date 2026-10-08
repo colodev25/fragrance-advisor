@@ -20,6 +20,14 @@ def temp_store(tmp_path):
     return SessionStore(db_path=str(db_file))
 
 
+@pytest.mark.parametrize("via_environment", [False, True])
+def test_memory_database_is_rejected_with_actionable_error(monkeypatch, via_environment):
+    if via_environment:
+        monkeypatch.setenv("SESSIONS_DB_PATH", ":memory:")
+    with pytest.raises(ValueError, match="file temporaneo"):
+        SessionStore(db_path=None if via_environment else ":memory:")
+
+
 # ==============================================================================
 # 1. UNIT TEST BASSO LIVELLO (SQLITE & STRUTTURE DATI)
 # ==============================================================================

@@ -22,8 +22,12 @@ CLEANUP_BATCH_SIZE = 100
 
 class SessionStore:
     def __init__(self, db_path: Optional[str] = None):
-        self.db_path = Path(db_path or os.getenv("SESSIONS_DB_PATH") or
-                            Path(__file__).resolve().parent.parent / "data" / "sessions.db")
+        selected_path = db_path or os.getenv("SESSIONS_DB_PATH") or (
+            Path(__file__).resolve().parent.parent / "data" / "sessions.db")
+        if str(selected_path) == ":memory:":
+            raise ValueError("SessionStore richiede un database SQLite su file; "
+                             "usa un file temporaneo per i test, non ':memory:'.")
+        self.db_path = Path(selected_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 

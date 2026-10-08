@@ -15,7 +15,7 @@ The project includes a FastAPI backend, a browser chat interface, a Shopify cata
 
 ## Run locally
 
-Uses Python 3.11 in the CI workflow and requires a Groq API key to start the advisor.
+Uses Python 3.11 with pinned dependencies and requires a Groq API key to start the advisor. Offline tests use a dummy key.
 
 ```bash
 python -m venv .venv
@@ -49,6 +49,7 @@ The API listens at `http://127.0.0.1:8000`. Run `python src/reindex.py` before s
 - [Advisor](docs/ADVISOR.md) — conversation and recommendation behavior
 - [API](docs/API.md) — HTTP endpoints and configuration
 - [Testing](docs/TESTING.md) — test coverage and execution
+- [Maintenance](docs/MAINTENANCE.md) — dependency versions and update procedure
 
 ## Technology
 

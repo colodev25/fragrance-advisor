@@ -2,9 +2,11 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { createRequire } = require('node:module');
 const vm = require('node:vm');
 const { test, before, after } = require('node:test');
-const { chromium } = require(process.env.WIDGET_PLAYWRIGHT_MODULE || 'playwright');
+const widgetTestRequire = createRequire(path.resolve(__dirname, '../tools/widget-tests/package.json'));
+const { chromium } = widgetTestRequire(process.env.WIDGET_PLAYWRIGHT_MODULE || 'playwright');
 
 const root = path.resolve(__dirname, '..');
 const files = ['index.html', 'snippets/etualy-advisor.liquid'];

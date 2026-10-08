@@ -1,0 +1,6 @@
+# Use runtime versions without installing the vector-search stack.
+-c ../requirements.txt
+requests
+beautifulsoup4
+python-dotenv
+openai

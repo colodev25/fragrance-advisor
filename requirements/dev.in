@@ -1,0 +1,4 @@
+-r runtime.in
+pytest==9.1.1
+PyYAML==6.0.3
+uv==0.9.9

@@ -404,6 +404,7 @@
     flex-direction: column;
     gap: 16px;
     scroll-behavior: smooth;
+    overflow-anchor: none;
     scrollbar-width: thin;
     scrollbar-color: var(--oa-border) transparent;
   }
@@ -2548,6 +2549,8 @@
           function toggleCardSlide(btn) {
         const card = btn.closest(".oa-product-card");
         if (card) {
+          // Cancel an earlier smooth scroll before changing the card height.
+          messagesContainer.scrollTo({ top: messagesContainer.scrollTop, behavior: "instant" });
           const willOpen = !card.classList.contains("is-open");
           if (willOpen) {
             const style = getComputedStyle(messagesContainer);
