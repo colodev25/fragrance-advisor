@@ -55,7 +55,7 @@ For identified requests, session state and the completed response are committed 
 
 The latest 100 complete responses per session are retained. Older identifiers keep their payload fingerprint: retrying one returns `409` (`request_result_expired`) rather than processing it again. Reset clears both session state and request records. Database initialization adds the request table automatically; no catalog ingestion or reindexing is needed.
 
-An exception before the atomic commit leaves no completed result, so the same identifier may be retried. A normal `200` response, including an advisor fallback message, is a completed result: a subsequent customer message gets a new identifier. If the process stops after a model call but before committing, a retry can require another model call.
+An exception before the atomic commit leaves no completed result, so the same identifier may be retried. Transient model failures and invalid completions return `503` without a saved response, so the original identifier remains retryable. A normal `200` response, including a guided selection with a fixed introduction, is a completed result: a subsequent customer message gets a new identifier. If the process stops after a model call but before committing, a retry can require another model call.
 
 Session locks are local to one process. Keep the current Render start command with `--workers 1` and one service instance. Multiple workers or replicas require shared coordination before enabling them. Recovery after a restart depends on retaining the SQLite database; Render storage durability remains a separate deployment concern.
 
@@ -82,13 +82,19 @@ Requests use one error format:
 }
 ```
 
-The API returns `422` for invalid request data, `409` for a conflicting identifier or an unavailable older result, `429` when a route limit is exceeded, and `503` when the advisor is starting or a downstream service cannot complete the request. A `429` response includes the standard `Retry-After` header.
+The API returns `422` for invalid request data, `409` for a conflicting identifier or an unavailable older result, `429` when a route limit is exceeded, and `503` when the advisor is starting or a downstream service cannot complete the request. An application `429` includes the standard `Retry-After` header. Provider failures can return `503` with codes such as `llm_rate_limit`, `llm_timeout`, `llm_unavailable`, `llm_invalid_response`, `llm_attempts_exhausted` or `chat_deadline_exceeded`; a provider cooldown is forwarded through `Retry-After` when available.
 
 The built-in rate limiter is in-memory and applies separately to chat and reset routes. It is intentionally lightweight for a single service instance: counters are reset after a restart and are not shared between multiple instances.
 
+## Response waits
+
+Chat processing uses a shared 25-second budget, including time waiting for the same-session lock, and at most three provider calls. Intent classification has a 3-second timeout; reply generation has a 10-second timeout, reduced to the remaining budget. These are cooperative bounds, not a hard cancellation of synchronous operations. See [LLM resilience](ADVISOR.md#llm-resilience).
+
+The widget limits its complete HTTP wait, including response-body reading, to 60 seconds. A local timeout offers recovery with the same request identifier and ignores late replies; it cannot cancel work already executing on the server or accelerate a Render cold start. Numeric and HTTP-date `Retry-After` values disable sends and retries until the indicated time, with a countdown retained across navigation and local restart.
+
 ## CORS
 
-`ALLOWED_ORIGINS` is a comma-separated list of origins. It defaults to `*`. When the wildcard is configured, the application allows all origins and disables credentialed CORS requests; set explicit origins when credentials are required or access should be restricted.
+CORS exposes `Retry-After` so the storefront can read the cooldown header. `ALLOWED_ORIGINS` is a comma-separated list of origins. It defaults to `*`. When the wildcard is configured, the application allows all origins and disables credentialed CORS requests; set explicit origins when credentials are required or access should be restricted.
 
 ## Configuration
 

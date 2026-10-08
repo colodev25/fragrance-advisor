@@ -6,6 +6,10 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import List, Dict, Any, Optional, Callable
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
+try:
+    from src.chat_budget import ChatUnavailable
+except ModuleNotFoundError:
+    from chat_budget import ChatUnavailable
 
 logger = logging.getLogger("fragrance_advisor.llm")
 
@@ -63,11 +67,20 @@ class ResilientGroqClient:
         failure_callback: Optional[Callable[[str, Optional[float]], None]] = None,
         request_callback: Optional[Callable[[Dict[str, Any]], bool]] = None,
         usage_callback: Optional[Callable[[Any], None]] = None,
+        chat_budget=None,
+        call_timeout: float = 10.0,
+        call_limit: int = 3,
     ) -> str:
         """
         Invia la richiesta al modello primario gratuito. Se incontra rate limit (429)
         o risposte troncate dal reasoning, prova il retry e scala sul fallback.
         """
+        if chat_budget is not None:
+            return self._chat_completion(
+                messages, primary_model, fallback_model, temperature, max_tokens,
+                response_validator, reasoning_effort, chat_budget, call_timeout, call_limit,
+            )
+
         models_to_try = [primary_model]
         if fallback_model and fallback_model != primary_model:
             models_to_try.append(fallback_model)
@@ -155,3 +168,54 @@ class ResilientGroqClient:
 
         logger.error("Nessuna risposta valida disponibile dai modelli configurati.")
         return graceful_fallback_text
+
+    def _chat_completion(self, messages, primary, fallback, temperature, max_tokens,
+                         validator, reasoning, budget, call_timeout, call_limit):
+        """La chat ha un unico livello di tentativi, senza recupero con token doppi."""
+        models = list(dict.fromkeys(model for model in (primary, fallback) if model))
+        last_kind = "llm_unavailable"
+        for attempt in range(min(call_limit, budget.MAX_CALLS - budget.calls)):
+            timeout = budget.reserve_call(call_timeout)
+            model = models[attempt % len(models)]
+            kwargs = {"model": model, "messages": messages, "temperature": temperature,
+                      "max_tokens": max_tokens, "timeout": timeout}
+            if reasoning and model.startswith("openai/gpt-oss-"):
+                kwargs["reasoning_effort"] = reasoning
+            try:
+                # Anche un client iniettato deve disabilitare i retry automatici SDK.
+                response = self.client.with_options(max_retries=0).chat.completions.create(**kwargs)
+                budget.check()
+                choice = response.choices[0]
+                content = (choice.message.content or "").strip()
+                if getattr(choice, "finish_reason", None) == "length":
+                    raise InvalidCompletion("truncated_response")
+                if not content:
+                    raise InvalidCompletion("empty_response")
+                if validator:
+                    validator(content)
+                return content
+            except ChatUnavailable:
+                raise
+            except (RateLimitError, APITimeoutError, APIConnectionError, InternalServerError) as error:
+                last_kind = ("llm_rate_limit" if isinstance(error, RateLimitError) else
+                             "llm_timeout" if isinstance(error, APITimeoutError) else "llm_unavailable")
+                hint = retry_after_seconds(error)
+                logger.warning("[CHAT %s] modello=%s chiamata=%s Retry-After=%s",
+                               last_kind.upper(), model, budget.calls, hint)
+                if hint is not None and hint > budget.MAX_INLINE_WAIT:
+                    budget.defer_retry(hint)
+                    raise ChatUnavailable(last_kind, budget.retry_after()) from error
+                if attempt + 1 < call_limit and budget.calls < budget.MAX_CALLS:
+                    delay = max(self.base_delay, hint or 0.0)
+                    if delay > budget.MAX_INLINE_WAIT or delay >= budget.remaining():
+                        raise ChatUnavailable(last_kind, math.ceil(hint) if hint else None) from error
+                    time.sleep(delay)
+                elif hint:
+                    budget.defer_retry(hint)
+            except Exception as error:
+                last_kind = "llm_invalid_response"
+                logger.warning("[CHAT INVALID RESPONSE] modello=%s tipo=%s", model, type(error).__name__)
+                if getattr(error, "status_code", None) in (401, 403):
+                    raise ChatUnavailable("llm_unavailable") from error
+        budget.check()
+        raise ChatUnavailable(last_kind)

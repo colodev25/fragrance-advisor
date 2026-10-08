@@ -93,6 +93,13 @@ def test_free_search_updates_state_only_for_valid_selection(raw, expected_cards,
     advisor.client = advisor._resilient_client.client
     advisor.resilient_client.create_completion.return_value = raw
     advisor._enrich_product_payload = MagicMock(side_effect=lambda product, **kwargs: product)
+    if raw.startswith("[ID:"):
+        from src.chat_budget import ChatUnavailable
+        with pytest.raises(ChatUnavailable, match="llm_invalid_response"):
+            advisor._handle_free_chat("Cerco rosa", "test", None)
+        assert advisor.active_perfumes["test"] == previous
+        assert advisor.sessions["test"] == []
+        return
     result = advisor._handle_free_chat("Cerco rosa", "test", None)
     assert len(result["products"]) == expected_cards
     assert advisor.active_perfumes["test"] == (None if clears_active else candidate if expected_cards else previous)

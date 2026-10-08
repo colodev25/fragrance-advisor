@@ -23,6 +23,7 @@ def advisor_mock(tmp_path):
 
     # Mock del client LLM configurato per simulare le decisioni del router intenti
     mock_client = MagicMock()
+    mock_client.with_options.return_value = mock_client
     
     def fake_llm_completion(**kwargs):
         messages = kwargs.get("messages", [])

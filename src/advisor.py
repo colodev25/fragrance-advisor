@@ -6,6 +6,10 @@ import hashlib
 from pathlib import Path
 from collections import defaultdict
 from typing import Optional
+try:
+    from src.chat_budget import ChatBudget, ChatUnavailable, current_chat_budget
+except ModuleNotFoundError:
+    from chat_budget import ChatBudget, ChatUnavailable, current_chat_budget
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -142,7 +146,9 @@ class FragranceAdvisor:
 
         self.client = client or OpenAI(
             base_url="https://api.groq.com/openai/v1",
-            api_key=groq_key
+            api_key=groq_key,
+            timeout=10.0,
+            max_retries=0,
         )
         self._resilient_client = resilient_client or ResilientGroqClient(self.client)
 
@@ -623,13 +629,13 @@ class FragranceAdvisor:
         )
 
         try:
-            decision = self.resilient_client.create_completion(
+            decision = self._chat_completion(
                 messages=[{"role": "user", "content": prompt}],
                 primary_model=FALLBACK_FREE_MODEL,
                 fallback_model=FALLBACK_FREE_MODEL,
                 temperature=0.0,
-                max_tokens=250,
-                graceful_fallback_text="VALUTA"
+                max_tokens=768, call_timeout=3.0, call_limit=1,
+                safe_fallback="VALUTA"
             ).upper()
             return "CAMBIA" if "CAMBIA" in decision else "VALUTA"
         except Exception:
@@ -640,20 +646,62 @@ class FragranceAdvisor:
         max_price: float = None, step_override: int = None, request_id: str = None,
     ) -> dict:
         session_id = session_id or "default"
-        with session_coordinator.hold(session_id):
-            if not hasattr(self, "session_store") or self.session_store is None:
-                self.session_store = SessionStore()
-            fingerprint = None
-            if request_id is not None:
-                payload = json.dumps({
-                    "message": user_query.strip(), "max_price": max_price,
-                    "step_override": step_override,
-                }, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-                fingerprint = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-                previous = self.session_store.get_request_response(session_id, request_id, fingerprint)
-                if previous is not None:
-                    return previous
-            return self._advise_locked(user_query, session_id, max_price, step_override, request_id, fingerprint)
+        budget = ChatBudget()
+        token = current_chat_budget.set(budget)
+        try:
+            with session_coordinator.hold(session_id, timeout=budget.remaining()):
+                budget.check()
+                if not hasattr(self, "session_store") or self.session_store is None:
+                    self.session_store = SessionStore()
+                fingerprint = None
+                if request_id is not None:
+                    payload = json.dumps({
+                        "message": user_query.strip(), "max_price": max_price,
+                        "step_override": step_override,
+                    }, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+                    fingerprint = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+                    previous = self.session_store.get_request_response(session_id, request_id, fingerprint)
+                    if previous is not None:
+                        return previous
+                try:
+                    return self._advise_locked(user_query, session_id, max_price, step_override, request_id, fingerprint)
+                except Exception:
+                    # Nessuna ricevuta viene salvata in caso di fallimento; rimuove anche lo stato RAM parziale.
+                    self.sessions.pop(session_id, None)
+                    self.active_perfumes.pop(session_id, None)
+                    self.guided_states.pop(session_id, None)
+                    raise
+        finally:
+            current_chat_budget.reset(token)
+
+    def _chat_completion(self, *, max_tokens=2048, call_timeout=10.0,
+                         call_limit=3, safe_fallback=None, **kwargs):
+        budget = current_chat_budget.get() or ChatBudget()
+        # I due messaggi storici servono come contesto, non devono far crescere il prompt senza limiti.
+        kwargs["messages"] = [
+            {**message, "content": message["content"][:16000]}
+            for message in kwargs["messages"]
+        ]
+        try:
+            return self.resilient_client.create_completion(
+                **kwargs, max_tokens=max_tokens, reasoning_effort="low",
+                recover_truncated=False, max_retry_delay=1.0,
+                chat_budget=budget, call_timeout=call_timeout, call_limit=call_limit,
+            )
+        except ChatUnavailable:
+            if safe_fallback is not None:
+                return safe_fallback
+            raise
+
+    @staticmethod
+    def _prompt_document(document):
+        """Preserva note/famiglia/uso, poi aggiunge descrizione entro 1.800 caratteri."""
+        text = str(document or "")
+        lines = text.splitlines()
+        priority = ("note", "testa", "cuore", "fondo", "famiglia", "occasion", "uso", "stagion")
+        facts = [line for line in lines if any(word in line.lower() for word in priority)]
+        other = [line for line in lines if line not in facts]
+        return "\n".join(facts + other)[:1800]
 
     def _advise_locked(self, user_query, session_id, max_price, step_override, request_id, fingerprint) -> dict:
         sess_data = self.session_store.get_session(session_id)
@@ -744,6 +792,7 @@ class FragranceAdvisor:
         if response is None:
             response = self._handle_free_chat(user_query, session_id, max_price)
 
+        current_chat_budget.get().check_deadline()
         self.sessions[session_id] = self.sessions[session_id][-MAX_HISTORY_MESSAGES:]
         receipt = {} if request_id is None else {
             "request_id": request_id, "fingerprint": fingerprint, "response": response,
@@ -879,11 +928,13 @@ class FragranceAdvisor:
             "NON elencare prezzi o link (saranno visualizzati direttamente nelle schede prodotto sottostanti)."
         )
 
-        reply = self.resilient_client.create_completion(
+        reply = self._chat_completion(
             messages=[{"role": "user", "content": prompt}],
             primary_model=PRIMARY_FREE_MODEL,
             fallback_model=FALLBACK_FREE_MODEL,
-            temperature=0.0
+            temperature=0.0,
+            max_tokens=1024,
+            safe_fallback="Ecco le fragranze selezionate dal catalogo in base alle tue preferenze.",
         )
 
         self.sessions[session_id].append({"role": "user", "content": f"Percorso guidato completato: {macro_label}, {gender}, {occasion}, {budget_str}"})
@@ -919,7 +970,7 @@ class FragranceAdvisor:
                 f"- Tipologia: {mentioned_product.get('ptype', '')} | Famiglia: {mentioned_product.get('family', '')}\n"
                 f"- Prezzo di vendita ufficiale: {mentioned_product['price']} EUR\n"
                 f"- Link Acquisto: {mentioned_product['add_to_cart_url']}\n"
-                f"- Profilo olfattivo, note ed evoluzione: {mentioned_product['document']}"
+                f"- Profilo olfattivo, note ed evoluzione: {self._prompt_document(mentioned_product['document'])}"
             )
 
             system_prompt = (
@@ -932,10 +983,10 @@ class FragranceAdvisor:
             )
 
             messages = [{"role": "system", "content": system_prompt}]
-            messages.extend(history[-2:])
+            messages.extend({**message, "content": message["content"][:2000]} for message in history[-2:])
             messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
-            reply = self.resilient_client.create_completion(
+            reply = self._chat_completion(
                 messages=messages,
                 primary_model=PRIMARY_FREE_MODEL,
                 fallback_model=FALLBACK_FREE_MODEL,
@@ -965,7 +1016,7 @@ class FragranceAdvisor:
                     f"- Famiglia: {active.get('family', '')} | Tipologia: {active.get('ptype', '')}\n"
                     f"- Prezzo di vendita ufficiale: {active['price']} EUR\n"
                     f"- Link Acquisto: {active['add_to_cart_url']}\n"
-                    f"- Profilo olfattivo, note ed occasioni d'uso: {active['document']}"
+                    f"- Profilo olfattivo, note ed occasioni d'uso: {self._prompt_document(active['document'])}"
                 )
 
                 system_prompt = (
@@ -986,10 +1037,10 @@ class FragranceAdvisor:
                 )
 
                 messages = [{"role": "system", "content": system_prompt}]
-                messages.extend(history[-2:])
+                messages.extend({**message, "content": message["content"][:2000]} for message in history[-2:])
                 messages.append({"role": "user", "content": f"RICHIESTA UTENTE: {user_query}\n\nCONTESTO:\n{context_str}"})
 
-                reply = self.resilient_client.create_completion(
+                reply = self._chat_completion(
                     messages=messages,
                     primary_model=PRIMARY_FREE_MODEL,
                     fallback_model=FALLBACK_FREE_MODEL,
@@ -1078,7 +1129,7 @@ class FragranceAdvisor:
                         f"Brand: {km.get('brand', 'Profumeria Artistica')}\n"
                         f"Tipologia: {km.get('ptype', '')} | Famiglia: {km.get('family', '')}\n"
                         f"Prezzo: {km['price']} EUR\n"
-                        f"Descrizione e Note: {km['document']}"
+                        f"Descrizione e Note: {self._prompt_document(km['document'])}"
                     )
                     candidate_idx += 1
 
@@ -1112,7 +1163,7 @@ class FragranceAdvisor:
                             f"Brand: {meta.get('brand', 'Profumeria Artistica')}\n"
                             f"Tipologia: {meta.get('ptype', '')} | Famiglia: {meta.get('family', '')}\n"
                             f"Prezzo: {meta['price']} EUR\n"
-                            f"Descrizione e Note: {doc}"
+                            f"Descrizione e Note: {self._prompt_document(doc)}"
                         )
                         candidate_idx += 1
                         if candidate_idx > 5:
@@ -1186,7 +1237,7 @@ class FragranceAdvisor:
                 messages = [{"role": "system", "content": system_prompt}]
                 messages.append({"role": "user", "content": user_message_content})
 
-                raw_reply = self.resilient_client.create_completion(
+                raw_reply = self._chat_completion(
                     messages=messages,
                     primary_model=PRIMARY_FREE_MODEL,
                     fallback_model=FALLBACK_FREE_MODEL,
@@ -1198,9 +1249,8 @@ class FragranceAdvisor:
                 selected_product = None
                 try:
                     selection = parse_catalog_selection(raw_reply, candidates_map)
-                except ValueError:
-                    reply = SELECTION_FAILURE_REPLY
-                    logger.warning("No validated catalog selection available.")
+                except ValueError as error:
+                    raise ChatUnavailable("llm_invalid_response") from error
                 else:
                     reply = selection["reply"]
                     selected_product = candidates_map.get(selection["selection"])

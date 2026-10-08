@@ -2085,7 +2085,7 @@
           const button = dom("button", "oa-chip", option);
           button.type = "button";
           button.addEventListener("click", () => handleChipClick(option));
-          button.disabled = activeRequest !== null;
+          button.disabled = activeRequest !== null || isCoolingDown();
           chipsContainer.appendChild(button);
         });
       }
@@ -2123,6 +2123,7 @@
         messagesContainer.replaceChildren(renderMessage(chatMessages[0]));
         renderOptions(INITIAL_OPTIONS);
         updateStepper(null);
+        refreshCooldown();
       }
       // END WIDGET SAFE RENDERING
 
@@ -2240,6 +2241,8 @@
       let currentOptions = [...INITIAL_OPTIONS];
       let activeRequest = null;
       let pendingRequest = null;
+      let cooldownUntil = 0;
+      let cooldownTimer = null;
 
       function saveChatState(stepOverride) {
         try {
@@ -2261,6 +2264,7 @@
               step: currentStepValue,
               last_message: lastUserMessage,
               pending_request: pendingRequest,
+              retry_until: cooldownUntil,
             }),
           );
           clearLegacyChat();
@@ -2299,6 +2303,7 @@
                 ? state.step
                 : null;
             lastUserMessage = plainText(state.last_message);
+            cooldownUntil = normalizeRetryDeadline(state.retry_until);
             const interrupted = normalizeChatRequest(state.pending_request);
             if (interrupted?.session_id === sessionId) {
               chatMessages.push(normalizeMessage({
@@ -2324,6 +2329,7 @@
             // Never parse or reinsert the previous HTML-based history.
             resetLocalChat(hasLegacy);
           }
+          refreshCooldown();
           saveChatState();
           scrollToBottom();
         } catch (error) {
@@ -2404,7 +2410,7 @@
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        if (activeRequest) return;
+        if (activeRequest || isCoolingDown()) return;
         const text = input.value.trim();
         if (!text) return;
         input.value = "";
@@ -2545,25 +2551,71 @@
       }
 
       // BEGIN WIDGET REQUEST FLOW
+      const CHAT_TIMEOUT_MS = 60000;
+
       function newRequestId() {
         return "req_" + (globalThis.crypto?.randomUUID
           ? globalThis.crypto.randomUUID()
           : Date.now().toString(36) + "_" + Math.random().toString(36).slice(2));
       }
 
+      function normalizeRetryDeadline(value) {
+        return typeof value === "number" && Number.isFinite(value) && value > Date.now()
+          ? value : 0;
+      }
+
+      function retryDeadline(response) {
+        const value = response.headers?.get?.("Retry-After");
+        if (!value || !value.trim()) return 0;
+        const seconds = Number(value);
+        const deadline = Number.isFinite(seconds)
+          ? Date.now() + Math.max(0, seconds) * 1000 : Date.parse(value);
+        return normalizeRetryDeadline(deadline);
+      }
+
+      function isCoolingDown() {
+        return cooldownUntil > Date.now();
+      }
+
       function setRequestBusy(busy) {
-        input.disabled = busy;
-        form.querySelector('button[type="submit"]').disabled = busy;
+        const blocked = busy || isCoolingDown();
+        input.disabled = blocked;
+        form.querySelector('button[type="submit"]').disabled = blocked;
         messagesContainer.setAttribute("aria-busy", String(busy));
-        chipsContainer.querySelectorAll("button").forEach((button) => { button.disabled = busy; });
-        messagesContainer.querySelectorAll(".oa-retry-btn").forEach((button) => { button.disabled = busy; });
+        chipsContainer.querySelectorAll("button").forEach((button) => { button.disabled = blocked; });
+        messagesContainer.querySelectorAll(".oa-retry-btn").forEach((button) => {
+          button.disabled = blocked;
+          const label = button.querySelector("span");
+          if (label) label.textContent = isCoolingDown()
+            ? "Riprova tra " + Math.ceil((cooldownUntil - Date.now()) / 1000) + " s"
+            : "Riprova ora";
+        });
+      }
+
+      function refreshCooldown() {
+        if (cooldownTimer !== null) clearTimeout(cooldownTimer);
+        cooldownTimer = null;
+        cooldownUntil = normalizeRetryDeadline(cooldownUntil);
+        setRequestBusy(activeRequest !== null);
+        if (isCoolingDown()) {
+          cooldownTimer = setTimeout(refreshCooldown, Math.min(1000, cooldownUntil - Date.now()));
+        } else {
+          saveChatState();
+        }
       }
 
       function cancelActiveRequest() {
         const previous = activeRequest;
         activeRequest = null;
         pendingRequest = null;
-        if (previous) previous.controller.abort();
+        if (previous) {
+          clearTimeout(previous.deadlineTimer);
+          previous.controller.abort();
+          previous.cancelWait();
+        }
+        if (cooldownTimer !== null) clearTimeout(cooldownTimer);
+        cooldownTimer = null;
+        // Conserva l'attesa anche quando il cliente ricomincia la conversazione.
         removeTyping();
         setRequestBusy(false);
       }
@@ -2576,8 +2628,16 @@
       }
 
       async function executeChatQuery(request) {
-        if (activeRequest || request.session_id !== sessionId) return;
-        const context = { request, controller: new AbortController() };
+        if (activeRequest || isCoolingDown() || request.session_id !== sessionId) return;
+        const context = { request, controller: new AbortController(), timedOut: false };
+        const interruption = new Promise((resolve, reject) => {
+          context.cancelWait = () => reject(new Error("Richiesta interrotta."));
+          context.deadlineTimer = setTimeout(() => {
+            context.timedOut = true;
+            context.controller.abort();
+            reject(new Error("La risposta sta impiegando troppo tempo. Puoi riprovare per recuperarla."));
+          }, CHAT_TIMEOUT_MS);
+        });
         activeRequest = context;
         pendingRequest = request;
         const isCurrent = () => activeRequest === context && sessionId === request.session_id;
@@ -2587,23 +2647,29 @@
         saveChatState();
 
         try {
-          const response = await fetch(`${API_BASE_URL}/chat`, {
+          // La scadenza copre sia gli header sia la lettura del corpo della risposta.
+          const response = await Promise.race([fetch(`${API_BASE_URL}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(request),
             signal: context.controller.signal,
-          });
+          }), interruption]);
           if (!isCurrent()) return;
           if (!response.ok) {
-            const errorBody = await response.json().catch(() => null);
+            const retryable = response.status === 429 || response.status >= 500;
+            const retryAt = retryable ? retryDeadline(response) : 0;
+            cooldownUntil = Math.max(cooldownUntil, retryAt);
+            saveChatState();
+            const errorBody = await Promise.race([response.json().catch(() => null), interruption]);
             if (!isCurrent()) return;
             const error = new Error(errorBody?.error?.message ||
               "Un'interruzione temporanea non consente di completare la richiesta.");
-            error.retryable = response.status === 429 || response.status >= 500;
+            error.retryable = retryable;
+            error.retryAt = retryAt;
             throw error;
           }
-          const data = await response.json();
-          if (!isCurrent()) return;
+          const data = await Promise.race([response.json(), interruption]);
+          if (!isCurrent() || context.timedOut) return;
           if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
             throw new Error("La risposta non è disponibile. Riprova tra qualche istante.");
           }
@@ -2617,25 +2683,28 @@
         } catch (error) {
           if (!isCurrent()) return;
           removeTyping();
+          cooldownUntil = Math.max(cooldownUntil, normalizeRetryDeadline(error?.retryAt));
           appendChatRecord(normalizeMessage({
-            kind: "error", text: error?.message ||
-              "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo.",
+            kind: "error", text: context.timedOut
+              ? "La risposta sta impiegando troppo tempo. Puoi riprovare per recuperarla."
+              : error?.message || "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo.",
             retryable: error?.retryable !== false, request,
           }));
           scrollToBottom();
         } finally {
+          clearTimeout(context.deadlineTimer);
           // Una risposta della vecchia sessione non deve rimuovere loader o blocchi della nuova.
           if (isCurrent()) {
             activeRequest = null;
             pendingRequest = null;
-            setRequestBusy(false);
+            refreshCooldown();
             saveChatState();
           }
         }
       }
 
       async function sendUserMessage(text) {
-        if (activeRequest) return;
+        if (activeRequest || isCoolingDown()) return;
         text = typeof text === "string" ? text.trim() : "";
         if (!text) return;
         if (text.length > 2000) {
@@ -2653,7 +2722,7 @@
       }
 
       async function retryLastMessage(btn, record) {
-        if (activeRequest || !record?.retryable || !record.request ||
+        if (activeRequest || isCoolingDown() || !record?.retryable || !record.request ||
             record.request.session_id !== sessionId || !chatMessages.includes(record)) return;
         const errDiv = btn?.closest(".oa-msg-error");
         if (!errDiv || messageRecords.get(errDiv) !== record) return;

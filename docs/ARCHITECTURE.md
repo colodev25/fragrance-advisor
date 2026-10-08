@@ -26,7 +26,7 @@ Browser interface (index.html)
 
 ### Conversation advisor
 
-`src/advisor.py` coordinates the guided and free-form flows, restores conversation state, identifies active-product follow-ups, applies recommendation rules, enriches product cards and prepares catalog context for the LLM. `src/llm_resilience.py` handles retry and fallback behavior for Groq calls.
+`src/advisor.py` coordinates the guided and free-form flows, restores conversation state, identifies active-product follow-ups, applies recommendation rules, enriches product cards and prepares catalog context for the LLM. `src/llm_resilience.py` handles retry and fallback behavior for Groq calls. `src/chat_budget.py` scopes the chat deadline and provider-call allowance to each request; catalog enrichment retains its separate batch policy. Transient chat failures are retryable HTTP errors, rather than saved conversation replies.
 
 ### Search and indexing
 
@@ -77,6 +77,7 @@ Separate GitHub Actions workflows synchronize Shopify and progressively enrich t
 | `src/session_store.py`  | SQLite session persistence                       |
 | `src/conversation_requests.py` | Per-session coordination and request conflicts |
 | `src/llm_resilience.py` | LLM retry and model fallback                     |
+| `src/chat_budget.py` | Chat processing deadline and provider-call allowance |
 | `data/`                 | Product JSON datasets and local session database |
 | `index.html`            | Browser chat interface                           |
 | `tests/`                | API, parser, session, resilience and E2E tests   |

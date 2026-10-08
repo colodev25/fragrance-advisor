@@ -8,6 +8,7 @@ const { chromium } = require(process.env.WIDGET_PLAYWRIGHT_MODULE || 'playwright
 
 const root = path.resolve(__dirname, '..');
 const files = ['index.html', 'snippets/etualy-advisor.liquid'];
+if (fs.existsSync(path.join(root, 'snippet.txt'))) files.push('snippet.txt');
 const stateKey = 'etualy_chat_state_v1';
 const attack = '\"><img src=x onerror="window.__xss=1"><script>window.__xss=2</script>';
 let browser;
@@ -17,12 +18,13 @@ function source(file) {
 }
 
 function script(file) {
+  if (file.endsWith('.txt')) return source(file);
   const match = source(file).match(/<script>([\s\S]*?)<\/script>/);
   assert.ok(match, `${file}: widget script must exist`);
   return match[1];
 }
 
-function instrumentedHtml(file) {
+function instrumentedScript(file) {
   const original = script(file);
   const hooks = `window.__widgetTest = {
     safeHttpUrl, normalizeProduct, normalizeMessage, renderMarkdownText,
@@ -31,10 +33,21 @@ function instrumentedHtml(file) {
     records: () => chatMessages, sendUserMessage,
     active: () => activeRequest !== null
   };`;
-  const instrumented = file.endsWith('.liquid')
+  const instrumented = file.endsWith('.txt')
+    ? original.replace('    restoreChatState();', `${hooks}\n    restoreChatState();`)
+    : file.endsWith('.liquid')
     ? original.replace(/\}\)\(\);\s*$/, `${hooks}\n})();`)
     : original + '\n' + hooks;
   assert.ok(instrumented.includes(hooks));
+  return instrumented;
+}
+
+function instrumentedHtml(file) {
+  const original = script(file);
+  const instrumented = instrumentedScript(file);
+  if (file.endsWith('.txt')) {
+    return '<!doctype html><html><head></head><body><script>' + instrumented + '</script></body></html>';
+  }
   return source(file).replace(original, instrumented)
     .replace(/{% comment %}[\s\S]*?{% endcomment %}/g, '');
 }
@@ -86,7 +99,8 @@ async function fixture(t, file, seed = {}) {
         reply: 'Risposta **sicura**', products: [], options: ['Per Lui'], step: 2,
       } };
       return route.fulfill({ status: response.status, contentType: 'application/json',
-        headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(response.body) });
+        headers: { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'Retry-After',
+          ...response.headers }, body: JSON.stringify(response.body) });
     }
     if (url.origin === 'https://images.test') {
       return route.fulfill({ contentType: 'image/png', body: Buffer.from(
@@ -140,16 +154,16 @@ async function assertSafe(page) {
   assert.deepEqual(result.inlineHandlers, []);
 }
 
-test('Both widgets contain the same safe renderer', () => {
+test('Available widget variants contain the same safe renderer', () => {
   const block = (file) => script(file).split('// BEGIN WIDGET SAFE RENDERING')[1]
     .split('// END WIDGET SAFE RENDERING')[0].trim();
-  assert.equal(block(files[0]), block(files[1]));
+  files.slice(1).forEach((file) => assert.equal(block(files[0]), block(file)));
 });
 
-test('Both widgets contain the same request coordination', () => {
+test('Available widget variants contain the same request coordination', () => {
   const block = (file) => script(file).split('// BEGIN WIDGET REQUEST FLOW')[1]
     .split('// END WIDGET REQUEST FLOW')[0].trim();
-  assert.equal(block(files[0]), block(files[1]));
+  files.slice(1).forEach((file) => assert.equal(block(files[0]), block(file)));
 });
 
 for (const file of files) {
@@ -495,4 +509,150 @@ for (const file of files) {
     assert.equal(await page.locator('#oaInput').isDisabled(), false);
     assert.equal(await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).pending_request, stateKey), null);
   });
+
+  test(`${file}: request deadline ends the wait and retry retains the message identity`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.clock.install();
+    await controlledFetch(page);
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    const original = await page.evaluate(() => window.__pending[0].body);
+    await page.clock.runFor(60001);
+    assert.equal(await page.evaluate(() => window.__widgetTest.active()), false);
+    assert.equal(await page.evaluate(() => window.__pending[0].signal.aborted), true);
+    assert.equal(await page.locator('.oa-retry-btn').count(), 1);
+    assert.equal(await page.locator('#oaTypingIndicator').count(), 0);
+    assert.equal(await page.locator('#oaInput').isDisabled(), false);
+    await page.locator('.oa-retry-btn').click();
+    assert.deepEqual(await page.evaluate(() => window.__pending[1].body), original);
+    await resolvePending(page, 0, { reply: 'VECCHIA RISPOSTA', products: [], options: ['vecchia'] });
+    assert.equal(await page.evaluate(() => window.__widgetTest.active()), true);
+    assert.equal((await page.locator('#oaMessages').textContent()).includes('VECCHIA'), false);
+    await resolvePending(page, 1);
+    await page.waitForFunction(() => !window.__widgetTest.active());
+    assert.equal(await page.locator('.oa-msg-user').count(), 1);
+  });
+
+  test(`${file}: deadline also covers a response body that never completes`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.clock.install();
+    await controlledFetch(page);
+    await page.evaluate(() => {
+      void window.__widgetTest.sendUserMessage('iris');
+      window.__pending[0].resolve({ ok: true, json: () => new Promise(() => {}) });
+    });
+    await page.clock.runFor(60001);
+    assert.equal(await page.evaluate(() => window.__widgetTest.active()), false);
+    assert.equal(await page.locator('.oa-retry-btn').count(), 1);
+    assert.match(await page.locator('.oa-error-text').textContent(), /troppo tempo/);
+  });
+
+  test(`${file}: numeric Retry-After blocks sends and counts down until retry is allowed`, async (t) => {
+    const { page, responses, requests } = await fixture(t, file);
+    await page.clock.install();
+    responses.push({ status: 503, headers: { 'Retry-After': '5' },
+      body: { error: { code: 'llm_rate_limit', message: 'Attendi' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.locator('.oa-retry-btn').waitFor();
+    await page.waitForFunction(() => !window.__widgetTest.active());
+    assert.equal(await page.locator('.oa-retry-btn').isDisabled(), true);
+    assert.equal(await page.locator('#oaInput').isDisabled(), true);
+    assert.match(await page.locator('.oa-retry-btn').textContent(), /Riprova tra 5 s/);
+    await page.evaluate(() => {
+      void window.__widgetTest.sendUserMessage('rosa');
+      document.querySelector('#oaForm').dispatchEvent(new Event('submit', { cancelable: true }));
+      document.querySelector('.oa-retry-btn').click();
+    });
+    assert.equal(requests.length, 1);
+    await page.clock.runFor(2000);
+    assert.match(await page.locator('.oa-retry-btn').textContent(), /Riprova tra 3 s/);
+    await page.clock.runFor(3001);
+    assert.equal(await page.locator('.oa-retry-btn').isDisabled(), false);
+    assert.equal(await page.locator('#oaInput').isDisabled(), false);
+    await page.locator('.oa-retry-btn').click();
+    await page.waitForFunction(() => !window.__widgetTest.active() && !document.querySelector('.oa-msg-error'));
+    assert.deepEqual(requests[1].body, requests[0].body);
+  });
+
+  test(`${file}: cooldown and retry identity survive navigation`, async (t) => {
+    const { page, requests, responses } = await fixture(t, file);
+    await page.clock.install();
+    responses.push({ status: 429, headers: { 'Retry-After': '10' },
+      body: { error: { message: 'Troppe richieste' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && Boolean(document.querySelector('.oa-retry-btn')));
+    const deadline = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).retry_until, stateKey);
+    await page.clock.runFor(3000);
+    await page.goto('https://widget.test/widget?cooldown=1', { waitUntil: 'domcontentloaded' });
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('.oa-retry-btn').isDisabled(), true);
+    assert.equal(await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).retry_until, stateKey), deadline);
+    await page.clock.runFor(7001);
+    assert.equal(await page.locator('.oa-retry-btn').isDisabled(), false);
+    await page.locator('.oa-retry-btn').click();
+    await page.waitForFunction(() => !window.__widgetTest.active());
+    assert.deepEqual(requests[1].body, requests[0].body);
+  });
+
+  test(`${file}: restart preserves a server cooldown and unlocks when it expires`, async (t) => {
+    const { page, responses } = await fixture(t, file);
+    await page.clock.install();
+    responses.push({ status: 503, headers: { 'Retry-After': '5' }, body: { error: { message: 'Attendi' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && Boolean(document.querySelector('.oa-retry-btn')));
+    await page.locator('#oaRestartBtn').click();
+    assert.equal(await page.locator('.oa-retry-btn').count(), 0);
+    assert.equal(await page.locator('#oaInput').isDisabled(), true);
+    assert.equal(await page.locator('#oaChips button').first().isDisabled(), true);
+    await page.clock.runFor(5001);
+    assert.equal(await page.locator('#oaInput').isDisabled(), false);
+    assert.equal(await page.locator('#oaChips button').first().isDisabled(), false);
+  });
+
+  test(`${file}: HTTP-date Retry-After is understood`, async (t) => {
+    const { page, responses } = await fixture(t, file);
+    await page.clock.install({ time: new Date('2026-10-08T12:00:00Z') });
+    responses.push({ status: 503, headers: { 'Retry-After': 'Thu, 08 Oct 2026 12:00:04 GMT' },
+      body: { error: { message: 'Attendi' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && Boolean(document.querySelector('.oa-retry-btn')));
+    assert.equal(await page.locator('.oa-retry-btn').isDisabled(), true);
+    await page.clock.runFor(4001);
+    assert.equal(await page.locator('.oa-retry-btn').isDisabled(), false);
+  });
+
+  for (const invalid of ['non-valido', '-1', '0']) {
+    test(`${file}: invalid or elapsed Retry-After (${invalid}) does not block the interface`, async (t) => {
+      const { page, responses } = await fixture(t, file);
+      responses.push({ status: 503, headers: { 'Retry-After': invalid }, body: { error: { message: 'Riprova' } } });
+      await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+      await page.waitForFunction(() => !window.__widgetTest.active() && Boolean(document.querySelector('.oa-retry-btn')));
+      assert.equal(await page.locator('.oa-retry-btn').isDisabled(), false);
+      assert.equal(await page.locator('#oaInput').isDisabled(), false);
+    });
+  }
+
+  test(`${file}: fast success clears the deadline timer and never creates a delayed error`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.clock.install();
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+    await page.clock.runFor(60001);
+    assert.equal(await page.locator('.oa-msg-error').count(), 0);
+    assert.equal(await page.locator('#oaInput').isDisabled(), false);
+  });
+
 }
+
+test('snippet.txt: reinserting the preview cleans up the old wait and restores its request',
+  { skip: !files.includes('snippet.txt') }, async (t) => {
+  const { page } = await fixture(t, 'snippet.txt');
+  await controlledFetch(page);
+  await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+  const original = await page.evaluate(() => window.__pending[0].body);
+  await page.addScriptTag({ content: instrumentedScript('snippet.txt') });
+  await page.locator('#oaLauncher').click();
+  assert.equal(await page.locator('#oaWidget').count(), 1);
+  assert.equal(await page.locator('.oa-retry-btn').count(), 1);
+  assert.equal(await page.evaluate(() => window.__pending[0].signal.aborted), true);
+  assert.deepEqual(await page.evaluate(() => window.__widgetTest.records().at(-1).request), original);
+});

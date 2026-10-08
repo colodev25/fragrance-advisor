@@ -4,6 +4,7 @@ Focalizzato unicamente su chat, reset di sessione e health-check.
 """
 
 import logging
+import math
 import os
 import re
 from contextlib import asynccontextmanager
@@ -18,6 +19,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.rate_limit import InMemoryRateLimiter
 from src.conversation_requests import RequestConflict
+from src.chat_budget import ChatUnavailable
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DIR = BASE_DIR / "chroma_db"
@@ -96,6 +98,7 @@ app.add_middleware(
     allow_credentials=not is_wildcard,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Retry-After"],
 )
 
 
@@ -221,6 +224,12 @@ def chat_endpoint(req: ChatRequest, request: Request):
         )
     except RequestConflict as exc:
         raise ApiError(409, exc.code, str(exc)) from exc
+    except ChatUnavailable as exc:
+        headers = {"Retry-After": str(math.ceil(exc.retry_after))} if exc.retry_after else {}
+        message = ("Il servizio sta ricevendo molte richieste. Attendi prima di riprovare."
+                   if exc.code == "llm_rate_limit" else
+                   "La consulenza richiede più tempo del previsto o non è disponibile. Puoi riprovare.")
+        raise ApiError(503, exc.code, message, headers) from exc
     except Exception:
         logger.exception("Chat request failed.")
         raise ApiError(503, "advisor_unavailable", "La consulenza non è disponibile in questo momento. Riprova tra qualche istante.")
