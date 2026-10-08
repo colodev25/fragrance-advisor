@@ -36,4 +36,4 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 
 ## Visual language
 
-The interface uses a restrained black, white and warm-gold palette, with Cormorant Garamond for editorial fragrance titles and Plus Jakarta Sans for interface text. Compact product cards, accord chips and subtle motion keep attention on the recommendation and its olfactory profile.
+The interface uses a restrained black, white and warm-gold palette, with Cormorant Garamond for editorial fragrance titles and Plus Jakarta Sans for interface text. The floating launcher uses a charcoal gradient, white fragrance icon and soft white glow to harmonize with the storefront's WhatsApp button; hover and keyboard focus keep the same monochrome style. Compact product cards, accord chips and subtle motion keep attention on the recommendation and its olfactory profile.
