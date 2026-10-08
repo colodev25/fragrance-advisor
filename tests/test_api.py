@@ -21,6 +21,8 @@ MOCK_PRODUCT = {
     "card_type": "standard",
     "story": "Un'armonia marina costruita attorno ad accordi salini e mirto.",
     "key_notes": ["Sale Marino", "Mirto", "Alghe"],
+    "olfactory_pyramid": {"top": [], "heart": [], "base": []},
+    "unpositioned_notes": ["Sale Marino", "Mirto", "Alghe"],
     "traits": "Profumo • Unisex • Primavera / Estate",
     "description": "Un'armonia marina costruita attorno ad accordi salini e mirto."
 }
@@ -82,13 +84,15 @@ def test_chat_endpoint_free_chat_contract(api_client):
     # Verifica completezza dei campi della Product Card
     prod = data["products"][0]
     required_fields = [
-        "name", "brand", "price", "story", "key_notes",
+        "name", "brand", "price", "story", "key_notes", "olfactory_pyramid", "unpositioned_notes",
         "traits", "product_page_url", "add_to_cart_url", "image_url"
     ]
     for field in required_fields:
         assert field in prod, f"Campo obbligatorio assente nella card: {field}"
     assert isinstance(prod["key_notes"], list)
     assert len(prod["key_notes"]) >= 1
+    assert prod["olfactory_pyramid"] == {"top": [], "heart": [], "base": []}
+    assert prod["unpositioned_notes"] == ["Sale Marino", "Mirto", "Alghe"]
 
 
 # ==============================================================================

@@ -14,7 +14,10 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 ## Product exploration
 
 - **Product cards:** recommendations can show the brand, fragrance name, family or type, price, story, olfactory notes and links to the product page and cart.
-- **Expanded fragrance details:** cards that support it open a slide-over panel with the fragrance story, key accords and profile details.
+- **Expanded fragrance details:** guided and free-chat cards open a detail panel from the information button. It shows the story, available pyramid stages and profile; its height adapts up to 420 px, with internal scrolling for longer content. Close actions remain outside that scrolling area.
+- **Additional olfactory notes:** notes whose position is unknown appear separately as “Altre note riportate”, or “Note riportate” when no pyramid is available, with “Posizione nella piramide non specificata”. Duplicates of positioned notes are removed; empty stages are omitted and missing notes receive a short message. Older saved cards retain their unclassified accord summary.
+- **Clear fragrance profile:** concentration/type, recipient and season are separate items, for example “Eau de Parfum • Unisex • Primavera / Estate”. Source type strings are cleaned to avoid a repeated recipient, and season labels omit internal derivation annotations. Older saved and received profiles use the same display cleanup.
+- **Keyboard navigation:** the detail button exposes its expanded state. The inactive side is excluded from interaction, and closing the panel returns focus to the information button. Both note sections and the expanded state survive page navigation.
 - **Image loading and recovery:** product images load lazily with a shimmer placeholder and fade-in. Failed or unavailable images show a fragrance-themed fallback icon.
 - **Cart feedback:** adding a product gives immediate visual confirmation, then opens the store cart link.
 
@@ -37,6 +40,8 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Links and images:** only absolute HTTP(S) URLs without credentials, whitespace, control characters or unsafe delimiters are accepted. Invalid links become plain text, invalid product links become inactive, and invalid images use the placeholder.
 - **Stored conversation:** `etualy_chat_state_v1` now contains version-2 JSON tied to the session token, revision and deadline. Restored fields use the same safe renderer; saved HTML is never reinserted and invalid states are cleared. Previous version-1 history is retired once with an update notice, preserving a pending message or draft. Backend sessions are not globally deleted by this migration.
 - **Shopify integration:** `snippets/etualy-advisor.liquid` contains the same safe renderer as the standalone page. Updating `index.html` alone does not update a snippet already installed in a Shopify theme; publish the revised snippet there as well.
+
+New structured note sections require responses from the deployed backend that contain `olfactory_pyramid` and `unpositioned_notes`. The DevTools preview calls that remote API. Older saved cards keep their accord summary; after deploying both parts, begin a fresh conversation to obtain the new card data.
 
 ## Visual language
 

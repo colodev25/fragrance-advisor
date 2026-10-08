@@ -254,9 +254,27 @@ class FragranceAdvisor:
         return {"male": "Per Lui", "female": "Per Lei", "unisex": "Unisex"}.get(recipient, "Destinatario non dichiarato")
 
     def _detect_season(self, family: str, tags: list, usage_profile: str = "", description: str = "") -> str:
-        season, source = season_evidence(family, tags, usage_profile, description)
+        season, _ = season_evidence(family, tags, usage_profile, description)
         label = {"summer": "Primavera / Estate", "winter": "Autunno / Inverno", "all": "Quattro Stagioni"}.get(season, "Stagionalità non dichiarata")
-        return label + (" (dedotta)" if source == "inferred" else "")
+        return label
+
+    @staticmethod
+    def _display_perfume_type(value, name=""):
+        pattern = r"\b(?:extrait(?:\s+de\s+parfum)?|eau\s+de\s+parfum|eau\s+de\s+toilette|eau\s+de\s+cologne|edp|edt|edc|parfum)\b"
+        labels = {"extrait": "Extrait de Parfum", "extrait de parfum": "Extrait de Parfum",
+                  "eau de parfum": "Eau de Parfum", "edp": "Eau de Parfum",
+                  "eau de toilette": "Eau de Toilette", "edt": "Eau de Toilette",
+                  "eau de cologne": "Eau de Cologne", "edc": "Eau de Cologne", "parfum": "Parfum"}
+        text = re.split(r"[,;•|]", str(value or ""), maxsplit=1)[0].strip()
+        text = re.sub(r"\b(?:unisex|per lui|per lei|per uomo|per donna|da uomo|da donna|maschile|femminile|for men|for women|pour homme|pour femme)\b", "", text, flags=re.I)
+        text = re.sub(r"\s+", " ", text).strip(" -–()")
+        match = re.search(pattern, text, re.I)
+        if match:
+            return labels[normalized(match.group())]
+        if not text or normalized(text) in {"profumo artistico", "profumo", "fragranza"}:
+            match = re.search(pattern, name, re.I)
+            return labels[normalized(match.group())] if match else "Profumo Artistico"
+        return text
 
 
     def _enrich_product_payload(self, prod_dict: dict, card_type: str = "slideover") -> dict:
@@ -275,6 +293,20 @@ class FragranceAdvisor:
                        and cp.get("brand", "").strip().lower() == p_brand.lower()]
             cat_match = matches[0] if len(matches) == 1 else None
 
+        def unique_notes(values):
+            result, seen = [], set()
+            for value in values:
+                if not isinstance(value, str):
+                    continue
+                note = re.sub(r"\s+", " ", value).strip()
+                key = normalized(note)
+                if key and key not in seen:
+                    result.append(note)
+                    seen.add(key)
+            return result
+
+        pyramid = {stage: [] for stage in ("top", "heart", "base")}
+        unpositioned_notes = []
         key_notes = []
         story = ""
         traits = ""
@@ -287,37 +319,25 @@ class FragranceAdvisor:
             p_img = urls.get("image_url", "") or p_img
 
             pyr = cat_match.get("olfactory_pyramid", {})
-            top = [n.strip() for n in pyr.get("top", []) if n.strip()][:2]
-            heart = [n.strip() for n in pyr.get("heart", []) if n.strip()][:2]
-            base = [n.strip() for n in pyr.get("base", []) if n.strip()][:2]
-            key_notes = list(dict.fromkeys(top + heart + base))[:6]
+            pyramid = {stage: unique_notes(pyr.get(stage, [])) for stage in pyramid}
+            positioned = {normalized(note) for notes in pyramid.values() for note in notes}
+            unpositioned_notes = [note for note in unique_notes(cat_match.get("unpositioned_notes", []))
+                                  if normalized(note) not in positioned]
+            preview = [note for notes in pyramid.values() for note in notes[:2]]
+            key_notes = unique_notes(preview + unpositioned_notes)[:6]
 
-            if not key_notes and cat_match.get("family"):
-                key_notes = [f.strip() for f in cat_match["family"].split(",") if f.strip()][:4]
-
-            clean_ptype = cat_match.get("ptype") or p_ptype
-            if not clean_ptype or clean_ptype.lower() in ["profumo artistico", "profumo", "fragranza"]:
-                n_low = p_name.lower()
-                if "extrait" in n_low:
-                    clean_ptype = "Extrait de Parfum"
-                elif "eau de parfum" in n_low or "edp" in n_low:
-                    clean_ptype = "Eau de Parfum"
-                elif "eau de toilette" in n_low or "edt" in n_low:
-                    clean_ptype = "Eau de Toilette"
-                elif "cologne" in n_low:
-                    clean_ptype = "Eau de Cologne"
-                else:
-                    clean_ptype = "Profumo Artistico"
+            raw_ptype = cat_match.get("ptype") or p_ptype
+            p_ptype = self._display_perfume_type(raw_ptype, p_name)
 
             tags = cat_match.get("tags", [])
             u_prof = cat_match.get("usage_profile", "")
             desc = cat_match.get("description", "")
             fam = cat_match.get("family", "") or p_family
 
-            gender_trait = self._detect_gender(p_name, tags, u_prof, desc)
+            gender_trait = self._detect_gender(p_name, tags, f"{u_prof} {raw_ptype}", desc)
             season_trait = self._detect_season(fam, tags, u_prof, desc)
 
-            traits = f"{clean_ptype} • {gender_trait} • {season_trait}"
+            traits = f"{p_ptype} • {gender_trait} • {season_trait}"
 
             raw_text = cat_match.get("description", "")
             cleaned = re.sub(rf"^Profumo\s+{re.escape(p_name)}.*?\.\s*", "", raw_text, flags=re.I)
@@ -347,9 +367,10 @@ class FragranceAdvisor:
                         story = f"Una raffinata creazione {fam_clean} dall'accordo avvolgente, concepita per lasciare una presenza memorabile."
 
         else:
-            key_notes = [f.strip() for f in p_family.split(",") if f.strip()][:4]
+            raw_ptype = p_ptype
+            p_ptype = self._display_perfume_type(raw_ptype, p_name)
             story = f"Una creazione {p_family.lower() or 'artistica'} d'eccellenza, equilibrata ed elegante sulla pelle."
-            gender_trait = self._detect_gender(p_name, [], "", prod_dict.get("document", ""))
+            gender_trait = self._detect_gender(p_name, [], raw_ptype, prod_dict.get("document", ""))
             season_trait = self._detect_season(p_family, [], "", prod_dict.get("document", ""))
             traits = f"{p_ptype} • {gender_trait} • {season_trait}"
 
@@ -365,6 +386,8 @@ class FragranceAdvisor:
             "card_type": card_type,
             "story": story,
             "key_notes": key_notes,
+            "olfactory_pyramid": pyramid,
+            "unpositioned_notes": unpositioned_notes,
             "traits": traits,
             "description": story
         }

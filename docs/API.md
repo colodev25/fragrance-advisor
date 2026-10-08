@@ -53,6 +53,18 @@ Example response shape:
 
 Product fields depend on the selected card. They can include name, brand, price, product and image URLs, fragrance traits, story, key notes and `card_type`.
 
+### Olfactory information in cards
+
+| Field | Meaning |
+| --- | --- |
+| `key_notes` | Brief preview of up to six catalog notes, including unpositioned notes when space permits. A fragrance family is not substituted for missing notes. |
+| `olfactory_pyramid` | Object containing `top`, `heart` and `base` string arrays, preserving all available catalog notes for each stage. Missing stages use empty arrays. |
+| `unpositioned_notes` | Additional catalog notes with no declared stage, after removing duplicates within the list and matches already in the pyramid. |
+
+These additive fields are present for both `standard` and `slideover` cards. They reflect the loaded catalog without a new model call. A note declared in multiple stages retains those positions; it is omitted from the unpositioned list. Comparison ignores case, accents and repeated whitespace. Clients with older saved responses can continue showing `key_notes` as an unclassified summary. Empty fields never imply an invented pyramid.
+
+`ptype` and the first component of `traits` contain only the fragrance concentration/type; recipient information occupies the second component. The third component is a plain customer-facing season label, without a derivation suffix. Internal seasonal evidence used for recommendation admission remains unchanged.
+
 Recognized preferences are retained in the conversation. The latest non-null API price ceiling remains effective until the client supplies another ceiling or resets the session; removing a textual budget does not remove that API ceiling. Partial alternatives include their differences in `reply`. Contradictory price bounds or unrecognized explicit note constraints receive a completed `200` clarification with no cards or model call. See [preference policy](ADVISOR.md#preference-policy).
 
 ### Identified requests and retries

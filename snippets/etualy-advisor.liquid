@@ -871,7 +871,54 @@
   }
 
   .oa-product-card.is-open .oa-card-slideover {
+    position: relative;
+    inset: auto;
+    min-height: 245px;
+    max-height: 420px;
     transform: translateY(0);
+  }
+
+  .oa-product-card.is-open .oa-card-front {
+    display: none;
+  }
+
+  .oa-slide-header,
+  .oa-slide-footer {
+    flex-shrink: 0;
+  }
+
+  .oa-pyramid-row {
+    display: grid;
+    grid-template-columns: 45px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    padding-top: 6px;
+  }
+
+  .oa-pyramid-stage {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--oa-text-secondary);
+    padding-top: 3px;
+  }
+
+  .oa-unpositioned-notes {
+    background: #f8f7f4;
+    border: 1px solid var(--oa-border-subtle);
+    border-radius: var(--oa-radius-sm);
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .oa-notes-caption {
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--oa-text-secondary);
+  }
+
+  .oa-note-pill {
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   .oa-slide-header {
@@ -1665,6 +1712,49 @@
         return link;
       }
 
+      function noteKey(note) {
+        return note.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .toLocaleLowerCase("it-IT").replace(/\s+/g, " ").trim();
+      }
+
+      function normalizeNotes(value) {
+        const notes = [], seen = new Set();
+        if (!Array.isArray(value)) return notes;
+        value.filter((note) => typeof note === "string").slice(0, 32)
+          .forEach((value) => {
+            const note = plainText(value, 500).trim();
+            const key = noteKey(note);
+            if (key && !seen.has(key)) {
+              notes.push(note);
+              seen.add(key);
+            }
+          });
+        return notes;
+      }
+
+      function displayPerfumeType(value) {
+        const first = plainText(value, 1000).split(/[,;•|]/, 1)[0];
+        const clean = first.replace(/\b(?:unisex|per lui|per lei|per uomo|per donna|da uomo|da donna|maschile|femminile|for men|for women|pour homme|pour femme)\b/gi, "")
+          .replace(/\s+/g, " ").replace(/^[\s–()-]+|[\s–()-]+$/g, "");
+        const match = clean.match(/\b(?:extrait(?:\s+de\s+parfum)?|eau\s+de\s+parfum|eau\s+de\s+toilette|eau\s+de\s+cologne|edp|edt|edc|parfum)\b/i);
+        const labels = {
+          "extrait": "Extrait de Parfum", "extrait de parfum": "Extrait de Parfum",
+          "eau de parfum": "Eau de Parfum", "edp": "Eau de Parfum",
+          "eau de toilette": "Eau de Toilette", "edt": "Eau de Toilette",
+          "eau de cologne": "Eau de Cologne", "edc": "Eau de Cologne", "parfum": "Parfum",
+        };
+        return match ? labels[match[0].toLowerCase().replace(/\s+/g, " ")] : clean;
+      }
+
+      function displayProductTraits(value) {
+        const text = plainText(value, 1000);
+        const parts = text.split("•").map((part) => part.trim());
+        if (parts.length < 3) return text;
+        parts[0] = displayPerfumeType(parts[0]);
+        parts[2] = parts[2].replace(/\s*\(dedotta\)/gi, "").trim();
+        return parts.join(" • ");
+      }
+
       function normalizeProduct(value) {
         const source =
           value && typeof value === "object" && !Array.isArray(value)
@@ -1672,19 +1762,15 @@
             : {};
         const product = {};
         [
-          "name",
-          "brand",
-          "family",
-          "ptype",
-          "story",
-          "description",
-          "traits",
+          "name", "brand", "family", "ptype", "story", "description", "traits",
         ].forEach((key) => {
           product[key] = plainText(
             source[key],
             key === "story" || key === "description" ? 10000 : 1000,
           );
         });
+        product.ptype = displayPerfumeType(product.ptype);
+        product.traits = displayProductTraits(product.traits);
         ["add_to_cart_url", "product_page_url", "image_url"].forEach((key) => {
           product[key] = safeHttpUrl(source[key]);
         });
@@ -1694,12 +1780,18 @@
           source.price >= 0
             ? source.price
             : plainText(source.price, 100);
-        product.key_notes = Array.isArray(source.key_notes)
-          ? source.key_notes
-              .filter((note) => typeof note === "string")
-              .slice(0, 32)
-              .map((note) => plainText(note, 500))
-          : [];
+        product.key_notes = normalizeNotes(source.key_notes);
+        const pyramid = source.olfactory_pyramid;
+        const positioned = new Set();
+        product.olfactory_pyramid = {};
+        ["top", "heart", "base"].forEach((stage) => {
+          const values = pyramid && typeof pyramid === "object" && !Array.isArray(pyramid)
+            ? pyramid[stage] : [];
+          product.olfactory_pyramid[stage] = normalizeNotes(values);
+          product.olfactory_pyramid[stage].forEach((note) => positioned.add(noteKey(note)));
+        });
+        product.unpositioned_notes = normalizeNotes(source.unpositioned_notes)
+          .filter((note) => !positioned.has(noteKey(note)));
         product.card_type =
           source.card_type === "slideover" ? "slideover" : "standard";
         product.is_open = source.is_open === true;
@@ -1780,9 +1872,9 @@
         const isSlideover = prod.card_type === "slideover";
         const card = dom(
           "div",
-          "oa-product-card" + (isSlideover ? " oa-has-slideover" : ""),
+          "oa-product-card oa-has-slideover",
         );
-        card.classList.toggle("is-open", isSlideover && prod.is_open);
+        card.classList.toggle("is-open", prod.is_open);
         cardRecords.set(card, product);
         const title = () => {
           const link = externalLink(
@@ -1793,9 +1885,9 @@
           link.title = "Visualizza " + name + " su Etualy";
           return link;
         };
-        const notes = (limit) => {
+        const notes = (items, limit = 32) => {
           const row = dom("div", "oa-notes-chips");
-          prod.key_notes
+          items
             .slice(0, limit)
             .forEach((note) =>
               row.appendChild(dom("span", "oa-note-pill", note)),
@@ -1831,18 +1923,18 @@
           ),
         );
         header.append(imageBox, meta);
-        if (isSlideover) {
-          const info = dom("button", "oa-card-info-btn", "ⓘ");
-          info.type = "button";
-          info.title = "Note e atmosfera";
-          info.addEventListener("click", () => toggleCardSlide(info));
-          header.appendChild(info);
-        }
+        const info = dom("button", "oa-card-info-btn", "ⓘ");
+        info.type = "button";
+        info.title = "Note e atmosfera";
+        info.setAttribute("aria-label", "Apri note e atmosfera di " + name);
+        info.setAttribute("aria-expanded", String(prod.is_open));
+        info.addEventListener("click", () => toggleCardSlide(info));
+        header.appendChild(info);
         front.appendChild(header);
         if (!isSlideover) {
           if (story) front.appendChild(dom("div", "oa-card-desc", story));
           if (prod.key_notes.length) {
-            const row = notes(4);
+            const row = notes(prod.key_notes, 4);
             row.style.marginTop = "2px";
             front.appendChild(row);
           }
@@ -1883,46 +1975,67 @@
         front.appendChild(footer);
         card.appendChild(front);
 
-        if (isSlideover) {
-          const slide = dom("div", "oa-card-slideover");
-          const slideHeader = dom("div", "oa-slide-header");
-          const slideMeta = dom("div", "oa-slide-meta");
-          const slideTitle = dom("div", "oa-slide-title");
-          slideTitle.appendChild(title());
-          slideMeta.append(
-            dom("div", "oa-slide-subtitle", "Profilo & Note Olfattive"),
-            slideTitle,
-          );
-          const close = dom("button", "oa-slide-close-btn");
-          close.type = "button";
-          close.title = "Chiudi note";
-          close.appendChild(icon("close"));
-          close.addEventListener("click", () => toggleCardSlide(close));
-          slideHeader.append(slideMeta, close);
-          const body = dom("div", "oa-slide-body");
-          if (story)
-            body.appendChild(dom("div", "oa-slide-story", '"' + story + '"'));
-          if (prod.key_notes.length) {
-            const box = dom("div", "oa-slide-notes-box");
-            box.append(
-              dom("div", "oa-slide-notes-label", "Accordi Salienti"),
-              notes(32),
-            );
-            body.appendChild(box);
-          }
-          if (traits) body.appendChild(dom("div", "oa-slide-traits", traits));
-          const slideFooter = dom("div", "oa-slide-footer");
-          const back = dom(
-            "button",
-            "oa-slide-back-btn",
-            "← Torna alla scheda",
-          );
-          back.type = "button";
-          back.addEventListener("click", () => toggleCardSlide(back));
-          slideFooter.appendChild(back);
-          slide.append(slideHeader, body, slideFooter);
-          card.appendChild(slide);
+        const slide = dom("div", "oa-card-slideover");
+        slide.inert = !prod.is_open;
+        front.inert = prod.is_open;
+        const slideHeader = dom("div", "oa-slide-header");
+        const slideMeta = dom("div", "oa-slide-meta");
+        const slideTitle = dom("div", "oa-slide-title");
+        slideTitle.appendChild(title());
+        slideMeta.append(
+          dom("div", "oa-slide-subtitle", "Profilo & Note Olfattive"),
+          slideTitle,
+        );
+        const close = dom("button", "oa-slide-close-btn");
+        close.type = "button";
+        close.title = "Chiudi note";
+        close.appendChild(icon("close"));
+        close.addEventListener("click", () => toggleCardSlide(close));
+        slideHeader.append(slideMeta, close);
+        const body = dom("div", "oa-slide-body");
+        if (story)
+          body.appendChild(dom("div", "oa-slide-story", '"' + story + '"'));
+        const stages = [["top", "Testa"], ["heart", "Cuore"], ["base", "Fondo"]];
+        const available = stages.filter(([stage]) => prod.olfactory_pyramid[stage].length);
+        if (available.length) {
+          const box = dom("div", "oa-slide-notes-box oa-pyramid-notes");
+          box.appendChild(dom("div", "oa-slide-notes-label", "Piramide olfattiva"));
+          available.forEach(([stage, label]) => {
+            const row = dom("div", "oa-pyramid-row");
+            row.append(dom("div", "oa-pyramid-stage", label), notes(prod.olfactory_pyramid[stage]));
+            box.appendChild(row);
+          });
+          body.appendChild(box);
         }
+        if (prod.unpositioned_notes.length) {
+          const box = dom("div", "oa-slide-notes-box oa-unpositioned-notes");
+          box.append(
+            dom("div", "oa-slide-notes-label", available.length ? "Altre note riportate" : "Note riportate"),
+            notes(prod.unpositioned_notes),
+            dom("div", "oa-notes-caption", "Posizione nella piramide non specificata"),
+          );
+          body.appendChild(box);
+        } else if (!available.length && prod.key_notes.length) {
+          // Older saved cards have only an unclassified summary.
+          const box = dom("div", "oa-slide-notes-box oa-legacy-notes");
+          box.append(dom("div", "oa-slide-notes-label", "Accordi salienti"), notes(prod.key_notes));
+          body.appendChild(box);
+        }
+        if (!available.length && !prod.unpositioned_notes.length && !prod.key_notes.length) {
+          body.appendChild(dom("div", "oa-notes-caption oa-notes-empty", "Note olfattive non disponibili."));
+        }
+        if (traits) body.appendChild(dom("div", "oa-slide-traits", traits));
+        const slideFooter = dom("div", "oa-slide-footer");
+        const back = dom(
+          "button",
+          "oa-slide-back-btn",
+          "← Torna alla scheda",
+        );
+        back.type = "button";
+        back.addEventListener("click", () => toggleCardSlide(back));
+        slideFooter.appendChild(back);
+        slide.append(slideHeader, body, slideFooter);
+        card.appendChild(slide);
         return card;
       }
 
@@ -2436,8 +2549,13 @@
         const card = btn.closest(".oa-product-card");
         if (card) {
           card.classList.toggle("is-open");
+          const open = card.classList.contains("is-open");
           const product = cardRecords.get(card);
-          if (product) product.is_open = card.classList.contains("is-open");
+          if (product) product.is_open = open;
+          card.querySelector(".oa-card-front").inert = open;
+          card.querySelector(".oa-card-slideover").inert = !open;
+          card.querySelector(".oa-card-info-btn").setAttribute("aria-expanded", String(open));
+          card.querySelector(open ? ".oa-slide-close-btn" : ".oa-card-info-btn").focus({ preventScroll: true });
           saveChatState();
         }
       }

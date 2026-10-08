@@ -26,9 +26,12 @@ def normalized(text):
 
 
 def enrichment_tags(tags):
-    """Commercial/size tags must not invalidate olfactory extraction."""
+    """Keep ambiguous Italian 'sale'; reject explicit promotional/size context."""
     return sorted({tag.strip() for tag in tags if isinstance(tag, str) and tag.strip()
-                   and not re.search(r"\d\s*(?:ml|cl|oz|€|eur|%)|\b(?:sconto|sconti|sale|promo|sold.?out|out.?of.?stock)\b", tag, re.I)})[:100]
+                   and not re.search(
+                       r"\d\s*(?:ml|cl|oz|€|eur|%)|\b(?:sconto|sconti|saldi|promo|sold.?out|out.?of.?stock)\b|"
+                       r"\b(?:on|flash|summer|winter|seasonal|clearance|black friday|mid.?season)\s+sale\b|"
+                       r"\bsale\s+(?:collection|price|off)\b", tag, re.I)})[:100]
 
 
 def supported_evidence(evidence, description, tags):

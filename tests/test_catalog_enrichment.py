@@ -6,11 +6,35 @@ from unittest.mock import MagicMock
 import pytest
 
 from src import ingest
-from src.catalog_enrichment import parse_enrichment, enrich_catalog_fields
+from src.catalog_enrichment import parse_enrichment, enrich_catalog_fields, enrichment_tags, enrichment_signature
 
 
 def response(notes=None, family=None):
     return json.dumps({"notes": notes or [], "family": family})
+
+
+@pytest.mark.parametrize("tag", ["Sale", "sale marino", "Accordo di sale", "Note: sale, iris"])
+def test_olfactory_salt_tags_are_kept(tag):
+    assert enrichment_tags([tag]) == [tag]
+
+
+@pytest.mark.parametrize("tag", ["On sale", "Flash sale", "Summer sale", "Winter Sale",
+                                "Sale collection", "Sale price", "Sale -20%", "Saldi", "Promo", "50 ml"])
+def test_explicit_commercial_tags_are_removed(tag):
+    assert enrichment_tags([tag]) == []
+
+
+def test_salt_tag_can_support_an_unpositioned_note():
+    result = parse_enrichment(response([{"name": "Sale", "position": None, "evidence": "Sale"}]),
+                              "", enrichment_tags(["Sale", "20% sconto"]), ingest.KNOWN_FAMILIES)
+    assert result["notes"] == [{"name": "Sale", "position": None, "evidence": "Sale", "source": "tags"}]
+
+
+def test_promotional_changes_keep_signature_but_salt_changes_it():
+    def signature(tags):
+        return enrichment_signature("Test", "Brand", "", tags, {}, "", ingest.KNOWN_FAMILIES)
+    assert signature(["Iris", "On sale"]) == signature(["Iris", "Winter sale", "Promo"])
+    assert signature(["Iris"]) != signature(["Iris", "Sale"])
 
 
 def test_unsupported_notes_and_fabricated_quotes_are_discarded():

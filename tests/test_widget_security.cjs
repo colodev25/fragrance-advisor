@@ -261,7 +261,7 @@ for (const file of files) {
     }, 'Iris "speciale" <edizione>');
     await page.waitForFunction(() => document.querySelector('#oaMessages img')?.classList.contains('is-loaded'));
     assert.equal(await page.locator('#oaMessages img').getAttribute('alt'), 'Iris "speciale" <edizione>');
-    assert.equal(await page.locator('#oaMessages .oa-card-title-link').getAttribute('href'), 'https://shop.test/products/iris');
+    assert.equal(await page.locator('#oaMessages .oa-card-front .oa-card-title-link').getAttribute('href'), 'https://shop.test/products/iris');
     await page.locator('#oaMessages .oa-card-cart-btn').click();
     await page.waitForFunction(() => window.__opened.length === 1);
     assert.deepEqual(await page.evaluate(() => window.__opened[0]), ['https://shop.test/cart/1:1', '_blank', 'noopener,noreferrer']);
@@ -277,6 +277,150 @@ for (const file of files) {
     });
     await page.waitForFunction(() => Boolean(document.querySelector('#oaMessages .oa-card-placeholder')));
     assert.equal(await page.locator('#oaMessages img').count(), 0);
+    await assertSafe(page);
+  });
+
+  for (const cardType of ['standard', 'slideover']) {
+    test(`${file}: ${cardType} details distinguish pyramid and additional notes`, async (t) => {
+      const { page } = await fixture(t, file);
+      await page.evaluate((card_type) => {
+        window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Scheda di esempio', products: [{
+          name: 'Fragranza di esempio', brand: 'Etualy', card_type, price: 90,
+          key_notes: ['Bergamotto', 'Limone', 'Iris', 'Sandalo', 'Cacao', 'Sale'],
+          olfactory_pyramid: { top: ['Bergamotto', 'Limone', 'Thé', 'THÉ'], heart: ['Iris'], base: ['Sandalo'] },
+          unpositioned_notes: [' iris ', 'Thé', 'Cacao', 'Sale', 'SALE'],
+        }] });
+      }, cardType);
+      const card = page.locator('#oaMessages .oa-product-card');
+      await card.locator('.oa-card-info-btn').click();
+      assert.deepEqual(await card.locator('.oa-pyramid-stage').allTextContents(), ['Testa', 'Cuore', 'Fondo']);
+      assert.deepEqual(await card.locator('.oa-pyramid-row').first().locator('.oa-note-pill').allTextContents(),
+        ['Bergamotto', 'Limone', 'Thé']);
+      assert.deepEqual(await card.locator('.oa-unpositioned-notes .oa-note-pill').allTextContents(), ['Cacao', 'Sale']);
+      assert.equal(await card.locator('.oa-unpositioned-notes .oa-slide-notes-label').textContent(), 'Altre note riportate');
+      assert.equal(await card.locator('.oa-notes-caption').textContent(), 'Posizione nella piramide non specificata');
+      assert.equal(await card.locator('.oa-card-info-btn').getAttribute('aria-expanded'), 'true');
+      assert.equal(await card.locator('.oa-card-front').evaluate((node) => node.inert), true);
+      assert.equal(await card.locator('.oa-card-slideover').evaluate((node) => node.inert), false);
+      if (file === 'index.html' && cardType === 'slideover' && process.env.WIDGET_SCREENSHOT_DIR) {
+        fs.mkdirSync(process.env.WIDGET_SCREENSHOT_DIR, { recursive: true });
+        await card.screenshot({ path: path.join(process.env.WIDGET_SCREENSHOT_DIR, 'fragrance-advisor-point7-card.png') });
+      }
+      await card.locator('.oa-slide-back-btn').click();
+      assert.equal(await card.locator('.oa-card-info-btn').getAttribute('aria-expanded'), 'false');
+      assert.equal(await card.locator('.oa-card-slideover').evaluate((node) => node.inert), true);
+      assert.equal(await card.locator('.oa-card-info-btn').evaluate((node) => node === document.activeElement), true);
+      await assertSafe(page);
+    });
+  }
+
+  test(`${file}: notes without a pyramid persist in standard-card details after navigation`, async (t) => {
+    const { page } = await fixture(t, file, { [stateKey]: stored([{ kind: 'welcome' }]) });
+    await page.evaluate(() => {
+      window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '', products: [{ name: 'Esempio',
+        card_type: 'standard', unpositioned_notes: ['Iris', 'Vaniglia', 'Sale'], key_notes: ['Iris', 'Vaniglia', 'Sale'] }] });
+    });
+    await page.locator('.oa-card-info-btn').click();
+    await page.goto('https://widget.test/widget?next=1', { waitUntil: 'domcontentloaded' });
+    await page.locator('#oaLauncher').click();
+    const card = page.locator('#oaMessages .oa-product-card');
+    assert.equal(await card.evaluate((node) => node.classList.contains('is-open')), true);
+    assert.equal(await card.locator('.oa-pyramid-notes').count(), 0);
+    assert.equal(await card.locator('.oa-unpositioned-notes .oa-slide-notes-label').textContent(), 'Note riportate');
+    assert.deepEqual(await card.locator('.oa-unpositioned-notes .oa-note-pill').allTextContents(), ['Iris', 'Vaniglia', 'Sale']);
+    const saved = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), stateKey);
+    assert.deepEqual(saved.messages.at(-1).products[0].unpositioned_notes, ['Iris', 'Vaniglia', 'Sale']);
+    await card.locator('.oa-slide-close-btn').click();
+    await assertSafe(page);
+  });
+
+  test(`${file}: partial pyramids omit empty stages`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.evaluate(() => {
+      window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '', products: [{ name: 'Esempio',
+        olfactory_pyramid: { top: [], heart: ['Iris'], base: [] }, unpositioned_notes: ['Sale'] }] });
+    });
+    await page.locator('.oa-card-info-btn').click();
+    assert.deepEqual(await page.locator('.oa-pyramid-stage').allTextContents(), ['Cuore']);
+    assert.equal(await page.locator('.oa-unpositioned-notes .oa-slide-notes-label').textContent(), 'Altre note riportate');
+  });
+
+  for (const restored of [false, true]) {
+    test(`${file}: ${restored ? 'saved' : 'received'} profiles separate type and recipient and hide derivation`, async (t) => {
+      const product = { name: 'Esempio', ptype: 'Eau de parfum, unisex',
+        traits: 'Eau de parfum, unisex • Unisex • Primavera / Estate (dedotta)',
+        key_notes: ['Iris'], card_type: 'standard' };
+      const messages = [{ kind: 'welcome' }];
+      if (restored) messages.push({ kind: 'bot', reply: 'Esempio', products: [product] });
+      const { page, responses } = await fixture(t, file, { [stateKey]: stored(messages) });
+      if (!restored) {
+        responses.push({ status: 200, body: { reply: 'Esempio', products: [product], options: [], step: null, mode: 'free' } });
+        await page.evaluate(() => { void window.__widgetTest.sendUserMessage('Parlami di Esempio'); });
+      }
+      await page.locator('.oa-card-info-btn').click();
+      assert.equal(await page.locator('.oa-slide-traits').textContent(), 'Eau de Parfum • Unisex • Primavera / Estate');
+      assert.equal(await page.locator('.oa-card-badge').textContent(), 'Eau de Parfum');
+      const saved = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), stateKey);
+      assert.equal(saved.messages.at(-1).products[0].ptype, 'Eau de Parfum');
+      assert.equal(saved.messages.at(-1).products[0].traits, 'Eau de Parfum • Unisex • Primavera / Estate');
+      assert.equal(await page.locator('.oa-legacy-notes .oa-slide-notes-label').textContent(), 'Accordi salienti');
+      await assertSafe(page);
+    });
+  }
+
+  test(`${file}: missing notes show a short message and old summaries remain unclassified`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.evaluate(() => {
+      window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '', products: [
+        { name: 'Senza note', family: 'Floreale' }, { name: 'Scheda precedente', key_notes: ['Iris'] },
+      ] });
+    });
+    const cards = page.locator('#oaMessages .oa-product-card');
+    await cards.nth(0).locator('.oa-card-info-btn').click();
+    assert.equal(await cards.nth(0).locator('.oa-notes-empty').textContent(), 'Note olfattive non disponibili.');
+    assert.equal(await cards.nth(0).locator('.oa-pyramid-notes, .oa-unpositioned-notes').count(), 0);
+    await cards.nth(1).locator('.oa-card-info-btn').click();
+    assert.equal(await cards.nth(1).locator('.oa-legacy-notes .oa-note-pill').textContent(), 'Iris');
+    assert.equal(await cards.nth(1).locator('.oa-pyramid-notes, .oa-unpositioned-notes').count(), 0);
+  });
+
+  test(`${file}: hostile structured notes remain bounded plain text`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.evaluate((payload) => {
+      const product = window.__widgetTest.normalizeProduct({ name: 'Esempio',
+        olfactory_pyramid: { top: [payload, { html: payload }, '', ' '], heart: 'Iris', base: null, onclick: payload },
+        unpositioned_notes: [payload, 'Sale', { html: payload }, false, ' ', 'SALE'] });
+      window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '', products: [product] });
+    }, attack);
+    await page.locator('.oa-card-info-btn').click();
+    assert.equal(await page.locator('.oa-pyramid-notes .oa-note-pill').textContent(), attack);
+    assert.deepEqual(await page.locator('.oa-unpositioned-notes .oa-note-pill').allTextContents(), ['Sale']);
+    const value = await page.evaluate(() => window.__widgetTest.normalizeProduct({
+      olfactory_pyramid: ["wrong"], unpositioned_notes: Array.from({ length: 100 }, (_, i) => 'x'.repeat(600) + i) }));
+    assert.deepEqual(value.olfactory_pyramid, { top: [], heart: [], base: [] });
+    assert.ok(value.unpositioned_notes.length <= 32);
+    assert.ok(value.unpositioned_notes.every((note) => note.length <= 500));
+    await assertSafe(page);
+  });
+
+  test(`${file}: long details scroll on mobile while the close actions remain reachable`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.evaluate(() => {
+      const notes = Array.from({ length: 32 }, (_, i) => 'Accordo lungo ' + i + 'x'.repeat(100));
+      window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '', products: [{ name: 'Esempio',
+        olfactory_pyramid: { top: notes, heart: notes, base: notes }, unpositioned_notes: ['Sale'] }] });
+    });
+    await page.locator('.oa-card-info-btn').click();
+    const card = page.locator('#oaMessages .oa-product-card');
+    const dimensions = await card.locator('.oa-slide-body').evaluate((node) => ({
+      scroll: node.scrollHeight, height: node.clientHeight, width: node.clientWidth, scrollWidth: node.scrollWidth,
+    }));
+    assert.ok(dimensions.scroll > dimensions.height, 'Long note lists must scroll');
+    assert.ok(dimensions.scrollWidth <= dimensions.width + 1, 'Notes must wrap inside the panel');
+    assert.ok((await card.boundingBox()).height <= 423, 'Expanded height must stay bounded');
+    await card.locator('.oa-slide-back-btn').click();
+    assert.equal(await card.evaluate((node) => node.classList.contains('is-open')), false);
     await assertSafe(page);
   });
 

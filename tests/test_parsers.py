@@ -106,8 +106,8 @@ def test_detect_gender(advisor_mock):
 # ==============================================================================
 
 def test_detect_season(advisor_mock):
-    assert advisor_mock._detect_season("Acquatica, Agrumata", []) == "Primavera / Estate (dedotta)"
-    assert advisor_mock._detect_season("Cuoiata, Tabaccosa", []) == "Autunno / Inverno (dedotta)"
+    assert advisor_mock._detect_season("Acquatica, Agrumata", []) == "Primavera / Estate"
+    assert advisor_mock._detect_season("Cuoiata, Tabaccosa", []) == "Autunno / Inverno"
     assert advisor_mock._detect_season("", ["profumi invernali"]) == "Autunno / Inverno"
     assert advisor_mock._detect_season("", ["profumi estivi", "profumi invernali"]) == "Quattro Stagioni"
 

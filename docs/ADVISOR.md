@@ -48,13 +48,23 @@ When confirmed matches exist, return up to three guided cards or a free-search s
 
 The parser handles common Italian expressions and catalog note names, with common English note aliases. Longest note matches preserve distinctions such as rose versus pink pepper. Unknown explicit note requests/exclusions request clarification instead of being silently dropped. Interpretation is rule based and does not cover arbitrary natural-language constructions.
 
-Unknown recipient or season is kept unknown. Season estimates based on family are labelled as deductions and do not count as confirmed seasonal matches. Generic “caldo” or “versatile” does not establish summer or year-round suitability. Explicit tags and usage information take precedence over family estimates; inferred family classifications remain distinct from declarations.
+Unknown recipient or season is kept unknown. Season estimates based on family remain internally distinct and do not count as confirmed seasonal matches. Product-card season labels omit the derivation suffix; partial recommendation notices still explain relevant differences. Generic “caldo” or “versatile” does not establish summer or year-round suitability. Explicit tags and usage information take precedence over family estimates; inferred family classifications remain distinct from declarations.
 
 Preference profiles are stored inside SQLite `guided_state.preferences`. A cheaper alternative retains note exclusions, requested notes and other preferences. Explicit replacements update the relevant criteria; “nessun limite di budget” removes textual bounds, “nessuna esclusione” clears exclusions, and “nessuna nota obbligatoria” clears required notes. The latest supplied API ceiling is retained separately until replaced by another API value or session reset. Restarting the guided consultation clears the preference profile; switching to free chat preserves it. Guided budget clarification retains the previous answers; unresolved note constraints remain pending across the quiz rather than disappearing at the next step.
 
 Price boundaries use cents: “sotto 120€” means at most 119.99€, “massimo 120€” permits 120€, and “oltre 200€” begins at 200.01€. Informational questions about a named product can show its actual price; recommendation requests referencing that product still apply the constraints. A named reference in an alternative search is excluded from the results.
 
 Note admission reflects the available olfactory catalog data; it does not certify formula composition or ingredient absence. Each exclusion-based selection includes a short explanation of this catalog basis. Evidence is prepared at advisor startup and reused; admission adds no LLM call. Impossible constraints are answered locally without embedding or model work.
+
+## Product card details
+
+`_enrich_product_payload` takes the complete `olfactory_pyramid` and `unpositioned_notes` from the matched catalog record. It removes blank entries and repeated spellings without assigning a stage to an unpositioned note. Notes repeated across explicitly declared stages remain in those stages. Additional notes already present anywhere in the pyramid are omitted from the separate list. `key_notes` remains a short preview; a missing note list is not replaced with family names.
+
+Both card types carry these fields. The widget shows the pyramid and a separate additional-note section in its detail panel. This presentation uses the existing catalog data and adds no model work or index rebuild requirement. Old persisted cards without the fields retain a neutral summary until new responses provide structured details.
+
+The displayed `ptype` and first profile item contain only the concentration/type. Compound source text such as “Eau de parfum, unisex” becomes “Eau de Parfum”; the original type text remains available as recipient evidence when preparing the separate recipient item. The customer season label contains no “(dedotta)” suffix. Deterministic recommendation checks still retain declared/inferred evidence separately.
+
+The local DevTools snippet uses the remote Render API, not the local Python files. Deploying the updated backend is required for new responses to carry the full note fields. Saved cards and cached responses from the previous backend contain only the old summary and cannot reconstruct a stage. After deploying and publishing the widget, start a new conversation for new structured cards. The widget also cleans type and season text in older received or saved profiles.
 
 ## Session state
 
