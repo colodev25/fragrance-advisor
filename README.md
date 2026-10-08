@@ -8,6 +8,7 @@ The project includes a FastAPI backend, a browser chat interface, a Shopify cata
 
 - Free-form fragrance discovery and a four-step guided consultation
 - Semantic product search with price and fragrance-note filtering
+- Shared preference rules, note exclusions and clearly explained alternatives
 - Context-aware follow-up questions and product alternatives
 - SQLite sessions with inactivity expiry and clear recovery when server state is lost
 - Shopify catalog ingestion and a local ChromaDB search index

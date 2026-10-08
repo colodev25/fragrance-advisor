@@ -95,8 +95,10 @@ def test_detect_gender(advisor_mock):
     assert advisor_mock._detect_gender("Aventus", ["uomo", "per lui"]) == "Per Lui"
     assert advisor_mock._detect_gender("Soleil de Capri", ["soleil", "uomo"]) == "Per Lui"
     assert advisor_mock._detect_gender("Megamare", ["uomo", "donna"]) == "Unisex"
-    assert advisor_mock._detect_gender("Silver Man", ["donna"]) == "Per Lui"
-    assert advisor_mock._detect_gender("Interlude Woman", ["uomo"]) == "Per Lei"
+    assert advisor_mock._detect_gender("Silver Man", []) == "Per Lui"
+    assert advisor_mock._detect_gender("Interlude Woman", []) == "Per Lei"
+    assert advisor_mock._detect_gender("Silver Man", ["donna"]) == "Destinatario non dichiarato"
+    assert advisor_mock._detect_gender("Interlude Woman", ["uomo"]) == "Destinatario non dichiarato"
 
 
 # ==============================================================================
@@ -104,8 +106,8 @@ def test_detect_gender(advisor_mock):
 # ==============================================================================
 
 def test_detect_season(advisor_mock):
-    assert advisor_mock._detect_season("Acquatica, Agrumata", []) == "Primavera / Estate"
-    assert advisor_mock._detect_season("Cuoiata, Tabaccosa", []) == "Autunno / Inverno"
+    assert advisor_mock._detect_season("Acquatica, Agrumata", []) == "Primavera / Estate (dedotta)"
+    assert advisor_mock._detect_season("Cuoiata, Tabaccosa", []) == "Autunno / Inverno (dedotta)"
     assert advisor_mock._detect_season("", ["profumi invernali"]) == "Autunno / Inverno"
     assert advisor_mock._detect_season("", ["profumi estivi", "profumi invernali"]) == "Quattro Stagioni"
 
@@ -117,7 +119,7 @@ def test_detect_season(advisor_mock):
 def test_extract_price_constraints(advisor_mock):
     min_p, max_p, q = advisor_mock._extract_price_constraints("cerco un profumo sotto i 150€", None)
     assert min_p is None
-    assert max_p == 150.0
+    assert max_p == 149.99
     assert "150" not in q
 
     min_p, max_p, q = advisor_mock._extract_price_constraints("vorrei spendere tra 80 e 120 euro", None)
@@ -126,7 +128,7 @@ def test_extract_price_constraints(advisor_mock):
 
     active = {"price": 100.0, "name": "Profumo X"}
     min_p, max_p, _ = advisor_mock._extract_price_constraints("ne vorrei uno più economico", active)
-    assert max_p == 99.5
+    assert max_p == 99.99
 
 
 # ==============================================================================

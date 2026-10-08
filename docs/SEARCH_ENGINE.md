@@ -19,7 +19,7 @@ Each record stores the catalog identifier, semantic text and metadata used by th
 For each query, `FragranceSearchEngine.search()`:
 
 1. Builds ChromaDB price filters from optional minimum and maximum values.
-2. Retrieves up to ten semantically similar records, or fewer if the collection is smaller.
+2. Retrieves a bounded pool: at least ten where available, expanding with the requested result count up to 100 records. The advisor requests 40 for ranking.
 3. Extracts keywords from the query and keeps candidates whose indexed document contains at least one keyword.
 4. Applies the requested result limit.
 
@@ -27,7 +27,7 @@ If keyword matching produces no candidates, the search layer returns the semanti
 
 ## Notes and product constraints
 
-The advisor also performs request-specific processing beyond the search engine, including explicit fragrance-note matching and product suitability checks. Those rules live in `src/advisor.py`; they are not all implemented as ChromaDB filters. The search layer applies numeric price limits but does not independently guarantee stock availability filtering at query time. The catalog ingestion step controls which products are written to the primary searchable catalog.
+The advisor and `src/recommendation_preferences.py` check stock, price, note requirements/exclusions and product suitability against the verified catalog snapshot. They check the full catalog, so a valid candidate outside the semantic pool can still be offered. Semantic retrieval orders the admitted candidates; its `exact_match_found` flag is not proof that customer constraints were satisfied. Excluded notes are removed from the ranking query. See [preference policy](ADVISOR.md#preference-policy).
 
 ## Refreshing the index
 

@@ -23,15 +23,38 @@ Customers can describe what they want directly, ask about a product, or refine a
 
 For a request that needs product recommendations, the advisor:
 
-1. Extracts relevant preferences, note requests and price constraints.
-2. Retrieves candidates through `FragranceSearchEngine` and the ChromaDB catalog index.
-3. Applies deterministic checks and uses product data to enrich the candidate cards.
+1. Updates the session's recognized preferences, requested notes, exclusions and price constraints.
+2. Checks admission across the complete loaded catalog, then retrieves semantic ranking through `FragranceSearchEngine`.
+3. Prioritizes confirmed matches and enriches admitted cards by stable catalog ID.
 4. Sends the request and selected catalog context to Groq to produce the conversational explanation.
 5. Stores the answer, active product and guided-flow state in `SessionStore`.
 
 The model explains and contextualizes catalog candidates. Product details shown in cards come from the catalog, and the advisor can return no product when the available candidates do not fit the request.
 
 Free-search and alternative recommendations require a JSON object with `selection` (a supplied candidate ID, or `null`) and a non-empty `reply`. Invalid JSON, unknown IDs and missing fields trigger the fallback model. If no valid selection is available within the request budget, the API returns a retryable `503`; conversation state and the previous active fragrance remain unchanged. An explicit `null` selection clears the active fragrance. No product is inferred from its name or selected automatically from the first search result.
+
+## Preference policy
+
+`src/recommendation_preferences.py` applies the same balanced policy to guided and free recommendations:
+
+| Criterion | Treatment |
+| --- | --- |
+| Availability and numeric budget | Required. The smaller of the textual ceiling and API ceiling applies; conflicting bounds request clarification. |
+| Recognized requested notes | Required evidence from declared notes, unpositioned notes, relevant note tags or positive description mentions. “Iris e vaniglia” requires both; “iris o vaniglia” permits either. |
+| Excluded notes or families | Required. A forbidden declared note/family is never relaxed. Note exclusions reject products without usable note evidence; family exclusions reject products without a declared family. |
+| Family, recipient, season and occasion | Preferences by default. Confirmed matches are prioritized. “Solo”, “deve” and similar recognized markers make the supplied criteria required. |
+
+When confirmed matches exist, return up to three guided cards or a free-search shortlist without padding it with partial matches. If none exist, admitted alternatives may be offered with a deterministic notice explaining their differences. The model receives only admitted candidates and cannot choose a rejected product ID.
+
+The parser handles common Italian expressions and catalog note names, with common English note aliases. Longest note matches preserve distinctions such as rose versus pink pepper. Unknown explicit note requests/exclusions request clarification instead of being silently dropped. Interpretation is rule based and does not cover arbitrary natural-language constructions.
+
+Unknown recipient or season is kept unknown. Season estimates based on family are labelled as deductions and do not count as confirmed seasonal matches. Generic “caldo” or “versatile” does not establish summer or year-round suitability. Explicit tags and usage information take precedence over family estimates; inferred family classifications remain distinct from declarations.
+
+Preference profiles are stored inside SQLite `guided_state.preferences`. A cheaper alternative retains note exclusions, requested notes and other preferences. Explicit replacements update the relevant criteria; “nessun limite di budget” removes textual bounds, “nessuna esclusione” clears exclusions, and “nessuna nota obbligatoria” clears required notes. The latest supplied API ceiling is retained separately until replaced by another API value or session reset. Restarting the guided consultation clears the preference profile; switching to free chat preserves it. Guided budget clarification retains the previous answers; unresolved note constraints remain pending across the quiz rather than disappearing at the next step.
+
+Price boundaries use cents: “sotto 120€” means at most 119.99€, “massimo 120€” permits 120€, and “oltre 200€” begins at 200.01€. Informational questions about a named product can show its actual price; recommendation requests referencing that product still apply the constraints. A named reference in an alternative search is excluded from the results.
+
+Note admission reflects the available olfactory catalog data; it does not certify formula composition or ingredient absence. Each exclusion-based selection includes a short explanation of this catalog basis. Evidence is prepared at advisor startup and reused; admission adds no LLM call. Impossible constraints are answered locally without embedding or model work.
 
 ## Session state
 

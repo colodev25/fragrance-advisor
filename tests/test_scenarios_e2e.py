@@ -44,7 +44,7 @@ def test_scenario_note_and_season(live_advisor):
 
     prod = res["products"][0]
     p_name = prod["name"]
-    active = live_advisor.active_perfumes.get(session_id)
+    active = live_advisor.session_store.get_session(session_id)["active_perfume"]
 
     assert active is not None
     assert active["name"] == p_name
@@ -65,7 +65,7 @@ def test_scenario_follow_up_stays_on_active(live_advisor):
     session_id = "e2e_session_followup"
     # Pre-condizione auto-consistente
     live_advisor.advise("consigliami un profumo alla vaniglia", session_id=session_id)
-    active_before = live_advisor.active_perfumes.get(session_id)
+    active_before = live_advisor.session_store.get_session(session_id)["active_perfume"]
     assert active_before is not None
 
     follow_up_query = "quali sono le sue note olfattive e quanto dura sulla pelle?"
@@ -75,7 +75,7 @@ def test_scenario_follow_up_stays_on_active(live_advisor):
     assert len(res["products"]) == 0
     assert len(res["reply"]) > 20
 
-    active_after = live_advisor.active_perfumes.get(session_id)
+    active_after = live_advisor.session_store.get_session(session_id)["active_perfume"]
     assert active_after["name"] == active_before["name"]
 
 
@@ -87,7 +87,7 @@ def test_scenario_switch_with_relative_price(live_advisor):
     session_id = "e2e_session_switch"
     # Pre-condizione auto-consistente
     live_advisor.advise("consigliami un profumo orientale costoso", session_id=session_id)
-    prev_perfume = live_advisor.active_perfumes.get(session_id)
+    prev_perfume = live_advisor.session_store.get_session(session_id)["active_perfume"]
     prev_price = float(prev_perfume["price"])
 
     res = live_advisor.advise("vorrei qualcosa di più economico", session_id=session_id)
@@ -150,5 +150,5 @@ def test_scenario_guided_flow_end_to_end(live_advisor):
         assert "key_notes" in prod
 
     # 4. Deve essere registrato un profumo attivo per eventuali follow-up
-    active = live_advisor.active_perfumes.get(session_id)
+    active = live_advisor.session_store.get_session(session_id)["active_perfume"]
     assert active is not None

@@ -77,16 +77,14 @@ def test_free_search_updates_state_only_for_valid_selection(raw, expected_cards,
     from src.advisor import FragranceAdvisor
     advisor = FragranceAdvisor.__new__(FragranceAdvisor)
     previous = {"name": "Precedente", "family": "Legnosa"}
-    candidate = {"name": "Nuovo", "price": 90, "document": "Note di rosa"}
+    from tests.test_recommendation_preferences import product
+    catalog_product = product(name="Nuovo", notes=["Rosa"])
+    candidate = FragranceAdvisor._product_data(catalog_product)
     advisor.sessions = {"test": []}
     advisor.active_perfumes = {"test": previous}
-    advisor.catalog_products = []
+    advisor.catalog_products = [catalog_product]
     advisor._find_mentioned_product = MagicMock(return_value=None)
     advisor._determine_intent = MagicMock(return_value="CAMBIA")
-    advisor._extract_price_constraints = MagicMock(return_value=(None, None, "rosa"))
-    advisor._has_explicit_olfactory_redirect = MagicMock(return_value=True)
-    advisor._extract_target_notes = MagicMock(return_value=["rosa"])
-    advisor._find_keyword_matches = MagicMock(return_value=[candidate])
     advisor.search_engine = MagicMock()
     advisor.search_engine.search.return_value = {"ids": [[]]}
     advisor.resilient_client = MagicMock()

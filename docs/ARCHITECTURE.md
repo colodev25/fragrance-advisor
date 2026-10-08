@@ -28,6 +28,8 @@ Browser interface (index.html)
 
 `src/advisor.py` coordinates the guided and free-form flows, restores conversation state, identifies active-product follow-ups, applies recommendation rules, enriches product cards and prepares catalog context for the LLM. `src/llm_resilience.py` handles retry and fallback behavior for Groq calls. `src/chat_budget.py` scopes the chat deadline and provider-call allowance to each request; catalog enrichment retains its separate batch policy. Transient chat failures are retryable HTTP errors, rather than saved conversation replies.
 
+`src/recommendation_preferences.py` centralizes evidence and admission for both modes. Required constraints are checked against the complete runtime catalog; semantic retrieval ranks the surviving products. Confirmed preference matches take priority, with explicit notices for partial alternatives. The profile persists with session state, and stock, budget or note exclusions cannot be bypassed by the model's candidate selection.
+
 ### Search and indexing
 
 `src/reindex.py` builds a unique `fragrances_<generation>` collection using ChromaDB's local ONNX embedding model (`all-MiniLM-L6-v2`) and cosine distance. It validates the source catalog, checks indexed IDs/count and a search probe, writes a catalog snapshot, then atomically publishes `chroma_db/active.json`. `src/search.py` verifies this manifest and loads its collection; `src/advisor.py` uses that same catalog snapshot. Source catalog updates remain pending until indexing succeeds and the backend restarts. See [index operations](INDEX_OPERATIONS.md).
@@ -73,6 +75,7 @@ Separate GitHub Actions workflows synchronize Shopify and progressively enrich t
 | ----------------------- | ------------------------------------------------ |
 | `src/main.py`           | FastAPI application and routes                   |
 | `src/advisor.py`        | Conversation and recommendation orchestration    |
+| `src/recommendation_preferences.py` | Catalog evidence, persistent preferences and deterministic admission |
 | `src/search.py`         | Runtime semantic retrieval and filtering         |
 | `src/reindex.py`        | ChromaDB index generation                        |
 | `src/ingest.py`         | Shopify product ingestion and normalization      |

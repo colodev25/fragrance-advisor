@@ -341,8 +341,8 @@ def test_expired_processing_cannot_commit_history_or_receipt(tmp_path, clock):
 
 def test_guided_cards_can_complete_with_fixed_intro_and_be_replayed(tmp_path, clock):
     advisor = advisor_for(SessionStore(str(tmp_path / "guided.db")))
-    advisor._resolve_macro_family = MagicMock(return_value=("Fresco", ["Agrumata"]))
-    advisor._is_compatible_with_guided = MagicMock(return_value=True)
+    from tests.test_recommendation_preferences import product
+    advisor.catalog_products = [product(name="Iris", tags=["unisex", "ufficio"])]
     advisor._enrich_product_payload = MagicMock(side_effect=lambda product, **kwargs: product)
     advisor.search_engine = MagicMock()
     advisor.search_engine.search.return_value = {

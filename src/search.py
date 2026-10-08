@@ -95,7 +95,7 @@ class FragranceSearchEngine:
         # 1. Recupero semantico iniziale
         raw_results = self.collection.query(
             query_texts=[query],
-            n_results=min(10, total_items),
+            n_results=min(max(10, min(n_results, 100)), total_items),
             where=where_clause
         )
 

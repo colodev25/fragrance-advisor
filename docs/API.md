@@ -29,7 +29,7 @@ The FastAPI application in `src/main.py` exposes the chat service to the browser
 | `session_id` | string | Yes | Session key: 1–128 letters, digits, `_` or `-`. Missing, `null`, empty and `default` values are rejected. |
 | `session_context` | object or `null` | No | After the first reply, send its `token` and `revision` to detect expired, lost or outdated conversation state. |
 | `request_id` | string or `null` | No | Unique identifier for one logical message, from 1 to 128 letters, digits, `_` or `-`. Reuse it with the same payload when retrying that message. |
-| `max_price` | number or `null` | No | Maximum price constraint from 0 to 10,000. |
+| `max_price` | number or `null` | No | Inclusive price ceiling from 0 to 10,000. Combined with the textual budget using the smaller ceiling; applies to both recommendation modes. |
 | `step_override` | integer or `null` | No | Optional guided-flow step from 1 to 4. |
 
 The response is the advisor's JSON object. It includes `reply`, `products`, `options`, `step`, and `mode` where applicable. `products` contains structured product cards; `options` contains guided-flow choices. `step` is the active guided step or `null`, and `mode` identifies guided or free conversation responses.
@@ -52,6 +52,8 @@ Example response shape:
 ```
 
 Product fields depend on the selected card. They can include name, brand, price, product and image URLs, fragrance traits, story, key notes and `card_type`.
+
+Recognized preferences are retained in the conversation. The latest non-null API price ceiling remains effective until the client supplies another ceiling or resets the session; removing a textual budget does not remove that API ceiling. Partial alternatives include their differences in `reply`. Contradictory price bounds or unrecognized explicit note constraints receive a completed `200` clarification with no cards or model call. See [preference policy](ADVISOR.md#preference-policy).
 
 ### Identified requests and retries
 
