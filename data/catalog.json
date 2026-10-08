@@ -2115,7 +2115,12 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Vaniglia assoluta",
+      "Gelsomino sambac",
+      "Fava tonka",
+      "Patchouli frazionato"
+    ],
     "family": "Gourmand",
     "family_inference": null,
     "data_provenance": {
@@ -2124,9 +2129,74 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Vaniglia assoluta",
+          "position": null,
+          "evidence": "Vaniglia assoluta",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Gelsomino sambac",
+          "position": null,
+          "evidence": "gelsomino sambac",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Fava tonka",
+          "position": null,
+          "evidence": "fava tonka",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Patchouli frazionato",
+          "position": null,
+          "evidence": "patchouli frazionato",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "687c85e074c549c63ebc866bd6c0c96968c45b042e8a02f8a3557e844d03f225",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Vaniglia assoluta",
+            "position": null,
+            "evidence": "Vaniglia assoluta"
+          },
+          {
+            "name": "Gelsomino sambac",
+            "position": null,
+            "evidence": "gelsomino sambac"
+          },
+          {
+            "name": "Fava tonka",
+            "position": null,
+            "evidence": "fava tonka"
+          },
+          {
+            "name": "Patchouli frazionato",
+            "position": null,
+            "evidence": "patchouli frazionato"
+          }
+        ],
+        "family": {
+          "name": "Gourmand",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Gourmand"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Looking For Vanilla | 43 EDP",
       "brand": "Parle Moi De Parfum",
@@ -2162,7 +2232,7 @@
       "add_to_cart": "https://etualy.com/cart/54977505198414:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/parle-moi-de-parfum-looking-for-vanilla-100-mledp.png?v=1760447011"
     },
-    "semantic_text": "Profumo Looking For Vanilla | 43 EDP di Parle Moi De Parfum. Tipologia: Eau de Parfum, Unisex. Famiglia olfattiva: Gourmand. Tag: 100 ml, da 101€ a 200€, Eau de Parfum, Fragranze, Gourmand, Per lei, Per lui. Carattere, contesto d'uso e occasioni: Perfetto per chi ama le fragranze gourmand ma cerca qualcosa di più raffinato e contemporaneo: non la dolcezza infantile dello zucchero, ma l’abbraccio sensuale di una vaniglia che sa di eleganza e libertà. Da indossare quando vuoi sentirti irresistibile ma senza eccessi — nelle giornate fresche, ne"
+    "semantic_text": "Profumo Looking For Vanilla | 43 EDP di Parle Moi De Parfum. Tipologia: Eau de Parfum, Unisex. Famiglia olfattiva: Gourmand. Tag: 100 ml, da 101€ a 200€, Eau de Parfum, Fragranze, Gourmand, Per lei, Per lui. Note citate senza posizione dichiarata: Vaniglia assoluta, Gelsomino sambac, Fava tonka, Patchouli frazionato. Carattere, contesto d'uso e occasioni: Perfetto per chi ama le fragranze gourmand ma cerca qualcosa di più raffinato e contemporaneo: non la dolcezza infantile dello zucchero, ma l’abbraccio sensuale di una vaniglia che sa di eleganza e libertà. Da indossare quando vuoi sentirti irresistibile ma senza eccessi — nelle giornate fresche, ne"
   },
   {
     "id": "sh_10803369836878",
@@ -2313,7 +2383,14 @@
       },
       "llm_notes": []
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "925b7bcc6df923ee377398ed1dcba77fc79c3a036f3136f3a3781c14767cd01b",
+      "version": 3,
+      "response": {
+        "notes": [],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "Orange Crush Extrait de Parfum",
       "brand": "Fugazzi",
@@ -3613,7 +3690,12 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Arancia Amara",
+      "Ginepro",
+      "Mimosa",
+      "Cuoio"
+    ],
     "family": "Speziata, Gourmand",
     "family_inference": null,
     "data_provenance": {
@@ -3622,9 +3704,70 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Arancia Amara",
+          "position": null,
+          "evidence": "arancia amara",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ginepro",
+          "position": null,
+          "evidence": "ginepro",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Mimosa",
+          "position": null,
+          "evidence": "mimosa mielata",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cuoio",
+          "position": null,
+          "evidence": "cuoio",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "f87366cf18aa89b7d1ef29ad896f636afe2868d6c735e7f0b4d643b936d1879e",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Arancia Amara",
+            "position": null,
+            "evidence": "arancia amara"
+          },
+          {
+            "name": "Ginepro",
+            "position": null,
+            "evidence": "ginepro"
+          },
+          {
+            "name": "Mimosa",
+            "position": null,
+            "evidence": "mimosa mielata"
+          },
+          {
+            "name": "Cuoio",
+            "position": null,
+            "evidence": "cuoio"
+          }
+        ],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "Teisenddu EDP",
       "brand": "Frassaï",
@@ -3661,7 +3804,7 @@
       "add_to_cart": "https://etualy.com/cart/54116966072654:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/aedes-de-venustas-sueno-latino-edp-100-ml_10_d30731b5-b2e7-41aa-8812-1834e6c458b5.png?v=1752758394"
     },
-    "semantic_text": "Profumo Teisenddu EDP di Frassaï. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Speziata, Gourmand. Tag: 50 ml, 9 ml, Ambrata, da 101€ a 200€, Eau de Parfum, fino a 50€, Floreale, Fragranze, Per lei, Per lui. Carattere, contesto d'uso e occasioni: Teisenddu è il compagno ideale per chi ama i profumi ricchi, evocativi e avvolgenti, capaci di raccontare storie e accendere i sensi. È perfetto per chi ha un debole per i gourmand eleganti ma detesta le ovvietà zuccherine. Indossalo in autunno e inverno, nelle giornate pigre in cui hai bisogno di c"
+    "semantic_text": "Profumo Teisenddu EDP di Frassaï. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Speziata, Gourmand. Tag: 50 ml, 9 ml, Ambrata, da 101€ a 200€, Eau de Parfum, fino a 50€, Floreale, Fragranze, Per lei, Per lui. Note citate senza posizione dichiarata: Arancia Amara, Ginepro, Mimosa, Cuoio. Carattere, contesto d'uso e occasioni: Teisenddu è il compagno ideale per chi ama i profumi ricchi, evocativi e avvolgenti, capaci di raccontare storie e accendere i sensi. È perfetto per chi ha un debole per i gourmand eleganti ma detesta le ovvietà zuccherine. Indossalo in autunno e inverno, nelle giornate pigre in cui hai bisogno di c"
   },
   {
     "id": "sh_10654485905742",
@@ -4560,7 +4703,14 @@
       "family": null,
       "llm_notes": []
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "b214c38ecc29cb63fd4b2c0bd6c8bc4e520dac26484ffe48ac74d630917dff12",
+      "version": 3,
+      "response": {
+        "notes": [],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "Discovery Set Frassai",
       "brand": "Frassaï",
@@ -4875,7 +5025,23 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Yuzu",
+      "Limone",
+      "Bergamotto",
+      "Arancia rossa",
+      "Mandarino",
+      "Neroli",
+      "Lavanda",
+      "Cassis",
+      "Magnolia",
+      "Gelsomino",
+      "Tè bianco",
+      "Fava Tonka",
+      "Patchouli",
+      "Vetiver",
+      "Muschio"
+    ],
     "family": "Agrumata",
     "family_inference": null,
     "data_provenance": {
@@ -4884,9 +5050,217 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Yuzu",
+          "position": null,
+          "evidence": "Yuzu",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Limone",
+          "position": null,
+          "evidence": "Limone",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Bergamotto",
+          "position": null,
+          "evidence": "Bergamotto",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Arancia rossa",
+          "position": null,
+          "evidence": "Arancia rossa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Mandarino",
+          "position": null,
+          "evidence": "Mandarino",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Neroli",
+          "position": null,
+          "evidence": "Neroli",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Lavanda",
+          "position": null,
+          "evidence": "Lavanda",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cassis",
+          "position": null,
+          "evidence": "Cassis",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Magnolia",
+          "position": null,
+          "evidence": "Magnolia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Gelsomino",
+          "position": null,
+          "evidence": "Gelsomino",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Tè bianco",
+          "position": null,
+          "evidence": "Tè bianco",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Fava Tonka",
+          "position": null,
+          "evidence": "Fava Tonka",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Patchouli",
+          "position": null,
+          "evidence": "Patchouli",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vetiver",
+          "position": null,
+          "evidence": "Vetiver",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio",
+          "position": null,
+          "evidence": "Muschio",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "d12ff89a20491c255a4de7ebf7e396bf9aa1dfa259135ed94fc28c5420f8fd24",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Yuzu",
+            "position": null,
+            "evidence": "Yuzu"
+          },
+          {
+            "name": "Limone",
+            "position": null,
+            "evidence": "Limone"
+          },
+          {
+            "name": "Bergamotto",
+            "position": null,
+            "evidence": "Bergamotto"
+          },
+          {
+            "name": "Arancia rossa",
+            "position": null,
+            "evidence": "Arancia rossa"
+          },
+          {
+            "name": "Mandarino",
+            "position": null,
+            "evidence": "Mandarino"
+          },
+          {
+            "name": "Neroli",
+            "position": null,
+            "evidence": "Neroli"
+          },
+          {
+            "name": "Lavanda",
+            "position": null,
+            "evidence": "Lavanda"
+          },
+          {
+            "name": "Cassis",
+            "position": null,
+            "evidence": "Cassis"
+          },
+          {
+            "name": "Magnolia",
+            "position": null,
+            "evidence": "Magnolia"
+          },
+          {
+            "name": "Gelsomino",
+            "position": null,
+            "evidence": "Gelsomino"
+          },
+          {
+            "name": "Tè bianco",
+            "position": null,
+            "evidence": "Tè bianco"
+          },
+          {
+            "name": "Fava Tonka",
+            "position": null,
+            "evidence": "Fava Tonka"
+          },
+          {
+            "name": "Patchouli",
+            "position": null,
+            "evidence": "Patchouli"
+          },
+          {
+            "name": "Vetiver",
+            "position": null,
+            "evidence": "Vetiver"
+          },
+          {
+            "name": "Muschio",
+            "position": null,
+            "evidence": "Muschio"
+          }
+        ],
+        "family": {
+          "name": "Agrumata",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Agrumata"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Isola Extrait de Parfum 100 ml",
       "brand": "Meo Fusciuni",
@@ -4922,7 +5296,7 @@
       "add_to_cart": "https://etualy.com/cart/53195520213326:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/aedes-de-venustas-sueno-latino-edp-100-ml_a9a5340b-6346-436c-acaf-b05c02d21fe9.png?v=1751616712"
     },
-    "semantic_text": "Profumo Isola Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Agrumata. Tag: 100 ml, 200€ e oltre, Agrumata, Extrait de parfum, Meo Fusciuni, Per lei, Per lui. Carattere, contesto d'uso e occasioni: Isola è per chi ama i profumi che raccontano storie – non solo da indossare, ma da vivere. Per chi si sente un po’ nomade e un po’ nostalgico, per chi ha l’anima mediterranea e lo sguardo rivolto all’orizzonte. Adatto a chi non ha bisogno di fragranze urlate per farsi notare, ma preferisce lasciare "
+    "semantic_text": "Profumo Isola Extrait de Parfum 100 ml di Meo Fusciuni. Tipologia: Extrait de Parfum, unisex. Famiglia olfattiva: Agrumata. Tag: 100 ml, 200€ e oltre, Agrumata, Extrait de parfum, Meo Fusciuni, Per lei, Per lui. Note citate senza posizione dichiarata: Yuzu, Limone, Bergamotto, Arancia rossa, Mandarino, Neroli, Lavanda, Cassis, Magnolia, Gelsomino, Tè bianco, Fava Tonka, Patchouli, Vetiver, Muschio. Carattere, contesto d'uso e occasioni: Isola è per chi ama i profumi che raccontano storie – non solo da indossare, ma da vivere. Per chi si sente un po’ nomade e un po’ nostalgico, per chi ha l’anima mediterranea e lo sguardo rivolto all’orizzonte. Adatto a chi non ha bisogno di fragranze urlate per farsi notare, ma preferisce lasciare "
   },
   {
     "id": "sh_10478900085070",
@@ -7531,7 +7905,11 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Arancia",
+      "Iso E Super",
+      "Ambra Bianca"
+    ],
     "family": "Agrumata",
     "family_inference": null,
     "data_provenance": {
@@ -7540,9 +7918,57 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Arancia",
+          "position": null,
+          "evidence": "l’arancia vivace",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Iso E Super",
+          "position": null,
+          "evidence": "Iso E Super",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambra Bianca",
+          "position": null,
+          "evidence": "Ambra Bianca",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "ba81f5b111f69b3d88e28f1cd15066b79f3244daa91a8d4f0a44a06d13ed9fa8",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Arancia",
+            "position": null,
+            "evidence": "l’arancia vivace"
+          },
+          {
+            "name": "Iso E Super",
+            "position": null,
+            "evidence": "Iso E Super"
+          },
+          {
+            "name": "Ambra Bianca",
+            "position": null,
+            "evidence": "Ambra Bianca"
+          }
+        ],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "Orange Crush Eau de Parfum",
       "brand": "Fugazzi",
@@ -7580,7 +8006,7 @@
       "add_to_cart": "https://etualy.com/cart/52721908646222:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/fugazzi-orange-crush-extrait-de-parfum-50-ml.png?v=1744802451"
     },
-    "semantic_text": "Profumo Orange Crush Eau de Parfum di Fugazzi. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Agrumata. Tag: 50 ml, Agrumata, Ambrata, da 51€ a 100€, Eau de Parfum, Legnosa, Muschiata, Per lei, Per lui. Carattere, contesto d'uso e occasioni: Perfetto per chi cerca una fragranza genderless, versatile e discreta, Orange Crush è l’ideale per accompagnare la quotidianità con un tocco di eleganza non ostentata. Adatto a tutte le stagioni, si indossa con naturalezza sia nelle giornate estive che nei mesi più freddi, adattandosi perfettamente "
+    "semantic_text": "Profumo Orange Crush Eau de Parfum di Fugazzi. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Agrumata. Tag: 50 ml, Agrumata, Ambrata, da 51€ a 100€, Eau de Parfum, Legnosa, Muschiata, Per lei, Per lui. Note citate senza posizione dichiarata: Arancia, Iso E Super, Ambra Bianca. Carattere, contesto d'uso e occasioni: Perfetto per chi cerca una fragranza genderless, versatile e discreta, Orange Crush è l’ideale per accompagnare la quotidianità con un tocco di eleganza non ostentata. Adatto a tutte le stagioni, si indossa con naturalezza sia nelle giornate estive che nei mesi più freddi, adattandosi perfettamente "
   },
   {
     "id": "sh_10406153322830",
@@ -7607,7 +8033,13 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Cashmeran",
+      "Bergamotto Calabrese",
+      "Pepe",
+      "Cashmere",
+      "Ambra Bianca"
+    ],
     "family": "Legnosa",
     "family_inference": null,
     "data_provenance": {
@@ -7616,9 +8048,87 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Cashmeran",
+          "position": null,
+          "evidence": "Cashmeran",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Bergamotto Calabrese",
+          "position": null,
+          "evidence": "bergamotto calabrese",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Pepe",
+          "position": null,
+          "evidence": "pepe nero",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cashmere",
+          "position": null,
+          "evidence": "Cashmere",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambra Bianca",
+          "position": null,
+          "evidence": "ambra bianca",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "ed2cba3011bce170d74aae8b6a388dd38267226dd7a2f88093f84968a3761b71",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Cashmeran",
+            "position": null,
+            "evidence": "Cashmeran"
+          },
+          {
+            "name": "Bergamotto Calabrese",
+            "position": null,
+            "evidence": "bergamotto calabrese"
+          },
+          {
+            "name": "Pepe",
+            "position": null,
+            "evidence": "pepe nero"
+          },
+          {
+            "name": "Cashmere",
+            "position": null,
+            "evidence": "Cashmere"
+          },
+          {
+            "name": "Ambra Bianca",
+            "position": null,
+            "evidence": "ambra bianca"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Legnosa"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Angel Dust Eau de Parfum",
       "brand": "Fugazzi",
@@ -7656,7 +8166,7 @@
       "add_to_cart": "https://etualy.com/cart/52721792188750:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/fugazzi-angel-dust-extrait-de-parfum-50-ml_849ca10b-bf23-4350-b211-4b15293ad8a8.png?v=1744801795"
     },
-    "semantic_text": "Profumo Angel Dust Eau de Parfum di Fugazzi. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 50 ml, da 51€ a 100€, Eau de Parfum, Legnosa, Muschiata, Per lei, Per lui, Speziata, Talcata. Carattere, contesto d'uso e occasioni: Ideale per chi predilige profumi intimi e raffinati, Angel Dust si rivolge a chi desidera esprimere la propria essenza con delicatezza, senza mai rinunciare a stile e carattere. Perfetto per momenti di riflessione, relax o incontri formali, è una fragranza che si adatta con grazia a ogni stagione e "
+    "semantic_text": "Profumo Angel Dust Eau de Parfum di Fugazzi. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 50 ml, da 51€ a 100€, Eau de Parfum, Legnosa, Muschiata, Per lei, Per lui, Speziata, Talcata. Note citate senza posizione dichiarata: Cashmeran, Bergamotto Calabrese, Pepe, Cashmere, Ambra Bianca. Carattere, contesto d'uso e occasioni: Ideale per chi predilige profumi intimi e raffinati, Angel Dust si rivolge a chi desidera esprimere la propria essenza con delicatezza, senza mai rinunciare a stile e carattere. Perfetto per momenti di riflessione, relax o incontri formali, è una fragranza che si adatta con grazia a ogni stagione e "
   },
   {
     "id": "sh_10406148735310",
