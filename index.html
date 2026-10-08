@@ -1970,6 +1970,18 @@
         return card;
       }
 
+      function normalizeChatRequest(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+        if (typeof value.message !== "string" || !value.message.trim() || value.message.length > 2000)
+          return null;
+        if (typeof value.session_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.session_id) ||
+            typeof value.request_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.request_id))
+          return null;
+        return Object.freeze({
+          message: value.message.trim(), session_id: value.session_id, request_id: value.request_id,
+        });
+      }
+
       function normalizeMessage(value) {
         if (!value || typeof value !== "object" || Array.isArray(value))
           return null;
@@ -1989,7 +2001,8 @@
           return {
             kind: "error",
             text: plainText(value.text),
-            retryable: value.retryable === true,
+            retryable: value.retryable === true && normalizeChatRequest(value.request) !== null,
+            request: normalizeChatRequest(value.request),
           };
         }
         return null;
@@ -2034,11 +2047,11 @@
             dom("span", "", "Avviso della Boutique"),
           );
           message.append(header, dom("div", "oa-error-text", record.text));
-          if (record.retryable) {
+          if (record.retryable && record.request?.session_id === sessionId) {
             const retry = dom("button", "oa-retry-btn");
             retry.type = "button";
             retry.append(icon("retry"), dom("span", "", "Riprova ora"));
-            retry.addEventListener("click", () => retryLastMessage(retry));
+            retry.addEventListener("click", () => retryLastMessage(retry, record));
             message.appendChild(retry);
           }
         }
@@ -2056,6 +2069,7 @@
           const button = dom("button", "oa-chip", option);
           button.type = "button";
           button.addEventListener("click", () => handleChipClick(option));
+          button.disabled = activeRequest !== null;
           chipsContainer.appendChild(button);
         });
       }
@@ -2078,6 +2092,7 @@
       }
 
       function resetLocalChat(rotateSession = false) {
+        cancelActiveRequest();
         if (rotateSession) {
           sessionId =
             "sess_" +
@@ -2207,6 +2222,8 @@
       let lastUserMessage = "";
       let chatMessages = [{ kind: "welcome" }];
       let currentOptions = [...INITIAL_OPTIONS];
+      let activeRequest = null;
+      let pendingRequest = null;
 
       function saveChatState(stepOverride) {
         try {
@@ -2227,6 +2244,7 @@
               options: currentOptions,
               step: currentStepValue,
               last_message: lastUserMessage,
+              pending_request: pendingRequest,
             }),
           );
           clearLegacyChat();
@@ -2265,6 +2283,19 @@
                 ? state.step
                 : null;
             lastUserMessage = plainText(state.last_message);
+            const interrupted = normalizeChatRequest(state.pending_request);
+            if (interrupted?.session_id === sessionId) {
+              chatMessages.push(normalizeMessage({
+                kind: "error", text: "La richiesta è stata interrotta dal cambio pagina. Puoi recuperarne la risposta.",
+                retryable: true, request: interrupted,
+              }));
+            }
+            // Solo l'ultimo messaggio irrisolto può essere riprovato.
+            chatMessages.forEach((record, index) => {
+              if (record.kind === "error" &&
+                  (index !== chatMessages.length - 1 || record.request?.session_id !== sessionId))
+                record.retryable = false;
+            });
             messagesContainer.replaceChildren();
             chatMessages.forEach((record) =>
               messagesContainer.appendChild(renderMessage(record)),
@@ -2344,11 +2375,12 @@
         scrollToBottom();
 
         try {
-          await fetch(`${API_BASE_URL}/reset`, {
+          const response = await fetch(`${API_BASE_URL}/reset`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: oldSession }),
           });
+          if (!response.ok) throw new Error("Reset remoto non completato.");
         } catch (e) {
           console.warn("[Etualy Advisor] Avviso reset remoto:", e);
         }
@@ -2356,6 +2388,7 @@
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
+        if (activeRequest) return;
         const text = input.value.trim();
         if (!text) return;
         input.value = "";
@@ -2495,79 +2528,125 @@
         }, 600);
       }
 
-      async function executeChatQuery(text) {
+      // BEGIN WIDGET REQUEST FLOW
+      function newRequestId() {
+        return "req_" + (globalThis.crypto?.randomUUID
+          ? globalThis.crypto.randomUUID()
+          : Date.now().toString(36) + "_" + Math.random().toString(36).slice(2));
+      }
+
+      function setRequestBusy(busy) {
+        input.disabled = busy;
+        form.querySelector('button[type="submit"]').disabled = busy;
+        messagesContainer.setAttribute("aria-busy", String(busy));
+        chipsContainer.querySelectorAll("button").forEach((button) => { button.disabled = busy; });
+        messagesContainer.querySelectorAll(".oa-retry-btn").forEach((button) => { button.disabled = busy; });
+      }
+
+      function cancelActiveRequest() {
+        const previous = activeRequest;
+        activeRequest = null;
+        pendingRequest = null;
+        if (previous) previous.controller.abort();
+        removeTyping();
+        setRequestBusy(false);
+      }
+
+      function retireRetries() {
+        chatMessages.forEach((record) => {
+          if (record.kind === "error") record.retryable = false;
+        });
+        messagesContainer.querySelectorAll(".oa-retry-btn").forEach((button) => button.remove());
+      }
+
+      async function executeChatQuery(request) {
+        if (activeRequest || request.session_id !== sessionId) return;
+        const context = { request, controller: new AbortController() };
+        activeRequest = context;
+        pendingRequest = request;
+        const isCurrent = () => activeRequest === context && sessionId === request.session_id;
+        setRequestBusy(true);
         renderOptions([]);
         showTyping();
+        saveChatState();
 
         try {
           const response = await fetch(`${API_BASE_URL}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              message: text,
-              session_id: sessionId,
-            }),
+            body: JSON.stringify(request),
+            signal: context.controller.signal,
           });
-
+          if (!isCurrent()) return;
           if (!response.ok) {
             const errorBody = await response.json().catch(() => null);
-            const error = new Error(
-              errorBody?.error?.message ||
-                "Un'interruzione temporanea non consente di completare la richiesta.",
-            );
+            if (!isCurrent()) return;
+            const error = new Error(errorBody?.error?.message ||
+              "Un'interruzione temporanea non consente di completare la richiesta.");
             error.retryable = response.status === 429 || response.status >= 500;
             throw error;
           }
-
           const data = await response.json();
+          if (!isCurrent()) return;
+          if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
+            throw new Error("La risposta non è disponibile. Riprova tra qualche istante.");
+          }
           removeTyping();
-
-          const record = normalizeMessage({
-            kind: "bot",
-            reply: data.reply,
-            products: data.products,
-          });
+          const record = normalizeMessage({ kind: "bot", reply: data.reply, products: data.products });
           const botMsgDiv = appendChatRecord(record);
           updateStepper(data.step);
           renderOptions(data.options);
-          saveChatState(data.step);
+          currentStepValue = Number.isInteger(data.step) && data.step >= 1 && data.step <= 4 ? data.step : null;
           scrollToElementTop(botMsgDiv);
-        } catch (err) {
+        } catch (error) {
+          if (!isCurrent()) return;
           removeTyping();
-          const errorMessage =
-            err?.message ||
-            "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo in questo istante.";
-          const canRetry = err?.retryable !== false;
-          appendChatRecord({
-            kind: "error",
-            text: plainText(errorMessage),
-            retryable: canRetry,
-          });
+          appendChatRecord(normalizeMessage({
+            kind: "error", text: error?.message ||
+              "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo.",
+            retryable: error?.retryable !== false, request,
+          }));
           scrollToBottom();
-          saveChatState();
+        } finally {
+          // Una risposta della vecchia sessione non deve rimuovere loader o blocchi della nuova.
+          if (isCurrent()) {
+            activeRequest = null;
+            pendingRequest = null;
+            setRequestBusy(false);
+            saveChatState();
+          }
         }
       }
 
       async function sendUserMessage(text) {
+        if (activeRequest) return;
+        text = typeof text === "string" ? text.trim() : "";
+        if (!text) return;
+        if (text.length > 2000) {
+          appendChatRecord({ kind: "error", text: "Scrivi un messaggio entro 2.000 caratteri.", retryable: false });
+          saveChatState();
+          return;
+        }
+        retireRetries();
+        const request = Object.freeze({ message: text, session_id: sessionId, request_id: newRequestId() });
         lastUserMessage = text;
+        // Conserva l'identità prima dell'invio per recuperare la risposta dopo una navigazione.
+        pendingRequest = request;
         appendUserMessage(text);
-        await executeChatQuery(text);
+        await executeChatQuery(request);
       }
 
-      async function retryLastMessage(btn) {
-        if (!lastUserMessage) return;
-        if (btn) {
-          btn.disabled = true;
-          btn.style.opacity = "0.6";
-          btn.style.pointerEvents = "none";
-        }
-        const errDiv = btn
-          ? btn.closest(".oa-msg-error")
-          : document.getElementById("oaLastErrorMsg");
-        if (errDiv) removeChatMessage(errDiv);
+      async function retryLastMessage(btn, record) {
+        if (activeRequest || !record?.retryable || !record.request ||
+            record.request.session_id !== sessionId || !chatMessages.includes(record)) return;
+        const errDiv = btn?.closest(".oa-msg-error");
+        if (!errDiv || messageRecords.get(errDiv) !== record) return;
+        pendingRequest = record.request;
+        removeChatMessage(errDiv);
         saveChatState();
-        await executeChatQuery(lastUserMessage);
+        await executeChatQuery(record.request);
       }
+      // END WIDGET REQUEST FLOW
 
       // Esegui il ripristino all'avvio
       restoreChatState();

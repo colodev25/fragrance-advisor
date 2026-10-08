@@ -17,6 +17,7 @@ The FastAPI application in `src/main.py` exposes the chat service to the browser
 {
   "message": "Cerco un profumo legnoso ed elegante",
   "session_id": "example-session",
+  "request_id": "req_example-001",
   "max_price": 150,
   "step_override": null
 }
@@ -26,6 +27,7 @@ The FastAPI application in `src/main.py` exposes the chat service to the browser
 | --- | --- | --- | --- |
 | `message` | string | Yes | Trimmed user message, from 1 to 2,000 characters. |
 | `session_id` | string or `null` | No | Session key; defaults to `default`. It accepts letters, digits, `_` and `-`, up to 128 characters. |
+| `request_id` | string or `null` | No | Unique identifier for one logical message, from 1 to 128 letters, digits, `_` or `-`. Reuse it with the same payload when retrying that message. |
 | `max_price` | number or `null` | No | Maximum price constraint from 0 to 10,000. |
 | `step_override` | integer or `null` | No | Optional guided-flow step from 1 to 4. |
 
@@ -45,6 +47,18 @@ Example response shape:
 
 Product fields depend on the selected card. They can include name, brand, price, product and image URLs, fragrance traits, story, key notes and `card_type`.
 
+### Identified requests and retries
+
+The widget assigns a new `request_id` to each message and preserves it for retries, including after page navigation. The backend serializes chat and reset operations for the same session within the running process; other sessions use independent locks. Requests without `request_id` remain compatible but have no duplicate-result recovery.
+
+For identified requests, session state and the completed response are committed together in SQLite. Sending the same session, identifier, trimmed message, price constraint and step override again returns that response without changing conversation state or calling the model again. Reusing an identifier with different input returns `409` (`request_id_conflict`). Rate limits still apply to every HTTP attempt.
+
+The latest 100 complete responses per session are retained. Older identifiers keep their payload fingerprint: retrying one returns `409` (`request_result_expired`) rather than processing it again. Reset clears both session state and request records. Database initialization adds the request table automatically; no catalog ingestion or reindexing is needed.
+
+An exception before the atomic commit leaves no completed result, so the same identifier may be retried. A normal `200` response, including an advisor fallback message, is a completed result: a subsequent customer message gets a new identifier. If the process stops after a model call but before committing, a retry can require another model call.
+
+Session locks are local to one process. Keep the current Render start command with `--workers 1` and one service instance. Multiple workers or replicas require shared coordination before enabling them. Recovery after a restart depends on retaining the SQLite database; Render storage durability remains a separate deployment concern.
+
 ### Reset request
 
 ```json
@@ -53,7 +67,7 @@ Product fields depend on the selected card. They can include name, brand, price,
 }
 ```
 
-The response is `{"status":"ok","session_id":"example-session","message":"Sessione azzerata"}`. Reset removes the stored history, active product and guided state for the given session.
+The response is `{"status":"ok","session_id":"example-session","message":"Sessione azzerata"}`. Reset removes the stored history, active product, guided state and completed request records for the given session. It waits for any operation already holding that session's lock. The widget immediately uses a new session identifier and discards replies from the previous session; aborting the browser request does not cancel model work already running on the backend.
 
 ## Validation, limits and errors
 
@@ -68,7 +82,7 @@ Requests use one error format:
 }
 ```
 
-The API returns `422` for invalid request data, `429` when a route limit is exceeded, and `503` when the advisor is starting or a downstream service cannot complete the request. A `429` response includes the standard `Retry-After` header.
+The API returns `422` for invalid request data, `409` for a conflicting identifier or an unavailable older result, `429` when a route limit is exceeded, and `503` when the advisor is starting or a downstream service cannot complete the request. A `429` response includes the standard `Retry-After` header.
 
 The built-in rate limiter is in-memory and applies separately to chat and reset routes. It is intentionally lightweight for a single service instance: counters are reset after a restart and are not shared between multiple instances.
 

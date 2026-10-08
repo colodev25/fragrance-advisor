@@ -9,6 +9,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+try:
+    from src.conversation_requests import RequestConflict
+except ModuleNotFoundError:
+    from conversation_requests import RequestConflict
+
+MAX_STORED_RESPONSES = 100
+
 
 class SessionStore:
     """Gestore della persistenza delle sessioni e dello stato conversazionale su SQLite."""
@@ -48,6 +55,33 @@ class SessionStore:
                 );
             """)
             conn.commit()
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS chat_requests (
+                    session_id TEXT NOT NULL,
+                    request_id TEXT NOT NULL,
+                    fingerprint TEXT NOT NULL,
+                    response TEXT,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (session_id, request_id)
+                );
+            """)
+            conn.commit()
+
+    def get_request_response(self, session_id: str, request_id: str, fingerprint: str):
+        """Restituisce un risultato concluso; un ID già usato non viene rielaborato."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                "SELECT fingerprint, response FROM chat_requests WHERE session_id = ? AND request_id = ?",
+                (session_id, request_id),
+            ).fetchone()
+        if row is None:
+            return None
+        if row["fingerprint"] != fingerprint:
+            raise RequestConflict("request_id_conflict", "Questo identificativo appartiene a un messaggio diverso.")
+        if row["response"] is None:
+            raise RequestConflict("request_result_expired", "Il risultato di questo messaggio non è più disponibile. Invia un nuovo messaggio.")
+        return json.loads(row["response"])
 
     def get_session(self, session_id: str) -> Dict[str, Any]:
         """Recupera lo stato della sessione. Se inesistente, restituisce lo stato vuoto standard."""
@@ -94,7 +128,10 @@ class SessionStore:
         session_id: str,
         history: List[Dict[str, Any]],
         active_perfume: Optional[Dict[str, Any]],
-        guided_state: Dict[str, Any]
+        guided_state: Dict[str, Any],
+        request_id: Optional[str] = None,
+        fingerprint: Optional[str] = None,
+        response: Optional[Dict[str, Any]] = None,
     ):
         """Salva o aggiorna lo stato completo della sessione con operazione atomica."""
         if not session_id:
@@ -104,6 +141,9 @@ class SessionStore:
         history_json = json.dumps(history, ensure_ascii=False)
         perfume_json = json.dumps(active_perfume, ensure_ascii=False) if active_perfume else None
         guided_json = json.dumps(guided_state, ensure_ascii=False)
+        if request_id is not None and (fingerprint is None or response is None):
+            raise ValueError("Una richiesta identificata richiede fingerprint e risposta.")
+        response_json = json.dumps(response, ensure_ascii=False) if request_id is not None else None
 
         with self._get_connection() as conn:
             conn.execute("""
@@ -115,6 +155,20 @@ class SessionStore:
                     guided_state = excluded.guided_state,
                     updated_at = excluded.updated_at;
             """, (session_id, history_json, perfume_json, guided_json, now))
+            if request_id is not None:
+                conn.execute(
+                    "INSERT INTO chat_requests (session_id, request_id, fingerprint, response, created_at) VALUES (?, ?, ?, ?, ?)",
+                    (session_id, request_id, fingerprint, response_json, now),
+                )
+                # Mantiene 100 risposte complete. I precedenti ID restano riconosciuti,
+                # evitando nuove chiamate LLM quando il risultato è stato scartato.
+                conn.execute("""
+                    UPDATE chat_requests SET response = NULL
+                    WHERE session_id = ? AND response IS NOT NULL AND rowid NOT IN (
+                        SELECT rowid FROM chat_requests WHERE session_id = ?
+                        AND response IS NOT NULL ORDER BY rowid DESC LIMIT ?
+                    )
+                """, (session_id, session_id, MAX_STORED_RESPONSES))
             conn.commit()
 
     def clear_session(self, session_id: str):
@@ -123,11 +177,17 @@ class SessionStore:
             return
         with self._get_connection() as conn:
             conn.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
+            conn.execute("DELETE FROM chat_requests WHERE session_id = ?", (session_id,))
             conn.commit()
 
     def cleanup_old_sessions(self, days: int = 30):
         """Rimuove le sessioni non aggiornate da oltre N giorni."""
         with self._get_connection() as conn:
+            conn.execute("""
+                DELETE FROM chat_requests WHERE session_id IN (
+                    SELECT session_id FROM sessions WHERE updated_at < datetime('now', ?)
+                )
+            """, (f"-{days} days",))
             conn.execute(
                 "DELETE FROM sessions WHERE updated_at < datetime('now', ?)",
                 (f"-{days} days",)

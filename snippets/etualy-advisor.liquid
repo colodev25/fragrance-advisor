@@ -1527,10 +1527,15 @@
       // Remote data and stored data are rendered only through DOM properties.
       const CHAT_STATE_KEY = "etualy_chat_state_v1";
       const LEGACY_CHAT_KEYS = [
-        "etualy_chat_messages", "etualy_chat_chips",
-        "etualy_chat_step", "etualy_last_user_message",
+        "etualy_chat_messages",
+        "etualy_chat_chips",
+        "etualy_chat_step",
+        "etualy_last_user_message",
       ];
-      const INITIAL_OPTIONS = ["🎯 Guidami nella scelta", "💬 Fai una domanda libera"];
+      const INITIAL_OPTIONS = [
+        "🎯 Guidami nella scelta",
+        "💬 Fai una domanda libera",
+      ];
       const cardRecords = new WeakMap();
       const messageRecords = new WeakMap();
 
@@ -1541,12 +1546,20 @@
       function safeHttpUrl(value) {
         if (typeof value !== "string") return "";
         const candidate = value.trim();
-        if (!/^https?:\/\//i.test(candidate) ||
-            /[\u0000-\u0020\u007f"'<>\\]/.test(candidate)) return "";
+        if (
+          !/^https?:\/\//i.test(candidate) ||
+          /[\u0000-\u0020\u007f"'<>\\]/.test(candidate)
+        )
+          return "";
         try {
           const url = new URL(candidate);
-          if (!["https:", "http:"].includes(url.protocol) ||
-              !url.hostname || url.username || url.password) return "";
+          if (
+            !["https:", "http:"].includes(url.protocol) ||
+            !url.hostname ||
+            url.username ||
+            url.password
+          )
+            return "";
           return url.href;
         } catch (_) {
           return "";
@@ -1570,7 +1583,12 @@
           cart: [
             ["circle", { cx: "9", cy: "21", r: "1" }],
             ["circle", { cx: "20", cy: "21", r: "1" }],
-            ["path", { d: "M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" }],
+            [
+              "path",
+              {
+                d: "M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6",
+              },
+            ],
           ],
           check: [["polyline", { points: "20 6 9 17 4 12" }]],
           close: [
@@ -1589,21 +1607,33 @@
         };
         const ns = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(ns, "svg");
-        const attrs = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
+        const attrs = {
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
           "stroke-width": kind === "bottle" ? "1.5" : "1.8",
-          "stroke-linecap": "round", "stroke-linejoin": "round" };
-        Object.entries(attrs).forEach(([name, value]) => svg.setAttribute(name, value));
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+        };
+        Object.entries(attrs).forEach(([name, value]) =>
+          svg.setAttribute(name, value),
+        );
         if (className) svg.setAttribute("class", className);
         drawings[kind].forEach(([tag, attributes]) => {
           const child = document.createElementNS(ns, tag);
-          Object.entries(attributes).forEach(([name, value]) => child.setAttribute(name, value));
+          Object.entries(attributes).forEach(([name, value]) =>
+            child.setAttribute(name, value),
+          );
           svg.appendChild(child);
         });
         return svg;
       }
 
       function imagePlaceholder() {
-        const placeholder = dom("div", "oa-card-image oa-card-placeholder is-loaded");
+        const placeholder = dom(
+          "div",
+          "oa-card-image oa-card-placeholder is-loaded",
+        );
         placeholder.appendChild(icon("bottle"));
         return placeholder;
       }
@@ -1620,19 +1650,42 @@
       }
 
       function normalizeProduct(value) {
-        const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        const source =
+          value && typeof value === "object" && !Array.isArray(value)
+            ? value
+            : {};
         const product = {};
-        ["name", "brand", "family", "ptype", "story", "description", "traits"].forEach((key) => {
-          product[key] = plainText(source[key], key === "story" || key === "description" ? 10000 : 1000);
+        [
+          "name",
+          "brand",
+          "family",
+          "ptype",
+          "story",
+          "description",
+          "traits",
+        ].forEach((key) => {
+          product[key] = plainText(
+            source[key],
+            key === "story" || key === "description" ? 10000 : 1000,
+          );
         });
         ["add_to_cart_url", "product_page_url", "image_url"].forEach((key) => {
           product[key] = safeHttpUrl(source[key]);
         });
-        product.price = typeof source.price === "number" && Number.isFinite(source.price) && source.price >= 0
-          ? source.price : plainText(source.price, 100);
+        product.price =
+          typeof source.price === "number" &&
+          Number.isFinite(source.price) &&
+          source.price >= 0
+            ? source.price
+            : plainText(source.price, 100);
         product.key_notes = Array.isArray(source.key_notes)
-          ? source.key_notes.filter((note) => typeof note === "string").slice(0, 32).map((note) => plainText(note, 500)) : [];
-        product.card_type = source.card_type === "slideover" ? "slideover" : "standard";
+          ? source.key_notes
+              .filter((note) => typeof note === "string")
+              .slice(0, 32)
+              .map((note) => plainText(note, 500))
+          : [];
+        product.card_type =
+          source.card_type === "slideover" ? "slideover" : "standard";
         product.is_open = source.is_open === true;
         product.cart_added = source.cart_added === true;
         return product;
@@ -1642,7 +1695,9 @@
         const tokenPattern = /\*\*([^*\n]+)\*\*|\[([^\]\n]+)\]\(([^)\s]+)\)/g;
         let offset = 0;
         for (const match of text.matchAll(tokenPattern)) {
-          parent.appendChild(document.createTextNode(text.slice(offset, match.index)));
+          parent.appendChild(
+            document.createTextNode(text.slice(offset, match.index)),
+          );
           if (match[1] !== undefined) {
             parent.appendChild(dom("strong", "", match[1]));
           } else {
@@ -1662,18 +1717,28 @@
       function renderMarkdownText(rawText, hasStructuredProducts = false) {
         let text = plainText(rawText);
         if (hasStructuredProducts) {
-          text = text.replace(/^\s*\*{0,2}(?:Prezzo|Price)\*{0,2}\s*:\s*[^\n\r]+/gim, "");
-          text = text.replace(/^\s*\*{0,2}\[(?:Aggiungi al Carrello|Add to Cart|Acquista|Immagine|Image|Foto)\]\([^)]+\)\*{0,2}/gim, "");
+          text = text.replace(
+            /^\s*\*{0,2}(?:Prezzo|Price)\*{0,2}\s*:\s*[^\n\r]+/gim,
+            "",
+          );
+          text = text.replace(
+            /^\s*\*{0,2}\[(?:Aggiungi al Carrello|Add to Cart|Acquista|Immagine|Image|Foto)\]\([^)]+\)\*{0,2}/gim,
+            "",
+          );
         }
         const fragment = document.createDocumentFragment();
-        text.split(/\n\n+/).map((part) => part.trim()).filter(Boolean).forEach((part) => {
-          const paragraph = dom("p");
-          part.split("\n").forEach((line, index) => {
-            if (index) paragraph.appendChild(dom("br"));
-            appendInlineMarkdown(paragraph, line);
+        text
+          .split(/\n\n+/)
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .forEach((part) => {
+            const paragraph = dom("p");
+            part.split("\n").forEach((line, index) => {
+              if (index) paragraph.appendChild(dom("br"));
+              appendInlineMarkdown(paragraph, line);
+            });
+            fragment.appendChild(paragraph);
           });
-          fragment.appendChild(paragraph);
-        });
         return fragment;
       }
 
@@ -1681,23 +1746,44 @@
         const prod = normalizeProduct(product);
         const name = prod.name || "Profumo Artistico";
         const brand = prod.brand || "Profumeria Artistica";
-        const price = typeof prod.price === "number"
-          ? new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(prod.price)
-          : prod.price ? prod.price + " €" : "0,00 €";
-        const story = (prod.story || prod.description).replace(/^["“”']+|["“”']+$/g, "").trim();
-        const traits = prod.traits || (prod.ptype ? prod.ptype + " • " + prod.family : prod.family);
+        const price =
+          typeof prod.price === "number"
+            ? new Intl.NumberFormat("it-IT", {
+                style: "currency",
+                currency: "EUR",
+              }).format(prod.price)
+            : prod.price
+              ? prod.price + " €"
+              : "0,00 €";
+        const story = (prod.story || prod.description)
+          .replace(/^["“”']+|["“”']+$/g, "")
+          .trim();
+        const traits =
+          prod.traits ||
+          (prod.ptype ? prod.ptype + " • " + prod.family : prod.family);
         const isSlideover = prod.card_type === "slideover";
-        const card = dom("div", "oa-product-card" + (isSlideover ? " oa-has-slideover" : ""));
+        const card = dom(
+          "div",
+          "oa-product-card" + (isSlideover ? " oa-has-slideover" : ""),
+        );
         card.classList.toggle("is-open", isSlideover && prod.is_open);
         cardRecords.set(card, product);
         const title = () => {
-          const link = externalLink(prod.product_page_url, name, "oa-card-title-link");
+          const link = externalLink(
+            prod.product_page_url,
+            name,
+            "oa-card-title-link",
+          );
           link.title = "Visualizza " + name + " su Etualy";
           return link;
         };
         const notes = (limit) => {
           const row = dom("div", "oa-notes-chips");
-          prod.key_notes.slice(0, limit).forEach((note) => row.appendChild(dom("span", "oa-note-pill", note)));
+          prod.key_notes
+            .slice(0, limit)
+            .forEach((note) =>
+              row.appendChild(dom("span", "oa-note-pill", note)),
+            );
           return row;
         };
 
@@ -1719,8 +1805,15 @@
         const meta = dom("div", "oa-card-meta");
         const titleBox = dom("div", "oa-card-title");
         titleBox.appendChild(title());
-        meta.append(dom("div", "oa-card-vendor", brand), titleBox,
-          dom("div", "oa-card-badge", prod.family || prod.ptype || "Profumo Artistico"));
+        meta.append(
+          dom("div", "oa-card-vendor", brand),
+          titleBox,
+          dom(
+            "div",
+            "oa-card-badge",
+            prod.family || prod.ptype || "Profumo Artistico",
+          ),
+        );
         header.append(imageBox, meta);
         if (isSlideover) {
           const info = dom("button", "oa-card-info-btn", "ⓘ");
@@ -1740,12 +1833,17 @@
         }
         const footer = dom("div", "oa-card-footer");
         footer.appendChild(dom("div", "oa-card-price", price));
-        const cart = dom(prod.add_to_cart_url ? "a" : "button", "oa-card-cart-btn");
+        const cart = dom(
+          prod.add_to_cart_url ? "a" : "button",
+          "oa-card-cart-btn",
+        );
         if (prod.add_to_cart_url) {
           cart.href = prod.add_to_cart_url;
           cart.target = "_blank";
           cart.rel = "noopener noreferrer";
-          cart.addEventListener("click", (event) => handleAddToCart(event, cart));
+          cart.addEventListener("click", (event) =>
+            handleAddToCart(event, cart),
+          );
         } else {
           cart.type = "button";
           cart.disabled = true;
@@ -1756,8 +1854,15 @@
         cartIcon.style.display = prod.cart_added ? "none" : "";
         checkIcon.style.display = prod.cart_added ? "inline-block" : "none";
         if (prod.cart_added) cart.classList.add("is-added");
-        cart.append(cartIcon, checkIcon, dom("span", "oa-cart-btn-text",
-          prod.cart_added ? "Nel Carrello" : "Aggiungi al Carrello"));
+        cart.append(
+          cartIcon,
+          checkIcon,
+          dom(
+            "span",
+            "oa-cart-btn-text",
+            prod.cart_added ? "Nel Carrello" : "Aggiungi al Carrello",
+          ),
+        );
         footer.appendChild(cart);
         front.appendChild(footer);
         card.appendChild(front);
@@ -1768,7 +1873,10 @@
           const slideMeta = dom("div", "oa-slide-meta");
           const slideTitle = dom("div", "oa-slide-title");
           slideTitle.appendChild(title());
-          slideMeta.append(dom("div", "oa-slide-subtitle", "Profilo & Note Olfattive"), slideTitle);
+          slideMeta.append(
+            dom("div", "oa-slide-subtitle", "Profilo & Note Olfattive"),
+            slideTitle,
+          );
           const close = dom("button", "oa-slide-close-btn");
           close.type = "button";
           close.title = "Chiudi note";
@@ -1776,15 +1884,23 @@
           close.addEventListener("click", () => toggleCardSlide(close));
           slideHeader.append(slideMeta, close);
           const body = dom("div", "oa-slide-body");
-          if (story) body.appendChild(dom("div", "oa-slide-story", '"' + story + '"'));
+          if (story)
+            body.appendChild(dom("div", "oa-slide-story", '"' + story + '"'));
           if (prod.key_notes.length) {
             const box = dom("div", "oa-slide-notes-box");
-            box.append(dom("div", "oa-slide-notes-label", "Accordi Salienti"), notes(32));
+            box.append(
+              dom("div", "oa-slide-notes-label", "Accordi Salienti"),
+              notes(32),
+            );
             body.appendChild(box);
           }
           if (traits) body.appendChild(dom("div", "oa-slide-traits", traits));
           const slideFooter = dom("div", "oa-slide-footer");
-          const back = dom("button", "oa-slide-back-btn", "← Torna alla scheda");
+          const back = dom(
+            "button",
+            "oa-slide-back-btn",
+            "← Torna alla scheda",
+          );
           back.type = "button";
           back.addEventListener("click", () => toggleCardSlide(back));
           slideFooter.appendChild(back);
@@ -1794,44 +1910,88 @@
         return card;
       }
 
-      function normalizeMessage(value) {
+      function normalizeChatRequest(value) {
         if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+        if (typeof value.message !== "string" || !value.message.trim() || value.message.length > 2000)
+          return null;
+        if (typeof value.session_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.session_id) ||
+            typeof value.request_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.request_id))
+          return null;
+        return Object.freeze({
+          message: value.message.trim(), session_id: value.session_id, request_id: value.request_id,
+        });
+      }
+
+      function normalizeMessage(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          return null;
         if (value.kind === "welcome") return { kind: "welcome" };
-        if (value.kind === "user") return { kind: "user", text: plainText(value.text) };
+        if (value.kind === "user")
+          return { kind: "user", text: plainText(value.text) };
         if (value.kind === "bot") {
-          return { kind: "bot", reply: plainText(value.reply), products: Array.isArray(value.products)
-            ? value.products.slice(0, 12).map(normalizeProduct) : [] };
+          return {
+            kind: "bot",
+            reply: plainText(value.reply),
+            products: Array.isArray(value.products)
+              ? value.products.slice(0, 12).map(normalizeProduct)
+              : [],
+          };
         }
         if (value.kind === "error") {
-          return { kind: "error", text: plainText(value.text), retryable: value.retryable === true };
+          return {
+            kind: "error",
+            text: plainText(value.text),
+            retryable: value.retryable === true && normalizeChatRequest(value.request) !== null,
+            request: normalizeChatRequest(value.request),
+          };
         }
         return null;
       }
 
       function renderMessage(record) {
-        const message = dom("div", "oa-msg " + (record.kind === "user" ? "oa-msg-user" : "oa-msg-bot"));
+        const message = dom(
+          "div",
+          "oa-msg " + (record.kind === "user" ? "oa-msg-user" : "oa-msg-bot"),
+        );
         messageRecords.set(message, record);
         if (record.kind === "welcome") {
           const first = dom("p");
-          first.append(document.createTextNode("Benvenuto nella boutique olfattiva di "), dom("strong", "", "Etualy"), document.createTextNode("."));
-          message.append(first, dom("p", "",
-            "Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni."));
+          first.append(
+            document.createTextNode("Benvenuto nella boutique olfattiva di "),
+            dom("strong", "", "Etualy"),
+            document.createTextNode("."),
+          );
+          message.append(
+            first,
+            dom(
+              "p",
+              "",
+              "Sono il tuo Maître Parfumeur personale: posso guidarti passo dopo passo attraverso 4 domande per scoprire la creazione perfetta per te, oppure consigliarti liberamente in base a note, desideri o occasioni.",
+            ),
+          );
         } else if (record.kind === "user") {
           message.textContent = record.text;
         } else if (record.kind === "bot") {
-          message.appendChild(renderMarkdownText(record.reply, record.products.length > 0));
-          record.products.forEach((product) => message.appendChild(createProductCard(product)));
+          message.appendChild(
+            renderMarkdownText(record.reply, record.products.length > 0),
+          );
+          record.products.forEach((product) =>
+            message.appendChild(createProductCard(product)),
+          );
         } else if (record.kind === "error") {
           message.classList.add("oa-msg-error");
           message.id = "oaLastErrorMsg";
           const header = dom("div", "oa-error-header");
-          header.append(icon("warning"), dom("span", "", "Avviso della Boutique"));
+          header.append(
+            icon("warning"),
+            dom("span", "", "Avviso della Boutique"),
+          );
           message.append(header, dom("div", "oa-error-text", record.text));
-          if (record.retryable) {
+          if (record.retryable && record.request?.session_id === sessionId) {
             const retry = dom("button", "oa-retry-btn");
             retry.type = "button";
             retry.append(icon("retry"), dom("span", "", "Riprova ora"));
-            retry.addEventListener("click", () => retryLastMessage(retry));
+            retry.addEventListener("click", () => retryLastMessage(retry, record));
             message.appendChild(retry);
           }
         }
@@ -1840,12 +2000,16 @@
 
       function renderOptions(options) {
         currentOptions = Array.isArray(options)
-          ? options.filter((option) => typeof option === "string").map((option) => plainText(option, 1000)) : [];
+          ? options
+              .filter((option) => typeof option === "string")
+              .map((option) => plainText(option, 1000))
+          : [];
         chipsContainer.replaceChildren();
         currentOptions.forEach((option) => {
           const button = dom("button", "oa-chip", option);
           button.type = "button";
           button.addEventListener("click", () => handleChipClick(option));
+          button.disabled = activeRequest !== null;
           chipsContainer.appendChild(button);
         });
       }
@@ -1868,8 +2032,13 @@
       }
 
       function resetLocalChat(rotateSession = false) {
+        cancelActiveRequest();
         if (rotateSession) {
-          sessionId = "sess_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
+          sessionId =
+            "sess_" +
+            Math.random().toString(36).substring(2, 11) +
+            "_" +
+            Date.now();
           sessionStorage.setItem("etualy_advisor_session_id", sessionId);
         }
         chatMessages = [{ kind: "welcome" }];
@@ -1973,6 +2142,8 @@
       let lastUserMessage = "";
       let chatMessages = [{ kind: "welcome" }];
       let currentOptions = [...INITIAL_OPTIONS];
+      let activeRequest = null;
+      let pendingRequest = null;
 
       function saveChatState(stepOverride) {
         try {
@@ -1983,6 +2154,7 @@
           sessionStorage.setItem(CHAT_STATE_KEY, JSON.stringify({
             version: 1, session_id: sessionId, messages: chatMessages,
             options: currentOptions, step: currentStepValue, last_message: lastUserMessage,
+              pending_request: pendingRequest,
           }));
           clearLegacyChat();
         } catch (error) {
@@ -2007,6 +2179,19 @@
             chatMessages = records;
             currentStepValue = Number.isInteger(state.step) && state.step >= 1 && state.step <= 4 ? state.step : null;
             lastUserMessage = plainText(state.last_message);
+            const interrupted = normalizeChatRequest(state.pending_request);
+            if (interrupted?.session_id === sessionId) {
+              chatMessages.push(normalizeMessage({
+                kind: "error", text: "La richiesta è stata interrotta dal cambio pagina. Puoi recuperarne la risposta.",
+                retryable: true, request: interrupted,
+              }));
+            }
+            // Solo l'ultimo messaggio irrisolto può essere riprovato.
+            chatMessages.forEach((record, index) => {
+              if (record.kind === "error" &&
+                  (index !== chatMessages.length - 1 || record.request?.session_id !== sessionId))
+                record.retryable = false;
+            });
             messagesContainer.replaceChildren();
             chatMessages.forEach((record) => messagesContainer.appendChild(renderMessage(record)));
             renderOptions(state.options);
@@ -2077,11 +2262,12 @@
       scrollToBottom();
 
       try {
-        await fetch(`${API_BASE_URL}/reset`, {
+        const response = await fetch(`${API_BASE_URL}/reset`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: oldSession }),
         });
+          if (!response.ok) throw new Error("Reset remoto non completato.");
       } catch (e) {
         console.warn("[Etualy Advisor] Avviso reset remoto:", e);
       }
@@ -2089,6 +2275,7 @@
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+        if (activeRequest) return;
       const text = input.value.trim();
       if (!text) return;
       input.value = "";
@@ -2223,69 +2410,125 @@
         }, 600);
       }
 
-      async function executeChatQuery(text) {
-      renderOptions([]);
-      showTyping();
+      // BEGIN WIDGET REQUEST FLOW
+      function newRequestId() {
+        return "req_" + (globalThis.crypto?.randomUUID
+          ? globalThis.crypto.randomUUID()
+          : Date.now().toString(36) + "_" + Math.random().toString(36).slice(2));
+      }
 
-      try {
-        const response = await fetch(`${API_BASE_URL}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: text,
-            session_id: sessionId,
-          }),
-        });
+      function setRequestBusy(busy) {
+        input.disabled = busy;
+        form.querySelector('button[type="submit"]').disabled = busy;
+        messagesContainer.setAttribute("aria-busy", String(busy));
+        chipsContainer.querySelectorAll("button").forEach((button) => { button.disabled = busy; });
+        messagesContainer.querySelectorAll(".oa-retry-btn").forEach((button) => { button.disabled = busy; });
+      }
 
-        if (!response.ok) {
-          const errorBody = await response.json().catch(() => null);
-          const error = new Error(
-            errorBody?.error?.message ||
-              "Un'interruzione temporanea non consente di completare la richiesta."
-          );
-          error.retryable = response.status === 429 || response.status >= 500;
-          throw error;
-        }
-
-        const data = await response.json();
+      function cancelActiveRequest() {
+        const previous = activeRequest;
+        activeRequest = null;
+        pendingRequest = null;
+        if (previous) previous.controller.abort();
         removeTyping();
+        setRequestBusy(false);
+      }
 
-        const record = normalizeMessage({ kind: "bot", reply: data.reply, products: data.products });
+      function retireRetries() {
+        chatMessages.forEach((record) => {
+          if (record.kind === "error") record.retryable = false;
+        });
+        messagesContainer.querySelectorAll(".oa-retry-btn").forEach((button) => button.remove());
+      }
+
+      async function executeChatQuery(request) {
+        if (activeRequest || request.session_id !== sessionId) return;
+        const context = { request, controller: new AbortController() };
+        activeRequest = context;
+        pendingRequest = request;
+        const isCurrent = () => activeRequest === context && sessionId === request.session_id;
+        setRequestBusy(true);
+        renderOptions([]);
+        showTyping();
+        saveChatState();
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(request),
+            signal: context.controller.signal,
+          });
+          if (!isCurrent()) return;
+          if (!response.ok) {
+            const errorBody = await response.json().catch(() => null);
+            if (!isCurrent()) return;
+            const error = new Error(errorBody?.error?.message ||
+              "Un'interruzione temporanea non consente di completare la richiesta.");
+            error.retryable = response.status === 429 || response.status >= 500;
+            throw error;
+          }
+          const data = await response.json();
+          if (!isCurrent()) return;
+          if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
+            throw new Error("La risposta non è disponibile. Riprova tra qualche istante.");
+          }
+          removeTyping();
+          const record = normalizeMessage({ kind: "bot", reply: data.reply, products: data.products });
           const botMsgDiv = appendChatRecord(record);
           updateStepper(data.step);
           renderOptions(data.options);
-          saveChatState(data.step);
+          currentStepValue = Number.isInteger(data.step) && data.step >= 1 && data.step <= 4 ? data.step : null;
           scrollToElementTop(botMsgDiv);
-      } catch (err) {
-        removeTyping();
-        const errorMessage =
-          err?.message ||
-          "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo in questo istante.";
-        const canRetry = err?.retryable !== false;
-        appendChatRecord({ kind: "error", text: plainText(errorMessage), retryable: canRetry });
+        } catch (error) {
+          if (!isCurrent()) return;
+          removeTyping();
+          appendChatRecord(normalizeMessage({
+            kind: "error", text: error?.message ||
+              "Un'interruzione temporanea non consente di raggiungere l'archivio olfattivo.",
+            retryable: error?.retryable !== false, request,
+          }));
           scrollToBottom();
+        } finally {
+          // Una risposta della vecchia sessione non deve rimuovere loader o blocchi della nuova.
+          if (isCurrent()) {
+            activeRequest = null;
+            pendingRequest = null;
+            setRequestBusy(false);
+            saveChatState();
+          }
+        }
+      }
+
+      async function sendUserMessage(text) {
+        if (activeRequest) return;
+        text = typeof text === "string" ? text.trim() : "";
+        if (!text) return;
+        if (text.length > 2000) {
+          appendChatRecord({ kind: "error", text: "Scrivi un messaggio entro 2.000 caratteri.", retryable: false });
           saveChatState();
+          return;
+        }
+        retireRetries();
+        const request = Object.freeze({ message: text, session_id: sessionId, request_id: newRequestId() });
+        lastUserMessage = text;
+        // Conserva l'identità prima dell'invio per recuperare la risposta dopo una navigazione.
+        pendingRequest = request;
+        appendUserMessage(text);
+        await executeChatQuery(request);
       }
-    }
 
-    async function sendUserMessage(text) {
-      lastUserMessage = text;
-      appendUserMessage(text);
-      await executeChatQuery(text);
-    }
-
-    async function retryLastMessage(btn) {
-      if (!lastUserMessage) return;
-      if (btn) {
-        btn.disabled = true;
-        btn.style.opacity = "0.6";
-        btn.style.pointerEvents = "none";
+      async function retryLastMessage(btn, record) {
+        if (activeRequest || !record?.retryable || !record.request ||
+            record.request.session_id !== sessionId || !chatMessages.includes(record)) return;
+        const errDiv = btn?.closest(".oa-msg-error");
+        if (!errDiv || messageRecords.get(errDiv) !== record) return;
+        pendingRequest = record.request;
+        removeChatMessage(errDiv);
+        saveChatState();
+        await executeChatQuery(record.request);
       }
-      const errDiv = btn ? btn.closest(".oa-msg-error") : document.getElementById("oaLastErrorMsg");
-      if (errDiv) removeChatMessage(errDiv);
-      saveChatState();
-      await executeChatQuery(lastUserMessage);
-    };
+      // END WIDGET REQUEST FLOW
 
     restoreChatState();
   })();

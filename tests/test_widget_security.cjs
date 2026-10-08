@@ -28,7 +28,8 @@ function instrumentedHtml(file) {
     safeHttpUrl, normalizeProduct, normalizeMessage, renderMarkdownText,
     createProductCard, appendChatRecord, renderOptions, saveChatState,
     restoreChatState, session: () => sessionId,
-    records: () => chatMessages
+    records: () => chatMessages, sendUserMessage,
+    active: () => activeRequest !== null
   };`;
   const instrumented = file.endsWith('.liquid')
     ? original.replace(/\}\)\(\);\s*$/, `${hooks}\n})();`)
@@ -106,6 +107,26 @@ function stored(messages, options = []) {
     options, step: 2, last_message: 'iris' });
 }
 
+async function controlledFetch(page) {
+  await page.evaluate(() => {
+    const original = window.fetch;
+    window.__pending = [];
+    window.fetch = (url, options) => {
+      if (new URL(url).pathname !== '/chat') return original(url, options);
+      // Ignora volutamente abort: verifica anche risposte tardive che non si possono cancellare.
+      return new Promise((resolve, reject) => {
+        window.__pending.push({ body: JSON.parse(options.body), signal: options.signal, resolve, reject });
+      });
+    };
+  });
+}
+
+async function resolvePending(page, index, data = { reply: 'Risposta completata', products: [], options: ['Per Lui'], step: 2 }) {
+  await page.evaluate(({ index, data }) => {
+    window.__pending[index].resolve(new Response(JSON.stringify(data), { status: 200 }));
+  }, { index, data });
+}
+
 async function assertSafe(page) {
   const result = await page.evaluate(() => ({
     executed: window.__xss,
@@ -122,6 +143,12 @@ async function assertSafe(page) {
 test('Both widgets contain the same safe renderer', () => {
   const block = (file) => script(file).split('// BEGIN WIDGET SAFE RENDERING')[1]
     .split('// END WIDGET SAFE RENDERING')[0].trim();
+  assert.equal(block(files[0]), block(files[1]));
+});
+
+test('Both widgets contain the same request coordination', () => {
+  const block = (file) => script(file).split('// BEGIN WIDGET REQUEST FLOW')[1]
+    .split('// END WIDGET REQUEST FLOW')[0].trim();
   assert.equal(block(files[0]), block(files[1]));
 });
 
@@ -300,6 +327,7 @@ for (const file of files) {
       document.querySelector('#oaMessages .oa-msg:last-child strong')?.textContent === 'sicura');
     assert.equal(requests.length, 2);
     assert.equal(requests[1].body.message, 'iris');
+    assert.equal(requests[1].body.request_id, requests[0].body.request_id);
     const saved = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), stateKey);
     assert.equal(saved.messages.some((record) => record.kind === 'error'), false);
     await assertSafe(page);
@@ -321,5 +349,150 @@ for (const file of files) {
     assert.equal(saved.last_message, '');
     assert.deepEqual(saved.messages, [{ kind: 'welcome' }]);
     await assertSafe(page);
+  });
+
+  test(`${file}: simultaneous sends produce one request and keep controls blocked until completion`, async (t) => {
+    const { page } = await fixture(t, file);
+    await controlledFetch(page);
+    await page.evaluate(() => {
+      void window.__widgetTest.sendUserMessage('iris');
+      void window.__widgetTest.sendUserMessage('rosa');
+      document.querySelector('#oaInput').value = 'secondo invio';
+      document.querySelector('#oaForm').dispatchEvent(new Event('submit', { cancelable: true }));
+    });
+    assert.equal(await page.evaluate(() => window.__pending.length), 1);
+    assert.equal(await page.locator('#oaInput').isDisabled(), true);
+    assert.equal(await page.locator('#oaForm button[type="submit"]').isDisabled(), true);
+    assert.equal(await page.locator('#oaRestartBtn').isDisabled(), false);
+    assert.equal(await page.locator('.oa-msg-user').count(), 1);
+    assert.equal(await page.locator('#oaInput').inputValue(), 'secondo invio');
+    assert.match(await page.evaluate(() => window.__pending[0].body.request_id), /^req_[A-Za-z0-9_-]+$/);
+    await resolvePending(page, 0);
+    await page.waitForFunction(() => !window.__widgetTest.active());
+    assert.equal(await page.locator('#oaInput').isDisabled(), false);
+    assert.equal(await page.locator('#oaChips button').isDisabled(), false);
+    assert.equal(await page.locator('#oaMessages').getAttribute('aria-busy'), 'false');
+  });
+
+  for (const outcome of ['success', 'failure']) {
+    test(`${file}: late ${outcome} after reset cannot affect the new pending conversation`, async (t) => {
+      const { page, requests } = await fixture(t, file);
+      await controlledFetch(page);
+      await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+      await page.locator('#oaRestartBtn').click();
+      assert.equal(await page.evaluate(() => window.__pending[0].signal.aborted), true);
+      assert.equal(await page.locator('.oa-msg-user').count(), 0);
+      await page.evaluate(() => { void window.__widgetTest.sendUserMessage('rosa'); });
+      assert.equal(await page.evaluate(() => window.__pending.length), 2);
+      assert.notEqual(await page.evaluate(() => window.__pending[1].body.session_id), 'sess_security');
+      if (outcome === 'success') {
+        await resolvePending(page, 0, { reply: 'RISPOSTA VECCHIA', products: [], options: ['vecchie'], step: 4 });
+      } else {
+        await page.evaluate(() => window.__pending[0].reject(new TypeError('ERRORE VECCHIO')));
+      }
+      assert.equal(await page.evaluate(() => window.__widgetTest.active()), true);
+      assert.equal(await page.locator('#oaInput').isDisabled(), true);
+      assert.equal(await page.locator('#oaTypingIndicator').count(), 1);
+      assert.equal(await page.locator('.oa-msg-error').count(), 0);
+      assert.equal((await page.locator('#oaMessages').textContent()).includes('VECCH'), false);
+      await resolvePending(page, 1);
+      await page.waitForFunction(() => !window.__widgetTest.active());
+      assert.equal(await page.locator('.oa-msg-user').textContent(), 'rosa');
+      assert.equal(await page.locator('#oaProgress').evaluate((element) => element.style.width), '50%');
+      assert.equal(await page.locator('#oaTypingIndicator').count(), 0);
+      await page.waitForFunction(() => document.querySelector('#oaChips')?.textContent === 'Per Lui');
+      assert.equal(requests.find((request) => request.path === '/reset').body.session_id, 'sess_security');
+      const state = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), stateKey);
+      assert.equal(state.pending_request, null);
+      assert.equal(state.messages.some((record) => JSON.stringify(record).includes('VECCH')), false);
+    });
+  }
+
+  test(`${file}: retry uses its saved message identity even if the global last message differs`, async (t) => {
+    const { page, requests, responses } = await fixture(t, file);
+    responses.push({ status: 503, body: { error: { message: 'Errore temporaneo' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.locator('.oa-msg-error').waitFor();
+    await page.evaluate((key) => {
+      const state = JSON.parse(sessionStorage.getItem(key));
+      state.last_message = 'rosa';
+      sessionStorage.setItem(key, JSON.stringify(state));
+    }, stateKey);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('#oaLauncher').click();
+    await page.locator('.oa-retry-btn').click();
+    await page.waitForFunction(() => !window.__widgetTest.active() && !document.querySelector('.oa-msg-error'));
+    assert.equal(requests.length, 2);
+    assert.deepEqual(requests[1].body, requests[0].body);
+    assert.equal(await page.locator('.oa-msg-user').count(), 1);
+  });
+
+  test(`${file}: double retry reuses one request without another user bubble`, async (t) => {
+    const { page, responses } = await fixture(t, file);
+    responses.push({ status: 503, body: { error: { message: 'Errore temporaneo' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.locator('.oa-msg-error').waitFor();
+    const original = await page.evaluate(() => window.__widgetTest.records().at(-1).request);
+    await controlledFetch(page);
+    await page.locator('.oa-retry-btn').evaluate((button) => { button.click(); button.click(); });
+    assert.equal(await page.evaluate(() => window.__pending.length), 1);
+    assert.deepEqual(await page.evaluate(() => window.__pending[0].body), original);
+    assert.equal(await page.locator('.oa-msg-user').count(), 1);
+    await resolvePending(page, 0);
+    await page.waitForFunction(() => !window.__widgetTest.active());
+    assert.equal(await page.locator('.oa-msg-error').count(), 0);
+  });
+
+  test(`${file}: navigation during a pending request preserves its identity for recovery`, async (t) => {
+    const { page, requests } = await fixture(t, file);
+    await controlledFetch(page);
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    const original = await page.evaluate(() => window.__pending[0].body);
+    const pending = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).pending_request, stateKey);
+    assert.deepEqual(pending, original);
+    await page.goto('https://widget.test/widget?pending=1', { waitUntil: 'domcontentloaded' });
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('.oa-msg-user').textContent(), 'iris');
+    assert.equal(await page.locator('.oa-retry-btn').count(), 1);
+    assert.equal(requests.length, 0, 'Recovery waits for the customer to retry');
+    await page.locator('.oa-retry-btn').click();
+    await page.waitForFunction(() => !window.__widgetTest.active() && !document.querySelector('.oa-msg-error'));
+    assert.deepEqual(requests[0].body, original);
+    assert.equal(await page.locator('.oa-msg-user').count(), 1);
+    assert.equal(await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).pending_request, stateKey), null);
+  });
+
+  test(`${file}: a new message retires older retries and uses a new identifier`, async (t) => {
+    const { page, requests, responses } = await fixture(t, file);
+    responses.push({ status: 503, body: { error: { message: 'Errore temporaneo' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.locator('.oa-retry-btn').waitFor();
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('rosa'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+    assert.notEqual(requests[0].body.request_id, requests[1].body.request_id);
+    assert.equal(await page.locator('.oa-retry-btn').count(), 0);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    assert.equal(await page.locator('.oa-retry-btn').count(), 0);
+    assert.equal(await page.locator('.oa-msg-user').count(), 2);
+  });
+
+  test(`${file}: legacy errors without request identifiers remain visible without an unsafe retry`, async (t) => {
+    const { page } = await fixture(t, file, { [stateKey]: stored([
+      { kind: 'welcome' }, { kind: 'user', text: 'iris' },
+      { kind: 'error', text: 'Errore precedente', retryable: true },
+    ]) });
+    assert.equal(await page.locator('.oa-msg-error').count(), 1);
+    assert.equal(await page.locator('.oa-retry-btn').count(), 0);
+    assert.equal(await page.locator('#oaInput').isDisabled(), false);
+  });
+
+  test(`${file}: conflicting or expired results do not offer retry and unlock the input`, async (t) => {
+    const { page, responses } = await fixture(t, file);
+    responses.push({ status: 409, body: { error: { code: 'request_result_expired', message: 'Invia un nuovo messaggio' } } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.locator('.oa-msg-error').waitFor();
+    assert.equal(await page.locator('.oa-retry-btn').count(), 0);
+    assert.equal(await page.locator('#oaInput').isDisabled(), false);
+    assert.equal(await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).pending_request, stateKey), null);
   });
 }

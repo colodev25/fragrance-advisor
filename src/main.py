@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from src.rate_limit import InMemoryRateLimiter
+from src.conversation_requests import RequestConflict
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DIR = BASE_DIR / "chroma_db"
@@ -103,6 +104,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = Field(default="default", max_length=128)
     max_price: Optional[float] = Field(default=None, ge=0, le=MAX_PRICE)
     step_override: Optional[int] = Field(default=None, ge=1, le=4)
+    request_id: Optional[str] = Field(default=None, min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
 
     @field_validator("message")
     @classmethod
@@ -209,12 +211,16 @@ def chat_endpoint(req: ChatRequest, request: Request):
         raise ApiError(503, startup_error or "service_starting", "Il servizio è in fase di avvio. Riprova tra qualche secondo.")
 
     try:
+        identified_request = {} if req.request_id is None else {"request_id": req.request_id}
         return advisor.advise(
             user_query=req.message,
             session_id=req.session_id,
             max_price=req.max_price,
             step_override=req.step_override,
+            **identified_request,
         )
+    except RequestConflict as exc:
+        raise ApiError(409, exc.code, str(exc)) from exc
     except Exception:
         logger.exception("Chat request failed.")
         raise ApiError(503, "advisor_unavailable", "La consulenza non è disponibile in questo momento. Riprova tra qualche istante.")

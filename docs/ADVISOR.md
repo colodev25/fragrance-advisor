@@ -44,6 +44,10 @@ Each `session_id` stores:
 
 `SessionStore` reloads persisted state for each request, so the conversation can continue after a server restart when the same session identifier is reused. `POST /reset` clears that session.
 
+`src/conversation_requests.py` coordinates the complete load/process/save operation and reset with a lock per session. Waiting requests keep a reference to that lock; unused locks are removed. This coordination assumes the current deployment with one worker and one service instance.
+
+An optional `request_id` identifies one message. Before processing, the advisor checks its saved result and payload fingerprint. A matching completed request returns the saved response; conflicting input is rejected. New results are saved atomically with session state. Transient failures before commit can be retried, while a completed fallback reply also counts as a saved result. SQLite retains 100 complete responses per session and fingerprints for older identifiers, until reset or session cleanup. See [API retry semantics](API.md#identified-requests-and-retries).
+
 The advisor retains at most 40 recent history messages (20 complete exchanges) when loading and saving a conversation. Active fragrance and guided preferences are stored separately. This limit concerns backend conversation state; widget history is managed by the frontend.
 
 ## LLM resilience

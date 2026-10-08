@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+import hashlib
 from pathlib import Path
 from collections import defaultdict
 from typing import Optional
@@ -15,8 +16,10 @@ except ModuleNotFoundError:
 
 try:
     from src.session_store import SessionStore
+    from src.conversation_requests import session_coordinator
 except ModuleNotFoundError:
     from session_store import SessionStore
+    from conversation_requests import session_coordinator
 
 try:
     from src.llm_resilience import ResilientGroqClient, PRIMARY_FREE_MODEL, FALLBACK_FREE_MODEL
@@ -632,13 +635,27 @@ class FragranceAdvisor:
         except Exception:
             return "VALUTA"
         
-    def advise(self, user_query: str, session_id: str = "default", max_price: float = None, step_override: int = None) -> dict:
-        if not session_id:
-            session_id = "default"
+    def advise(
+        self, user_query: str, session_id: str = "default",
+        max_price: float = None, step_override: int = None, request_id: str = None,
+    ) -> dict:
+        session_id = session_id or "default"
+        with session_coordinator.hold(session_id):
+            if not hasattr(self, "session_store") or self.session_store is None:
+                self.session_store = SessionStore()
+            fingerprint = None
+            if request_id is not None:
+                payload = json.dumps({
+                    "message": user_query.strip(), "max_price": max_price,
+                    "step_override": step_override,
+                }, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+                fingerprint = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+                previous = self.session_store.get_request_response(session_id, request_id, fingerprint)
+                if previous is not None:
+                    return previous
+            return self._advise_locked(user_query, session_id, max_price, step_override, request_id, fingerprint)
 
-        if not hasattr(self, "session_store") or self.session_store is None:
-            self.session_store = SessionStore()
-
+    def _advise_locked(self, user_query, session_id, max_price, step_override, request_id, fingerprint) -> dict:
         sess_data = self.session_store.get_session(session_id)
         self.sessions[session_id] = sess_data["history"][-MAX_HISTORY_MESSAGES:]
         self.active_perfumes[session_id] = sess_data["active_perfume"]
@@ -728,11 +745,15 @@ class FragranceAdvisor:
             response = self._handle_free_chat(user_query, session_id, max_price)
 
         self.sessions[session_id] = self.sessions[session_id][-MAX_HISTORY_MESSAGES:]
+        receipt = {} if request_id is None else {
+            "request_id": request_id, "fingerprint": fingerprint, "response": response,
+        }
         self.session_store.save_session(
             session_id=session_id,
             history=self.sessions[session_id],
             active_perfume=self.active_perfumes.get(session_id),
-            guided_state=self.guided_states[session_id]
+            guided_state=self.guided_states[session_id],
+            **receipt,
         )
 
         return response
@@ -1198,9 +1219,9 @@ class FragranceAdvisor:
     def reset_session(self, session_id: str):
         if not session_id:
             return
-        self.session_store.clear_session(session_id)
-        self.sessions.pop(session_id, None)
-        self.active_perfumes.pop(session_id, None)
-        self.guided_states.pop(session_id, None)
-        if hasattr(self, "session_store") and self.session_store:
-            self.session_store.clear_session(session_id)
+        with session_coordinator.hold(session_id):
+            if hasattr(self, "session_store") and self.session_store:
+                self.session_store.clear_session(session_id)
+            self.sessions.pop(session_id, None)
+            self.active_perfumes.pop(session_id, None)
+            self.guided_states.pop(session_id, None)

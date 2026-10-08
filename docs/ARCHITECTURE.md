@@ -40,6 +40,8 @@ Browser interface (index.html)
 
 `src/session_store.py` stores conversation history, active fragrance, guided-flow state and update timestamp in SQLite. The default database is `data/sessions.db`; `SESSIONS_DB_PATH` can override it. SQLite WAL mode is enabled for session storage.
 
+`src/conversation_requests.py` serializes chat and reset for each session within the single API process. SQLite also stores completed identified requests: state and response share one transaction, allowing a lost response to be recovered without repeating model work. The latest 100 responses per session are retained; older identifiers remain recognized. The widget allows one active request, preserves its identity across navigation and ignores previous-session replies after reset. See [API request coordination](API.md#identified-requests-and-retries).
+
 ## Catalog and request flows
 
 ```text
@@ -73,6 +75,7 @@ Separate GitHub Actions workflows synchronize Shopify and progressively enrich t
 | `src/catalog_jobs.py`   | Persistent enrichment queue and nightly budgets  |
 | `src/catalog_enrichment.py` | Source evidence validation and extraction cache |
 | `src/session_store.py`  | SQLite session persistence                       |
+| `src/conversation_requests.py` | Per-session coordination and request conflicts |
 | `src/llm_resilience.py` | LLM retry and model fallback                     |
 | `data/`                 | Product JSON datasets and local session database |
 | `index.html`            | Browser chat interface                           |
