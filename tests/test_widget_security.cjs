@@ -424,6 +424,48 @@ for (const file of files) {
     await assertSafe(page);
   });
 
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 360, height: 740 },
+    { width: 360, height: 520 }, { width: 360, height: 520, reducedMotion: 'reduce' }]) {
+    test(`${file}: selected details stay above the input at ${viewport.width}x${viewport.height} (${viewport.reducedMotion || 'normal motion'})`, async (t) => {
+      const { page } = await fixture(t, file);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      if (viewport.reducedMotion) await page.emulateMedia({ reducedMotion: viewport.reducedMotion });
+      await page.evaluate(() => {
+        const notes = Array.from({ length: 32 }, (_, i) => 'Nota lunga ' + i + 'x'.repeat(80));
+        window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Tre proposte', products:
+          Array.from({ length: 3 }, (_, i) => ({ name: 'Profumo ' + i,
+            olfactory_pyramid: { top: notes, heart: notes, base: notes } })) });
+      });
+      const cards = page.locator('#oaMessages .oa-product-card');
+      const pageScroll = await page.evaluate(() => window.scrollY);
+      for (const index of [0, 1, 2, 0, 1, 2, 0]) {
+        const card = cards.nth(index);
+        await card.locator('.oa-card-info-btn').click();
+        try { await page.waitForFunction((i) => {
+          const container = document.getElementById('oaMessages');
+          const selected = container.querySelectorAll('.oa-product-card')[i];
+          const bounds = container.getBoundingClientRect();
+          const box = selected.getBoundingClientRect();
+          return box.top >= bounds.top - 1 && box.bottom <= bounds.bottom + 1;
+        }, index, { timeout: 5000 }); } catch (error) {
+          const geometry = await card.evaluate((node) => {
+            const container = document.getElementById('oaMessages');
+            return { card: node.getBoundingClientRect().toJSON(), container: container.getBoundingClientRect().toJSON(),
+              top: container.scrollTop, height: container.scrollHeight, detailHeight: node.style.getPropertyValue('--oa-detail-height') };
+          });
+          throw new Error(`Card ${index}: ${JSON.stringify(geometry)}`, { cause: error });
+        }
+        const dimensions = await card.locator('.oa-slide-body').evaluate((node) => ({
+          height: node.clientHeight, scroll: node.scrollHeight,
+        }));
+        assert.ok(dimensions.height > 0 && dimensions.scroll > dimensions.height);
+        assert.equal(await page.evaluate(() => window.scrollY), pageScroll, 'Only the chat should scroll');
+        await card.locator('.oa-slide-back-btn').click();
+      }
+      await assertSafe(page);
+    });
+  }
+
   test(`${file}: JSON history and option actions survive page navigation`, async (t) => {
     const { page, requests } = await fixture(t, file, { [stateKey]: stored([{ kind: 'welcome' }]) });
     await page.evaluate((payload) => {

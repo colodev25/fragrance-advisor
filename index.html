@@ -861,8 +861,8 @@
       .oa-product-card.is-open .oa-card-slideover {
         position: relative;
         inset: auto;
-        min-height: 245px;
-        max-height: 420px;
+        min-height: min(245px, var(--oa-detail-height, 420px));
+        max-height: min(420px, var(--oa-detail-height, 420px));
         transform: translateY(0);
       }
 
@@ -2644,6 +2644,13 @@
       function toggleCardSlide(btn) {
         const card = btn.closest(".oa-product-card");
         if (card) {
+          const willOpen = !card.classList.contains("is-open");
+          if (willOpen) {
+            const style = getComputedStyle(messagesContainer);
+            const availableHeight = messagesContainer.clientHeight
+              - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 2;
+            card.style.setProperty("--oa-detail-height", Math.max(1, availableHeight) + "px");
+          }
           card.classList.toggle("is-open");
           const open = card.classList.contains("is-open");
           const product = cardRecords.get(card);
@@ -2653,6 +2660,15 @@
           card.querySelector(".oa-card-info-btn").setAttribute("aria-expanded", String(open));
           card.querySelector(open ? ".oa-slide-close-btn" : ".oa-card-info-btn").focus({ preventScroll: true });
           saveChatState();
+          if (open) {
+            requestAnimationFrame(() => {
+              if (!card.isConnected || !card.classList.contains("is-open")) return;
+              const containerTop = messagesContainer.getBoundingClientRect().top + messagesContainer.clientTop;
+              const paddingTop = parseFloat(getComputedStyle(messagesContainer).paddingTop);
+              const top = messagesContainer.scrollTop + card.getBoundingClientRect().top - containerTop - paddingTop;
+              messagesContainer.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+            });
+          }
         }
       }
 
