@@ -38,7 +38,11 @@ Browser interface (index.html)
 
 ### Session persistence
 
-`src/session_store.py` stores conversation history, active fragrance, guided-flow state and update timestamp in SQLite. The default database is `data/sessions.db`; `SESSIONS_DB_PATH` can override it. SQLite WAL mode is enabled for session storage.
+`src/session_store.py` stores conversation history, active fragrance, guided-flow state, update timestamp and version/expiry metadata in SQLite. The default database is `data/sessions.db`; `SESSIONS_DB_PATH` can override it. WAL mode is enabled and each connection is explicitly closed after use.
+
+Sessions expire after 24 hours without a new completed message. An off-thread maintenance task runs at startup and hourly, deleting expired state and receipts in bounded batches under per-session locks. Request processing also checks expiry, clears temporary RAM copies on completion and refreshes the active product by catalog ID. The widget sends its token/revision in normal chat requests to detect missing or stale state and restart coherently while preserving the customer's draft. No extra page-load HTTP check is introduced.
+
+Render Free has no persistent disk: these sessions can disappear before their inactivity deadline on deploy, restart or spin-down. The current design handles that loss explicitly; it does not provide durable storage across those events. See [session storage](INDEX_OPERATIONS.md#session-storage-on-render-free).
 
 `src/conversation_requests.py` serializes chat and reset for each session within the single API process. SQLite also stores completed identified requests: state and response share one transaction, allowing a lost response to be recovered without repeating model work. The latest 100 responses per session are retained; older identifiers remain recognized. The widget allows one active request, preserves its identity across navigation and ignores previous-session replies after reset. See [API request coordination](API.md#identified-requests-and-retries).
 

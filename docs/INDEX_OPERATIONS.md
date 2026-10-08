@@ -42,3 +42,11 @@ The build must produce `chroma_db/` in the filesystem delivered to the running s
 Render checks HTTP readiness during deployments and while instances run. The endpoint returns `200` when the advisor initialized and `503` otherwise. It does not call Groq or execute an embedding search on each check, and does not continuously diagnose those dependencies. It does not prevent free-plan cold starts. See [Render health checks](https://render.com/docs/health-checks).
 
 Catalog synchronization commits do not upload an index. Ensure Render deploys the updated commit through its configured deployment mechanism. The synchronization workflow uses the GitHub Actions token; its push does not automatically trigger another Actions workflow. The test workflow independently builds an index before running tests.
+
+## Session storage on Render Free
+
+The current service uses Render Free without a persistent disk. Its local SQLite file can be lost on deploy, restart or spin-down; changing `SESSIONS_DB_PATH` does not make that filesystem durable. Persistent disks require a paid service. See [Render's free-service storage limits](https://render.com/docs/free#local-files-lost-on-redeploy).
+
+The application retains the existing free setup and handles missing sessions explicitly: the widget starts a new consultation with a notice and preserves the message for resubmission. The 24-hour inactivity policy applies only while the database survives. A local restart can retain history when the same SQLite file remains available.
+
+Publish the updated backend and Shopify snippet together for the versioned-session contract; updating the repository page does not replace the snippet installed in the theme. Existing version-1 widget histories restart once on upgrade. Schema migration runs automatically at backend initialization; this session change needs no catalog ingestion or reindexing beyond the existing Render build command.

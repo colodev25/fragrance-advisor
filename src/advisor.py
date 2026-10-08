@@ -3,6 +3,7 @@ import re
 import json
 import logging
 import hashlib
+import time
 from pathlib import Path
 from collections import defaultdict
 from typing import Optional
@@ -20,10 +21,10 @@ except ModuleNotFoundError:
 
 try:
     from src.session_store import SessionStore
-    from src.conversation_requests import session_coordinator
+    from src.conversation_requests import session_coordinator, RequestConflict
 except ModuleNotFoundError:
     from session_store import SessionStore
-    from conversation_requests import session_coordinator
+    from conversation_requests import session_coordinator, RequestConflict
 
 try:
     from src.llm_resilience import ResilientGroqClient, PRIMARY_FREE_MODEL, FALLBACK_FREE_MODEL
@@ -215,6 +216,7 @@ class FragranceAdvisor:
 
             if len(norm_name) >= 3 and f" {norm_name} " in q_clean:
                 return {
+                    "id": prod.get("id"),
                     "name": prod.get("name", ""),
                     "brand": prod.get("brand", "Profumeria Artistica"),
                     "price": float(prod.get("price", 0.0)),
@@ -320,6 +322,7 @@ class FragranceAdvisor:
         results = []
         for _, p in scored_candidates[:limit]:
             results.append({
+                "id": p.get("id"),
                 "name": p.get("name", ""),
                 "brand": p.get("brand", "Profumeria Artistica"),
                 "price": float(p.get("price", 0.0)),
@@ -642,37 +645,73 @@ class FragranceAdvisor:
             return "VALUTA"
         
     def advise(
-        self, user_query: str, session_id: str = "default",
+        self, user_query: str, session_id: str,
         max_price: float = None, step_override: int = None, request_id: str = None,
+        session_context: dict = None,
     ) -> dict:
-        session_id = session_id or "default"
+        if not isinstance(session_id, str) or session_id == "default" or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", session_id):
+            raise ValueError("Un identificativo di sessione valido è obbligatorio.")
         budget = ChatBudget()
         token = current_chat_budget.set(budget)
         try:
             with session_coordinator.hold(session_id, timeout=budget.remaining()):
-                budget.check()
-                if not hasattr(self, "session_store") or self.session_store is None:
-                    self.session_store = SessionStore()
-                fingerprint = None
-                if request_id is not None:
-                    payload = json.dumps({
-                        "message": user_query.strip(), "max_price": max_price,
-                        "step_override": step_override,
-                    }, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-                    fingerprint = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-                    previous = self.session_store.get_request_response(session_id, request_id, fingerprint)
-                    if previous is not None:
-                        return previous
                 try:
-                    return self._advise_locked(user_query, session_id, max_price, step_override, request_id, fingerprint)
-                except Exception:
-                    # Nessuna ricevuta viene salvata in caso di fallimento; rimuove anche lo stato RAM parziale.
+                    budget.check()
+                    if not hasattr(self, "session_store") or self.session_store is None:
+                        self.session_store = SessionStore()
+                    state = self.session_store.get_session(session_id, include_expired=True)
+                    actual = state["session_context"]
+                    if (actual and actual["expires_at"] <= time.time() * 1000) or (
+                        session_context is not None and (actual is None or session_context["token"] != actual["token"])
+                    ):
+                        raise RequestConflict("session_expired", "La sessione è scaduta o non è più disponibile. Iniziamo una nuova consulenza.")
+                    fingerprint = None
+                    if request_id is not None:
+                        payload = json.dumps({
+                            "message": user_query.strip(), "max_price": max_price,
+                            "step_override": step_override,
+                        }, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+                        fingerprint = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+                        previous = self.session_store.get_request_response(session_id, request_id, fingerprint)
+                        if previous is not None:
+                            saved_context = previous.get("session_context")
+                            if session_context is not None and (
+                                not saved_context or saved_context["revision"] != actual["revision"]
+                            ):
+                                raise RequestConflict("session_out_of_sync", "La conversazione è stata aggiornata altrove. Iniziamo una nuova consulenza.")
+                            return previous
+                    if session_context is not None and session_context["revision"] != actual["revision"]:
+                        raise RequestConflict("session_out_of_sync", "La conversazione è stata aggiornata altrove. Iniziamo una nuova consulenza.")
+                    return self._advise_locked(user_query, session_id, max_price, step_override, request_id, fingerprint, state)
+                finally:
+                    # SQLite già ricaricato a ogni messaggio: nessuna copia RAM dei clienti inattivi.
                     self.sessions.pop(session_id, None)
                     self.active_perfumes.pop(session_id, None)
                     self.guided_states.pop(session_id, None)
-                    raise
         finally:
             current_chat_budget.reset(token)
+
+    def _refresh_active_product(self, active):
+        if not active or not hasattr(self, "catalog_products"):
+            return active
+        identifier = active.get("id")
+        if identifier:
+            matches = [product for product in self.catalog_products if product["id"] == identifier]
+        else:
+            # Migrazione dei prodotti salvati prima degli ID: solo corrispondenze univoche.
+            matches = [product for product in self.catalog_products
+                       if product.get("name", "").strip().casefold() == active.get("name", "").strip().casefold()
+                       and (not active.get("brand") or product.get("brand", "").casefold() == active["brand"].casefold())]
+        if len(matches) != 1 or matches[0].get("in_stock") is not True:
+            return None
+        product = matches[0]
+        urls = product.get("urls", {})
+        return {
+            "id": product["id"], "name": product["name"], "brand": product.get("brand", ""),
+            "price": product["price"], "family": product.get("family", ""), "ptype": product.get("ptype", ""),
+            "add_to_cart_url": urls.get("add_to_cart", ""), "product_page_url": urls.get("product_page", ""),
+            "image_url": urls.get("image_url", ""), "document": product.get("semantic_text") or product.get("description", ""),
+        }
 
     def _chat_completion(self, *, max_tokens=2048, call_timeout=10.0,
                          call_limit=3, safe_fallback=None, **kwargs):
@@ -703,10 +742,10 @@ class FragranceAdvisor:
         other = [line for line in lines if line not in facts]
         return "\n".join(facts + other)[:1800]
 
-    def _advise_locked(self, user_query, session_id, max_price, step_override, request_id, fingerprint) -> dict:
-        sess_data = self.session_store.get_session(session_id)
+    def _advise_locked(self, user_query, session_id, max_price, step_override, request_id, fingerprint, sess_data) -> dict:
         self.sessions[session_id] = sess_data["history"][-MAX_HISTORY_MESSAGES:]
-        self.active_perfumes[session_id] = sess_data["active_perfume"]
+        self.active_perfumes[session_id] = self._refresh_active_product(sess_data["active_perfume"])
+        active_missing = bool(sess_data["active_perfume"]) and self.active_perfumes[session_id] is None
         self.guided_states[session_id] = sess_data["guided_state"]
 
         query_clean = user_query.strip()
@@ -789,6 +828,17 @@ class FragranceAdvisor:
                 state["step"] = None
                 response = self._generate_guided_recommendations(state["answers"], session_id)
 
+        if response is None and active_missing and not self._find_mentioned_product(user_query) and not (
+            self._has_explicit_olfactory_redirect(user_query) or re.search(r"\b(cerc|alternativ|divers|altr)", q_lower)
+        ):
+            response = {
+                "reply": "Il profumo che stavamo valutando non è più disponibile nel catalogo aggiornato. Posso aiutarti a trovare una nuova fragranza.",
+                "options": ["🎯 Guidami nella scelta", "💬 Fai una domanda libera"],
+                "products": [], "step": None, "mode": "free",
+            }
+            self.sessions[session_id].extend([
+                {"role": "user", "content": user_query}, {"role": "assistant", "content": response["reply"]},
+            ])
         if response is None:
             response = self._handle_free_chat(user_query, session_id, max_price)
 
@@ -797,11 +847,12 @@ class FragranceAdvisor:
         receipt = {} if request_id is None else {
             "request_id": request_id, "fingerprint": fingerprint, "response": response,
         }
-        self.session_store.save_session(
+        response["session_context"] = self.session_store.save_session(
             session_id=session_id,
             history=self.sessions[session_id],
             active_perfume=self.active_perfumes.get(session_id),
             guided_state=self.guided_states[session_id],
+            include_session_context=True,
             **receipt,
         )
 
@@ -851,6 +902,7 @@ class FragranceAdvisor:
                 doc = results["documents"][0][i]
 
                 prod_data = {
+                    "id": results["ids"][0][i],
                     "name": meta.get("name", ""),
                     "brand": meta.get("brand", "Profumeria Artistica"),
                     "price": float(meta.get("price", 0.0)),
@@ -881,6 +933,7 @@ class FragranceAdvisor:
 
                     doc = results["documents"][0][i]
                     prod_data = {
+                        "id": results["ids"][0][i],
                         "name": meta.get("name", ""),
                         "brand": meta.get("brand", "Profumeria Artistica"),
                         "price": float(meta.get("price", 0.0)),
@@ -1146,6 +1199,7 @@ class FragranceAdvisor:
 
                         pid = f"PRODOTTO_{candidate_idx}"
                         candidates_map[pid] = {
+                            "id": results["ids"][0][i],
                             "name": meta.get("name", ""),
                             "brand": meta.get("brand", "Profumeria Artistica"),
                             "price": float(meta.get("price", 0.0)),

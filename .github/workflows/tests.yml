@@ -39,6 +39,6 @@ jobs:
       - name: Esecuzione Test Suite
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          SESSIONS_DB_PATH: ":memory:"
+          SESSIONS_DB_PATH: "${{ runner.temp }}/fragrance-advisor-tests.db"
         run: |
-          pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py tests/test_conversation_requests.py tests/test_chat_budget.py tests/test_catalog_integrity.py tests/test_catalog_enrichment.py tests/test_catalog_jobs.py tests/test_llm_resilience.py -m "not e2e" -v
+          pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py tests/test_conversation_requests.py tests/test_session_lifecycle.py tests/test_chat_budget.py tests/test_catalog_integrity.py tests/test_catalog_enrichment.py tests/test_catalog_jobs.py tests/test_llm_resilience.py -m "not e2e" -v

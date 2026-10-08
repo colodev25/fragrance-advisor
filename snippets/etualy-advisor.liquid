@@ -1926,6 +1926,23 @@
         return card;
       }
 
+      function normalizeSessionContext(value, withExpiry = true) {
+        if (!value || typeof value !== "object" || Array.isArray(value) ||
+            typeof value.token !== "string" || !/^[a-f0-9]{32}$/.test(value.token) ||
+            !Number.isSafeInteger(value.revision) || value.revision < 1) return null;
+        if (withExpiry && (!Number.isSafeInteger(value.expires_at) || value.expires_at <= 0)) return null;
+        return Object.freeze({
+          token: value.token, revision: value.revision,
+          ...(withExpiry ? { expires_at: value.expires_at } : {}),
+        });
+      }
+
+      function newSessionId() {
+        return "sess_" + (globalThis.crypto?.randomUUID
+          ? globalThis.crypto.randomUUID()
+          : Date.now().toString(36) + "_" + Math.random().toString(36).slice(2));
+      }
+
       function normalizeChatRequest(value) {
         if (!value || typeof value !== "object" || Array.isArray(value)) return null;
         if (typeof value.message !== "string" || !value.message.trim() || value.message.length > 2000)
@@ -1933,8 +1950,11 @@
         if (typeof value.session_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.session_id) ||
             typeof value.request_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.request_id))
           return null;
+        const context = value.session_context == null ? null : normalizeSessionContext(value.session_context, false);
+        if (value.session_context != null && !context) return null;
         return Object.freeze({
           message: value.message.trim(), session_id: value.session_id, request_id: value.request_id,
+          ...(context ? { session_context: context } : {}),
         });
       }
 
@@ -2049,12 +2069,10 @@
 
       function resetLocalChat(rotateSession = false) {
         cancelActiveRequest();
+        sessionContext = null;
+        input.value = "";
         if (rotateSession) {
-          sessionId =
-            "sess_" +
-            Math.random().toString(36).substring(2, 11) +
-            "_" +
-            Date.now();
+          sessionId = newSessionId();
           sessionStorage.setItem("etualy_advisor_session_id", sessionId);
         }
         chatMessages = [{ kind: "welcome" }];
@@ -2068,13 +2086,13 @@
       // END WIDGET SAFE RENDERING
 
       function getOrCreateSessionId() {
-      let sid = sessionStorage.getItem("etualy_advisor_session_id");
-      if (!sid) {
-        sid = "sess_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
-        sessionStorage.setItem("etualy_advisor_session_id", sid);
+        let sid = sessionStorage.getItem("etualy_advisor_session_id");
+        if (!sid || sid === "default" || !/^[A-Za-z0-9_-]{1,128}$/.test(sid)) {
+          sid = newSessionId();
+          sessionStorage.setItem("etualy_advisor_session_id", sid);
+        }
+        return sid;
       }
-      return sid;
-    }
 
     let sessionId = getOrCreateSessionId();
 
@@ -2161,6 +2179,7 @@
       let currentOptions = [...INITIAL_OPTIONS];
       let activeRequest = null;
       let pendingRequest = null;
+      let sessionContext = null;
       let cooldownUntil = 0;
       let cooldownTimer = null;
 
@@ -2171,10 +2190,12 @@
               ? stepOverride : null;
           }
           sessionStorage.setItem(CHAT_STATE_KEY, JSON.stringify({
-            version: 1, session_id: sessionId, messages: chatMessages,
+            version: 2, session_id: sessionId, messages: chatMessages,
             options: currentOptions, step: currentStepValue, last_message: lastUserMessage,
               pending_request: pendingRequest,
               retry_until: cooldownUntil,
+              session_context: sessionContext,
+              draft: input.value,
           }));
           clearLegacyChat();
         } catch (error) {
@@ -2188,7 +2209,13 @@
           const hasLegacy = LEGACY_CHAT_KEYS.some((key) => sessionStorage.getItem(key) !== null);
           if (serialized) {
             const state = JSON.parse(serialized);
-            if (!state || state.version !== 1 || state.session_id !== sessionId ||
+            cooldownUntil = normalizeRetryDeadline(state?.retry_until);
+            const recoveredDraft = plainText(state?.pending_request?.message || state?.draft, 2000);
+            if (state?.version === 1) {
+              restartUnavailableSession("Il consulente è stato aggiornato. Iniziamo una nuova consulenza.", recoveredDraft);
+              return;
+            }
+            if (!state || state.version !== 2 || state.session_id !== sessionId ||
                 !Array.isArray(state.messages) || !Array.isArray(state.options)) {
               throw new Error("Stato locale non compatibile.");
             }
@@ -2196,10 +2223,19 @@
             if (!records.length || records.some((record) => record === null)) {
               throw new Error("Cronologia locale non valida.");
             }
+            sessionContext = state.session_context == null ? null : normalizeSessionContext(state.session_context);
+            if ((state.session_context != null && !sessionContext) ||
+                (records.some((record) => record.kind === "bot") && !sessionContext)) {
+              throw new Error("Contesto della sessione non valido.");
+            }
+            if (sessionContext && sessionContext.expires_at <= Date.now()) {
+              restartUnavailableSession("La sessione è scaduta. Iniziamo una nuova consulenza.", recoveredDraft);
+              return;
+            }
             chatMessages = records;
             currentStepValue = Number.isInteger(state.step) && state.step >= 1 && state.step <= 4 ? state.step : null;
             lastUserMessage = plainText(state.last_message);
-            cooldownUntil = normalizeRetryDeadline(state.retry_until);
+            input.value = plainText(state.draft, 2000);
             const interrupted = normalizeChatRequest(state.pending_request);
             if (interrupted?.session_id === sessionId) {
               chatMessages.push(normalizeMessage({
@@ -2207,7 +2243,6 @@
                 retryable: true, request: interrupted,
               }));
             }
-            // Solo l'ultimo messaggio irrisolto può essere riprovato.
             chatMessages.forEach((record, index) => {
               if (record.kind === "error" &&
                   (index !== chatMessages.length - 1 || record.request?.session_id !== sessionId))
@@ -2220,7 +2255,6 @@
             sessionStorage.setItem("etualy_teaser_closed", "true");
             if (teaser) teaser.classList.remove("is-visible");
           } else {
-            // Never parse or reinsert the previous HTML-based history.
             resetLocalChat(hasLegacy);
           }
           refreshCooldown();
@@ -2238,6 +2272,7 @@
           }
         }
       }
+
 
       function dismissTeaser() {
       if (teaser) teaser.classList.remove("is-visible");
@@ -2294,6 +2329,8 @@
         console.warn("[Etualy Advisor] Avviso reset remoto:", e);
       }
     });
+
+      input.addEventListener("input", () => saveChatState());
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -2509,6 +2546,14 @@
         messagesContainer.querySelectorAll(".oa-retry-btn").forEach((button) => button.remove());
       }
 
+      function restartUnavailableSession(message, draft = "") {
+        resetLocalChat(true);
+        input.value = plainText(draft, 2000);
+        appendChatRecord({ kind: "error", text: message, retryable: false });
+        saveChatState();
+        scrollToBottom();
+      }
+
       async function executeChatQuery(request) {
         if (activeRequest || isCoolingDown() || request.session_id !== sessionId) return;
         const context = { request, controller: new AbortController(), timedOut: false };
@@ -2544,6 +2589,10 @@
             saveChatState();
             const errorBody = await Promise.race([response.json().catch(() => null), interruption]);
             if (!isCurrent()) return;
+            if (["session_expired", "session_out_of_sync"].includes(errorBody?.error?.code)) {
+              restartUnavailableSession("La sessione è scaduta o è stata aggiornata altrove. Iniziamo una nuova consulenza: il tuo messaggio è pronto da reinviare.", request.message);
+              return;
+            }
             const error = new Error(errorBody?.error?.message ||
               "Un'interruzione temporanea non consente di completare la richiesta.");
             error.retryable = retryable;
@@ -2555,6 +2604,16 @@
           if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
             throw new Error("La risposta non è disponibile. Riprova tra qualche istante.");
           }
+          const nextContext = normalizeSessionContext(data.session_context);
+          if (!nextContext) throw new Error("Non è possibile verificare lo stato della consulenza. Puoi riprovare.");
+          if ((request.session_context && (
+                nextContext.token !== request.session_context.token ||
+                nextContext.revision !== request.session_context.revision + 1
+              )) || nextContext.expires_at <= Date.now()) {
+            restartUnavailableSession("La sessione non è più allineata. Iniziamo una nuova consulenza: il tuo messaggio è pronto da reinviare.", request.message);
+            return;
+          }
+          sessionContext = nextContext;
           removeTyping();
           const record = normalizeMessage({ kind: "bot", reply: data.reply, products: data.products });
           const botMsgDiv = appendChatRecord(record);
@@ -2594,8 +2653,15 @@
           saveChatState();
           return;
         }
+        if (sessionContext && sessionContext.expires_at <= Date.now()) {
+          restartUnavailableSession("La sessione è scaduta. Iniziamo una nuova consulenza: il tuo messaggio è pronto da reinviare.", text);
+          return;
+        }
         retireRetries();
-        const request = Object.freeze({ message: text, session_id: sessionId, request_id: newRequestId() });
+        const request = normalizeChatRequest({
+          message: text, session_id: sessionId, request_id: newRequestId(),
+          session_context: sessionContext,
+        });
         lastUserMessage = text;
         // Conserva l'identità prima dell'invio per recuperare la risposta dopo una navigazione.
         pendingRequest = request;

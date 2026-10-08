@@ -26,7 +26,8 @@ The FastAPI application in `src/main.py` exposes the chat service to the browser
 | Field | Type | Required | Behavior |
 | --- | --- | --- | --- |
 | `message` | string | Yes | Trimmed user message, from 1 to 2,000 characters. |
-| `session_id` | string or `null` | No | Session key; defaults to `default`. It accepts letters, digits, `_` and `-`, up to 128 characters. |
+| `session_id` | string | Yes | Session key: 1–128 letters, digits, `_` or `-`. Missing, `null`, empty and `default` values are rejected. |
+| `session_context` | object or `null` | No | After the first reply, send its `token` and `revision` to detect expired, lost or outdated conversation state. |
 | `request_id` | string or `null` | No | Unique identifier for one logical message, from 1 to 128 letters, digits, `_` or `-`. Reuse it with the same payload when retrying that message. |
 | `max_price` | number or `null` | No | Maximum price constraint from 0 to 10,000. |
 | `step_override` | integer or `null` | No | Optional guided-flow step from 1 to 4. |
@@ -41,7 +42,12 @@ Example response shape:
   "options": [],
   "products": [],
   "step": null,
-  "mode": "free"
+  "mode": "free",
+  "session_context": {
+    "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": 1,
+    "expires_at": 1791547200000
+  }
 }
 ```
 
@@ -51,13 +57,27 @@ Product fields depend on the selected card. They can include name, brand, price,
 
 The widget assigns a new `request_id` to each message and preserves it for retries, including after page navigation. The backend serializes chat and reset operations for the same session within the running process; other sessions use independent locks. Requests without `request_id` remain compatible but have no duplicate-result recovery.
 
-For identified requests, session state and the completed response are committed together in SQLite. Sending the same session, identifier, trimmed message, price constraint and step override again returns that response without changing conversation state or calling the model again. Reusing an identifier with different input returns `409` (`request_id_conflict`). Rate limits still apply to every HTTP attempt.
+For identified requests, session state and the completed response, including session metadata, are committed together in SQLite. Sending the same session, identifier, trimmed message, price constraint and step override again recovers that response without changing state or calling the model again, subject to the session checks below. Reusing an identifier with different input returns `409` (`request_id_conflict`). Rate limits still apply to every HTTP attempt.
 
 The latest 100 complete responses per session are retained. Older identifiers keep their payload fingerprint: retrying one returns `409` (`request_result_expired`) rather than processing it again. Reset clears both session state and request records. Database initialization adds the request table automatically; no catalog ingestion or reindexing is needed.
 
 An exception before the atomic commit leaves no completed result, so the same identifier may be retried. Transient model failures and invalid completions return `503` without a saved response, so the original identifier remains retryable. A normal `200` response, including a guided selection with a fixed introduction, is a completed result: a subsequent customer message gets a new identifier. If the process stops after a model call but before committing, a retry can require another model call.
 
-Session locks are local to one process. Keep the current Render start command with `--workers 1` and one service instance. Multiple workers or replicas require shared coordination before enabling them. Recovery after a restart depends on retaining the SQLite database; Render storage durability remains a separate deployment concern.
+Session locks are local to one process. Keep the current Render start command with `--workers 1` and one service instance. Multiple workers or replicas require shared coordination before enabling them.
+
+### Session lifetime and continuity
+
+Every new completed message renews a **24-hour inactivity deadline**. Reads, failures and cached retries do not renew it. Responses include `session_context`: a 32-character lowercase hexadecimal `token`, an integer `revision` incremented at each commit, and `expires_at` as Unix epoch milliseconds. Subsequent widget requests send only the token and revision; the server owns expiry.
+
+- Expired sessions, or a supplied token whose session was lost or replaced, return `409` with `session_expired` before model processing.
+- A supplied revision that differs from the stored conversation returns `409` with `session_out_of_sync`. A retry may use its original revision to recover the latest completed response; if another message has advanced the session, that older result is rejected.
+- Expired state and its request receipts are deleted in small batches at startup and hourly, skipping sessions being processed. Expiry is enforced even before cleanup runs.
+
+Clients supplying only a valid session ID remain supported, but cannot detect lost state or revision mismatches. Session metadata is a continuity mechanism, not user authentication.
+
+The widget performs these checks through the normal chat exchange, without an extra page-load request. On expiry or loss it starts a fresh local conversation, explains the restart and preserves the message in the input for deliberate resubmission. Version-1 saved widget state is retired once on upgrade; any pending message or draft is retained.
+
+The current Render Free deployment has no persistent disk: SQLite can be lost on deploy, restart or spin-down. The 24-hour deadline therefore does not guarantee 24 hours of availability. Durable recovery requires retained storage; see [deployment storage](INDEX_OPERATIONS.md#session-storage-on-render-free).
 
 ### Reset request
 
@@ -67,7 +87,7 @@ Session locks are local to one process. Keep the current Render start command wi
 }
 ```
 
-The response is `{"status":"ok","session_id":"example-session","message":"Sessione azzerata"}`. Reset removes the stored history, active product, guided state and completed request records for the given session. It waits for any operation already holding that session's lock. The widget immediately uses a new session identifier and discards replies from the previous session; aborting the browser request does not cancel model work already running on the backend.
+The response is `{"status":"ok","session_id":"example-session","message":"Sessione azzerata"}`. Reset requires a valid session ID and also rejects `default`. It removes the stored history, active product, guided state and completed request records for the given session. It waits for any operation already holding that session's lock. The widget immediately uses a new session identifier and discards replies from the previous session; aborting the browser request does not cancel model work already running on the backend.
 
 ## Validation, limits and errors
 

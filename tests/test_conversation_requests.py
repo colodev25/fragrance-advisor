@@ -172,7 +172,10 @@ def test_failure_before_commit_can_be_retried_without_partial_history(advisor):
 def test_completed_fallback_response_is_reused(advisor):
     advisor._handle_free_chat.side_effect = None
     advisor._handle_free_chat.return_value = {"reply": "Riprova tra poco", "products": []}
-    assert advisor.advise("iris", "customer", request_id="req_1") == {"reply": "Riprova tra poco", "products": []}
+    result = advisor.advise("iris", "customer", request_id="req_1")
+    assert result["reply"] == "Riprova tra poco"
+    assert result["products"] == []
+    assert result["session_context"]["revision"] == 1
     advisor.advise("iris", "customer", request_id="req_1")
     assert advisor._handle_free_chat.call_count == 1
 
@@ -242,7 +245,7 @@ def test_api_identified_request_replay_and_conflict(client, advisor):
 
 @pytest.mark.parametrize("request_id", ["", "with spaces", "a" * 129, 42, {}, []])
 def test_api_rejects_invalid_request_ids(client, request_id):
-    response = client.post("/chat", json={"message": "iris", "request_id": request_id})
+    response = client.post("/chat", json={"message": "iris", "session_id": "customer", "request_id": request_id})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_error"
 

@@ -40,9 +40,13 @@ Each `session_id` stores:
 - Conversation history
 - The active fragrance, if one is selected
 - Guided-flow step and collected answers
-- Last update time in the SQLite record
+- Last update time, inactivity deadline, session token and revision
 
-`SessionStore` reloads persisted state for each request, so the conversation can continue after a server restart when the same session identifier is reused. `POST /reset` clears that session.
+`SessionStore` reloads persisted state for each request. Conversation continuity after a restart requires the SQLite file to survive; the current Render Free filesystem is ephemeral. Session IDs are mandatory and the shared `default` value is rejected. `POST /reset` clears the session.
+
+New completed messages renew a 24-hour inactivity deadline; reads, failed processing and cached retries do not. Expiry and supplied token/revision checks run before model work. The API starts maintenance at startup and hourly, in batches of 100 expired sessions and at most 10 batches per cycle. Cleanup uses the same session locks, skips busy conversations and deletes state and receipts together. SQLite connections close after every operation, including failures. Inactive customer copies are removed from the advisor's RAM maps after each request.
+
+Before processing an uncached message, the active fragrance is refreshed from the currently loaded catalog by stable product ID, including its price, links and olfactory data. Legacy records without an ID use only a unique name/brand match. A removed or unavailable product is cleared; a follow-up receives an availability notice and an invitation to search again. Explicit new searches can proceed normally. This uses the verified runtime snapshot, not a live Shopify inventory lookup.
 
 `src/conversation_requests.py` coordinates the complete load/process/save operation and reset with a lock per session. Waiting requests keep a reference to that lock; unused locks are removed. This coordination assumes the current deployment with one worker and one service instance.
 

@@ -161,14 +161,14 @@ def test_guided_flow_state_transitions(advisor_mock):
     # Step 2
     res2 = advisor_mock.advise("🍋 Fresco o Agrumato", session_id=session_id)
     assert res2["step"] == 2
-    assert advisor_mock.guided_states[session_id]["answers"] == ["🍋 Fresco o Agrumato"]
+    assert advisor_mock.session_store.get_session(session_id)["guided_state"]["answers"] == ["🍋 Fresco o Agrumato"]
 
     # Step 3
     res3 = advisor_mock.advise("Per Lui", session_id=session_id)
     assert res3["step"] == 3
-    assert advisor_mock.guided_states[session_id]["answers"] == ["🍋 Fresco o Agrumato", "Per Lui"]
+    assert advisor_mock.session_store.get_session(session_id)["guided_state"]["answers"] == ["🍋 Fresco o Agrumato", "Per Lui"]
 
     # Step 4
     res4 = advisor_mock.advise("Primavera / Estate", session_id=session_id)
     assert res4["step"] == 4
-    assert advisor_mock.guided_states[session_id]["answers"] == ["🍋 Fresco o Agrumato", "Per Lui", "Primavera / Estate"]
+    assert advisor_mock.session_store.get_session(session_id)["guided_state"]["answers"] == ["🍋 Fresco o Agrumato", "Per Lui", "Primavera / Estate"]

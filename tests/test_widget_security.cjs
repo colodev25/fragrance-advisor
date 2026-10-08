@@ -63,6 +63,7 @@ after(async () => {
 });
 
 async function fixture(t, file, seed = {}) {
+  const revisions = new Map();
   const context = await browser.newContext({ serviceWorkers: 'block' });
   t.after(() => context.close());
   const errors = [];
@@ -98,6 +99,15 @@ async function fixture(t, file, seed = {}) {
       const response = responses.shift() || { status: 200, body: {
         reply: 'Risposta **sicura**', products: [], options: ['Per Lui'], step: 2,
       } };
+      if (response.status === 200 && url.pathname === '/chat' && !response.raw) {
+        const body = request.postDataJSON();
+        const revision = (body.session_context?.revision || revisions.get(body.session_id) || 0) + 1;
+        revisions.set(body.session_id, revision);
+        response.body.session_context ||= {
+          token: body.session_context?.token || 'a'.repeat(32), revision,
+          expires_at: Date.parse('2099-01-01T00:00:00Z'),
+        };
+      }
       return route.fulfill({ status: response.status, contentType: 'application/json',
         headers: { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'Retry-After',
           ...response.headers }, body: JSON.stringify(response.body) });
@@ -117,7 +127,9 @@ async function fixture(t, file, seed = {}) {
 }
 
 function stored(messages, options = []) {
-  return JSON.stringify({ version: 1, session_id: 'sess_security', messages,
+  return JSON.stringify({ version: 2, session_id: 'sess_security', session_context: {
+    token: 'a'.repeat(32), revision: 1, expires_at: Date.parse('2099-01-01T00:00:00Z'),
+  }, messages,
     options, step: 2, last_message: 'iris' });
 }
 
@@ -137,6 +149,11 @@ async function controlledFetch(page) {
 
 async function resolvePending(page, index, data = { reply: 'Risposta completata', products: [], options: ['Per Lui'], step: 2 }) {
   await page.evaluate(({ index, data }) => {
+    const expected = window.__pending[index].body.session_context;
+    data.session_context ||= {
+      token: expected?.token || 'a'.repeat(32), revision: (expected?.revision || 0) + 1,
+      expires_at: Date.now() + 86400000,
+    };
     window.__pending[index].resolve(new Response(JSON.stringify(data), { status: 200 }));
   }, { index, data });
 }
@@ -264,7 +281,7 @@ for (const file of files) {
   });
 
   test(`${file}: JSON history and option actions survive page navigation`, async (t) => {
-    const { page, requests } = await fixture(t, file);
+    const { page, requests } = await fixture(t, file, { [stateKey]: stored([{ kind: 'welcome' }]) });
     await page.evaluate((payload) => {
       window.__widgetTest.appendChatRecord({ kind: 'user', text: payload });
       window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '**Iris**', products: [
@@ -321,7 +338,7 @@ for (const file of files) {
     assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), 'sess_security');
     assert.equal(await page.locator('#oaMessages .oa-msg').count(), 1);
     const saved = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), stateKey);
-    assert.equal(saved.version, 1);
+    assert.equal(saved.version, 2);
     assert.deepEqual(saved.messages, [{ kind: 'welcome' }]);
     await assertSafe(page);
   });
@@ -639,6 +656,116 @@ for (const file of files) {
     await page.clock.runFor(60001);
     assert.equal(await page.locator('.oa-msg-error').count(), 0);
     assert.equal(await page.locator('#oaInput').isDisabled(), false);
+  });
+
+
+  test(`${file}: new replies persist session metadata and following requests carry it`, async (t) => {
+    const { page, requests } = await fixture(t, file);
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+    const context = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).session_context, stateKey);
+    assert.equal(context.revision, 1);
+    await page.goto('https://widget.test/widget?metadata=1', { waitUntil: 'domcontentloaded' });
+    await page.locator('#oaLauncher').click();
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('quanto costa?'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+    assert.deepEqual(requests[1].body.session_context, { token: context.token, revision: 1 });
+    assert.equal(await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).session_context.revision, stateKey), 2);
+  });
+
+  for (const code of ['session_expired', 'session_out_of_sync']) {
+    test(`${file}: ${code} restarts locally and keeps the unsent message without auto-resending`, async (t) => {
+      const { page, requests, responses } = await fixture(t, file);
+      await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+      await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+      const sid = await page.evaluate(() => window.__widgetTest.session());
+      responses.push({ status: 409, body: { error: { code, message: 'Ripartiamo' } } });
+      await page.evaluate(() => { void window.__widgetTest.sendUserMessage('quanto costa?'); });
+      await page.waitForFunction((sid) => window.__widgetTest.session() !== sid, sid);
+      assert.equal(requests.length, 2);
+      assert.equal(await page.locator('.oa-msg-user').count(), 0);
+      assert.equal(await page.locator('.oa-retry-btn').count(), 0);
+      assert.equal(await page.locator('#oaInput').inputValue(), 'quanto costa?');
+      assert.equal(await page.locator('#oaChips button').count(), 2);
+      await page.goto('https://widget.test/widget?draft=1', { waitUntil: 'domcontentloaded' });
+      await page.locator('#oaLauncher').click();
+      assert.equal(await page.locator('#oaInput').inputValue(), 'quanto costa?');
+      await page.locator('#oaForm button[type="submit"]').click();
+      await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+      assert.equal(requests.length, 3);
+      assert.notEqual(requests[2].body.session_id, sid);
+      assert.notEqual(requests[2].body.request_id, requests[1].body.request_id);
+      assert.equal(requests[2].body.session_context, undefined);
+    });
+  }
+
+  test(`${file}: expired local state resets on navigation and preserves a pending draft`, async (t) => {
+    const state = JSON.parse(stored([{ kind: 'welcome' }, { kind: 'user', text: 'iris' }]));
+    state.session_context.expires_at = 1;
+    state.pending_request = { message: 'quanto costa?', session_id: 'sess_security', request_id: 'req_pending' };
+    const { page, requests } = await fixture(t, file, { [stateKey]: JSON.stringify(state) });
+    assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), 'sess_security');
+    assert.equal(await page.locator('#oaInput').inputValue(), 'quanto costa?');
+    assert.equal(requests.length, 0);
+    assert.equal(await page.locator('.oa-msg-user').count(), 0);
+    assert.match(await page.locator('.oa-error-text').textContent(), /scaduta/);
+  });
+
+  test(`${file}: expiry while a page stays open preserves the typed message without sending`, async (t) => {
+    const { page, requests } = await fixture(t, file);
+    await page.clock.install();
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+    const sid = await page.evaluate(() => window.__widgetTest.session());
+    await page.clock.setSystemTime(new Date('2099-01-01T00:00:01Z'));
+    assert.ok(await page.evaluate(() => Date.now() > Date.parse('2099-01-01T00:00:00Z')));
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('vorrei rosa'); });
+    assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), sid);
+    assert.equal(await page.locator('#oaInput').inputValue(), 'vorrei rosa');
+    assert.equal(requests.length, 1);
+  });
+
+  test(`${file}: old schema is retired with a clear notice and pending draft retained`, async (t) => {
+    const state = JSON.parse(stored([{ kind: 'welcome' }]));
+    state.version = 1;
+    state.pending_request = { message: 'iris', session_id: 'sess_security', request_id: 'req_old' };
+    const { page, requests } = await fixture(t, file, { [stateKey]: JSON.stringify(state) });
+    assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), 'sess_security');
+    assert.match(await page.locator('.oa-error-text').textContent(), /aggiornato/);
+    assert.equal(await page.locator('#oaInput').inputValue(), 'iris');
+    assert.equal(requests.length, 0);
+  });
+
+  test(`${file}: unsent drafts survive navigation without creating requests`, async (t) => {
+    const { page, requests } = await fixture(t, file);
+    await page.locator('#oaInput').fill('cerco iris');
+    await page.goto('https://widget.test/widget?draft=1', { waitUntil: 'domcontentloaded' });
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('#oaInput').inputValue(), 'cerco iris');
+    assert.equal(requests.length, 0);
+  });
+
+  test(`${file}: success without valid session metadata remains retryable`, async (t) => {
+    const { page, responses } = await fixture(t, file);
+    responses.push({ status: 200, raw: true, body: { reply: 'Non verificata', products: [], options: [] } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && Boolean(document.querySelector('.oa-retry-btn')));
+    assert.equal((await page.locator('#oaMessages').textContent()).includes('Non verificata'), false);
+    assert.equal(await page.locator('.oa-retry-btn').isDisabled(), false);
+  });
+
+  test(`${file}: delayed success from another session version cannot replace the conversation`, async (t) => {
+    const { page, requests, responses } = await fixture(t, file, { [stateKey]: stored([{ kind: 'welcome' }]) });
+    responses.push({ status: 200, raw: true, body: {
+      reply: 'CONTESTO ERRATO', products: [], options: [], session_context: {
+        token: 'b'.repeat(32), revision: 2, expires_at: Date.parse('2099-01-01T00:00:00Z'),
+      },
+    } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => window.__widgetTest.session() !== 'sess_security');
+    assert.equal((await page.locator('#oaMessages').textContent()).includes('CONTESTO ERRATO'), false);
+    assert.equal(await page.locator('#oaInput').inputValue(), 'iris');
+    assert.equal(requests.length, 1);
   });
 
 }

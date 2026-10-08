@@ -7,7 +7,7 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Proactive entry point:** a floating launcher opens the advisor; a short invitation appears after a delay and can be dismissed.
 - **Two ways to get started:** customers can follow the four-step guided consultation or begin with a free-form question about notes, fragrances or occasions.
 - **Quick replies and progress:** contextual choice chips make guided answers easy to select, while a progress bar indicates the current step.
-- **Chat continuity:** the session identifier, structured messages, product data, quick replies, guided step and last message are saved in sessionStorage. Restoring the conversation recreates its elements and actions while navigating between pages in the same browser tab. Restarting clears local state and asks the backend to reset the previous session. Expanded card panels and cart feedback are also retained.
+- **Chat continuity:** the session identifier and version, structured messages, product data, quick replies, guided step and unsent draft are saved in sessionStorage. Restoring recreates elements and actions across pages in the same browser tab. Expanded card panels and cart feedback are also retained; closing the tab ends this local continuity.
 - **Natural chat feedback:** message bubbles, smooth scrolling and an animated typing indicator keep the conversation readable. Longer waits show progressive status messages for requests that may be delayed by a backend cold start.
 
 ## Product exploration
@@ -25,6 +25,7 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Respectful retries:** a server cooldown appears as a countdown on “Riprova”. Sending and retrying are temporarily disabled; the deadline survives page changes and local restart.
 - **Recovery across pages:** navigating during a pending request preserves its identifier and offers a retry after restoration, without duplicating the customer message. Previous saved errors without request identifiers remain visible but cannot be retried through their old buttons.
 - **Safe restart:** restart cancels the local wait, creates a new session and ignores late responses from the previous conversation. The remote reset is coordinated with processing already underway; a model call that has started can still finish.
+- **Session recovery:** a session expires after 24 hours without a new completed message. If it has expired, disappeared from the server or advanced in another tab, the widget explains the restart, creates a fresh local session and keeps the message ready in the input. It never resends automatically or resets another tab's server state. Version checks travel with normal chat requests; page navigation adds no API call.
 - **Responsive layout:** the desktop widget opens as a floating panel; on small screens it becomes a full-screen view with safe-area spacing.
 - **Mobile keyboard and touch handling:** focusing the input brings it into view; interacting with or scrolling the conversation dismisses the keyboard. Opening the mobile widget locks background-page scrolling.
 - **Reduced-motion support:** system preferences for reduced motion are respected by limiting transitions, animations and smooth scrolling.
@@ -33,7 +34,7 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 
 - **Text and cards:** customer messages, model responses and product fields are inserted through DOM text and attribute properties. Received content cannot supply HTML elements or event handlers. The supported response formatting remains paragraphs, line breaks, bold text and links.
 - **Links and images:** only absolute HTTP(S) URLs without credentials, whitespace, control characters or unsafe delimiters are accepted. Invalid links become plain text, invalid product links become inactive, and invalid images use the placeholder.
-- **Stored conversation:** `etualy_chat_state_v1` contains versioned JSON tied to the current session. Restored fields are normalized and rendered through the same safe path; saved HTML is never reinserted. Invalid states are cleared. On the first load after upgrading, the previous HTML-based history is discarded and a new local session starts; this is not a deletion of every backend session.
+- **Stored conversation:** `etualy_chat_state_v1` now contains version-2 JSON tied to the session token, revision and deadline. Restored fields use the same safe renderer; saved HTML is never reinserted and invalid states are cleared. Previous version-1 history is retired once with an update notice, preserving a pending message or draft. Backend sessions are not globally deleted by this migration.
 - **Shopify integration:** `snippets/etualy-advisor.liquid` contains the same safe renderer as the standalone page. Updating `index.html` alone does not update a snippet already installed in a Shopify theme; publish the revised snippet there as well.
 
 ## Visual language

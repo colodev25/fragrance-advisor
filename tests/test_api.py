@@ -188,10 +188,10 @@ def test_chat_endpoint_rate_limit(api_client):
 
     with patch("src.main.advisor", mock_advisor):
         for _ in range(CHAT_RATE_LIMIT_PER_MINUTE):
-            response = api_client.post("/chat", json={"message": "Test rate limit"})
+            response = api_client.post("/chat", json={"message": "Test rate limit", "session_id": "rate_test"})
             assert response.status_code == 200
 
-        blocked = api_client.post("/chat", json={"message": "Test rate limit"})
+        blocked = api_client.post("/chat", json={"message": "Test rate limit", "session_id": "rate_test"})
 
     assert blocked.status_code == 429
     assert blocked.json()["error"]["code"] == "rate_limit_exceeded"

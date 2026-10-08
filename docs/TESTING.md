@@ -10,6 +10,7 @@ The project uses pytest. Tests cover the HTTP API, catalog parsing and advisor r
 | tests/test_parsers.py | Note cleaning, note extraction, gender and season detection, price constraints, intent routing and guided-flow steps. |
 | tests/test_session_store.py | SQLite defaults, save and load, updates, clearing, concurrent writes, restart persistence and reset through the API. |
 | tests/test_conversation_requests.py | Per-session serialization, independent customers, concurrent duplicates, reset during processing, atomic state/result commits, restart recovery, identifier conflicts, response pruning, schema migration and HTTP retry contracts. Uses temporary SQLite databases and mocked processing without constructing external clients. |
+| tests/test_session_lifecycle.py | 24-hour inactivity expiry, renewal and replay rules, lost databases, tokens and stale revisions, cleanup batching and busy-session safety, migration, connection closure, RAM release, product-ID refresh, removed stock and API validation. No external services. |
 | tests/test_chat_budget.py | Shared deadlines and call allowance, SDK retries disabled using an in-memory transport, fast replies without added waits, reduced timeouts, completion ceilings, short and long provider cooldowns, failed-state rollback, guided-card fallback and retryable HTTP errors. No external services. |
 | tests/test_llm_resilience.py | Retry delays, fallback model, concurrent calls, private reasoning protection, truncated answers, candidate selection validation, graceful failure and an optional live Groq check. |
 | tests/test_rate_limit.py | Per-client and per-route request limits. |
@@ -38,9 +39,9 @@ The API tests run the application lifespan, which initializes the real advisor; 
 
 .github/workflows/tests.yml uses Python 3.11, installs project dependencies and pytest, builds a local ChromaDB index, then runs:
 
-    pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py tests/test_conversation_requests.py tests/test_chat_budget.py tests/test_catalog_integrity.py tests/test_catalog_enrichment.py tests/test_catalog_jobs.py tests/test_llm_resilience.py -m "not e2e" -v
+    pytest tests/test_api.py tests/test_parsers.py tests/test_session_store.py tests/test_conversation_requests.py tests/test_session_lifecycle.py tests/test_chat_budget.py tests/test_catalog_integrity.py tests/test_catalog_enrichment.py tests/test_catalog_jobs.py tests/test_llm_resilience.py -m "not e2e" -v
 
-The workflow passes GROQ_API_KEY from a repository secret and sets SESSIONS_DB_PATH=:memory:. It includes mocked LLM resilience tests, excludes the live e2e model check and does not run test_scenarios_e2e.py.
+The workflow passes GROQ_API_KEY from a repository secret and sets SESSIONS_DB_PATH to a SQLite file in the runner's temporary directory. This retains state across separately opened connections; the current store does not support plain `:memory:` for that lifecycle. It includes mocked LLM resilience tests, excludes the live e2e model check and does not run test_scenarios_e2e.py. Rate-limit tests and browser CI integration remain separate maintenance items.
 
 ## Widget browser checks
 
@@ -52,15 +53,15 @@ node --test --test-reporter=spec tests/test_widget_security.cjs
 
 Playwright must be resolvable by Node. If using an existing runtime rather than a project installation, set `WIDGET_PLAYWRIGHT_MODULE` to its Playwright package directory. Set `WIDGET_BROWSER_EXECUTABLE` to an installed Chromium, Chrome or Edge executable; otherwise Playwright uses its installed Chromium. These variables are for tests only. The local verification used Playwright 1.62.1 and headless Edge.
 
-All page requests are intercepted: HTML, API responses and a sample image are supplied locally; other requests are blocked. No Groq key, Shopify access or running backend is required. Browser contexts and temporary profiles close after the run. The current local suite contains 99 checks when the DevTools preview is present and is currently separate from the Python CI command above; browser CI integration remains part of the test-maintenance work.
+All page requests are intercepted: HTML, API responses and a sample image are supplied locally; other requests are blocked. No Groq key, Shopify access or running backend is required. Browser contexts and temporary profiles close after the run. The current local suite contains 126 checks when the DevTools preview is present and is currently separate from the Python CI command above; browser CI integration remains part of the test-maintenance work.
 
 Request-coordination checks deliberately deliver both successful and failed responses after cancellation, while a new session is waiting. They also simulate navigation before a response arrives and verify recovery with the original request identifier and a single customer message.
 
 ## Latest local verification
 
-On 8 October 2026, the point-4 changes passed **150 Python tests** and **99 browser checks**, with the live Groq test excluded. Python used dummy credentials and blocked external socket connections, allowing only local loopback needed by the Windows HTTP test client. API/parser regressions used the existing verified local search index. Browser tests used headless Edge and intercepted every request; virtual clocks exercised 60-second deadlines and countdowns without real waits.
+On 8 October 2026, the point-5 changes passed **183 Python tests** and **126 browser checks**, with the live Groq test excluded. Python used dummy credentials, a temporary SQLite file and blocked external socket connections, allowing only local loopback needed by the Windows HTTP test client. API/parser regressions used the existing verified local search index. Browser tests used headless Edge and intercepted every request; virtual clocks exercised deadlines, countdowns and session expiry without real waits.
 
-Coverage includes the real SDK with an in-memory HTTP transport, request/state recovery after LLM failure, unchanged catalog enrichment, concurrent sessions and both numeric and HTTP-date `Retry-After`. These offline checks do not measure production LLM latency, free-plan quota availability or Render cold-start duration. The new Python budget module is included in CI; no remote CI run is claimed.
+Coverage includes the real SDK with an in-memory HTTP transport, request/state recovery after LLM failure, unchanged catalog enrichment, concurrent sessions and both numeric and HTTP-date `Retry-After`. Session tests also cover loss after deploy, expired replay prevention, stale tabs, pending-message preservation, draft persistence, version-1 retirement and safe cleanup. These offline checks do not measure production LLM latency, free-plan quota availability or Render cold-start duration. Budget and session-lifecycle modules are included in CI; no remote CI run is claimed.
 
 ## Adding coverage
 

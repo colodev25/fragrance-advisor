@@ -4,6 +4,7 @@ Focalizzato unicamente su chat, reset di sessione e health-check.
 """
 
 import logging
+import asyncio
 import math
 import os
 import re
@@ -56,6 +57,20 @@ advisor = None
 startup_error: Optional[str] = None
 
 
+async def maintain_sessions(instance):
+    """At startup and hourly, reclaim expired state in bounded off-thread batches."""
+    while True:
+        try:
+            for _ in range(10):
+                removed = await asyncio.to_thread(instance.session_store.cleanup_old_sessions)
+                if removed < 100:
+                    break
+                await asyncio.sleep(0)
+        except Exception:
+            logger.exception("Session maintenance failed; retrying next cycle.")
+        await asyncio.sleep(3600)
+
+
 class ApiError(Exception):
     def __init__(self, status_code: int, code: str, message: str, headers: Optional[dict[str, str]] = None):
         self.status_code = status_code
@@ -80,9 +95,15 @@ async def lifespan(app: FastAPI):
         startup_error = "initialization_failed"
         logger.exception("FragranceAdvisor could not be initialized.")
 
-    yield
-    advisor = None
-    logger.info("Stopping Etualy olfactive advisor API.")
+    maintenance = asyncio.create_task(maintain_sessions(advisor)) if advisor is not None else None
+    try:
+        yield
+    finally:
+        if maintenance is not None:
+            maintenance.cancel()
+            await asyncio.gather(maintenance, return_exceptions=True)
+        advisor = None
+        logger.info("Stopping Etualy olfactive advisor API.")
 
 
 app = FastAPI(title="Consulente Olfattivo AI - Etualy", lifespan=lifespan)
@@ -102,9 +123,15 @@ app.add_middleware(
 )
 
 
+class SessionContext(BaseModel):
+    token: str = Field(pattern=r"^[a-f0-9]{32}$")
+    revision: int = Field(ge=1, le=9_007_199_254_740_991, strict=True)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=MAX_MESSAGE_LENGTH)
-    session_id: Optional[str] = Field(default="default", max_length=128)
+    session_id: str = Field(min_length=1, max_length=128)
+    session_context: Optional[SessionContext] = None
     max_price: Optional[float] = Field(default=None, ge=0, le=MAX_PRICE)
     step_override: Optional[int] = Field(default=None, ge=1, le=4)
     request_id: Optional[str] = Field(default=None, min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
@@ -119,10 +146,8 @@ class ChatRequest(BaseModel):
 
     @field_validator("session_id")
     @classmethod
-    def validate_session_id(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return value
-        if not SESSION_ID_PATTERN.fullmatch(value):
+    def validate_session_id(cls, value: str) -> str:
+        if value == "default" or not SESSION_ID_PATTERN.fullmatch(value):
             raise ValueError("session_id può contenere solo lettere, numeri, trattini e underscore.")
         return value
 
@@ -133,7 +158,7 @@ class ResetRequest(BaseModel):
     @field_validator("session_id")
     @classmethod
     def validate_session_id(cls, value: str) -> str:
-        if not SESSION_ID_PATTERN.fullmatch(value):
+        if value == "default" or not SESSION_ID_PATTERN.fullmatch(value):
             raise ValueError("session_id può contenere solo lettere, numeri, trattini e underscore.")
         return value
 
@@ -215,6 +240,8 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
     try:
         identified_request = {} if req.request_id is None else {"request_id": req.request_id}
+        if req.session_context is not None:
+            identified_request["session_context"] = req.session_context.model_dump()
         return advisor.advise(
             user_query=req.message,
             session_id=req.session_id,

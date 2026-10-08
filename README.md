@@ -2,14 +2,14 @@
 
 Fragrance Advisor is a conversational perfume discovery service for Etualy. It combines a product catalog, semantic search and an AI assistant to help customers find fragrances by notes, style, occasion and budget.
 
-The project includes a FastAPI backend, a browser chat interface, a Shopify catalog pipeline and persistent conversation sessions. Product recommendations are grounded in catalog results, with application logic applying structured constraints before the assistant explains its suggestions.
+The project includes a FastAPI backend, a browser chat interface, a Shopify catalog pipeline and conversation session management. Product recommendations are grounded in catalog results, with application logic applying structured constraints before the assistant explains its suggestions.
 
 ## Highlights
 
 - Free-form fragrance discovery and a four-step guided consultation
 - Semantic product search with price and fragrance-note filtering
 - Context-aware follow-up questions and product alternatives
-- Persistent sessions stored in SQLite
+- SQLite sessions with inactivity expiry and clear recovery when server state is lost
 - Shopify catalog ingestion and a local ChromaDB search index
 
 ## Run locally

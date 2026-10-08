@@ -8,5 +8,7 @@ chroma_db/
 data/scartati.json
 data/sessions.db
 data/*.db
+data/*.db-wal
+data/*.db-shm
 snippet.txt
 to-do.txt
