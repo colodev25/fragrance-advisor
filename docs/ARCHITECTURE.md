@@ -26,7 +26,7 @@ Browser interface (index.html)
 
 ### Storefront purchases
 
-Cart operations run directly between the widget and Shopify, independently of chat/Render/Groq. On the same Etualy origin, the widget checks the exact variant through the localized Product Ajax API, then adds one unit through Cart Ajax. Changed price/options require explicit confirmation; ambiguous outcomes are not automatically retried. `src/cart_product.py` supplies verified catalog variant fields and legacy permalink compatibility. Theme-specific cart counters/drawers remain an integration task. See [purchase integration](UI_UX.md#purchase-integration).
+Cart operations run directly between the widget and Shopify, independently of chat/Render/Groq. On the same Etualy origin, the widget checks the exact variant through the localized Product Ajax API, then adds one unit through Cart Ajax. Changed price/options require explicit confirmation; ambiguous outcomes are not automatically retried. `src/cart_product.py` supplies verified catalog variant fields and legacy permalink compatibility. For Etualy's Impulse theme, a confirmed addition dispatches `cart:build`: the native cart form refreshes drawer contents, totals, quantity controls and counters while keeping the drawer closed. Different themes require a separate adapter. See [purchase integration](UI_UX.md#purchase-integration).
 
 ### Conversation advisor
 

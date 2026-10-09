@@ -2639,6 +2639,18 @@
 
       let cartMutationPending = false;
       let cartController = null;
+      function refreshStoreCart() {
+        // Impulse rebuilds items, totals, quantity controls and the header counter
+        // on cart:build. ajaxProduct:added would also open its drawer.
+        if (window.Shopify?.theme?.schema_name !== "Impulse" ||
+            typeof window.theme?.CartForm !== "function" ||
+            !document.getElementById("CartDrawerForm")) return;
+        try {
+          document.dispatchEvent(new CustomEvent("cart:build"));
+        } catch (_) {
+          // A theme integration failure must never retry an already confirmed add.
+        }
+      }
       async function handleAddToCart(event, btn) {
         const card = btn?.closest(".oa-product-card");
         const product = cardRecords.get(card);
@@ -2721,6 +2733,7 @@
           }
           const added = result.items?.find((item) => String(item.variant_id || item.id) === purchase.id);
           if (!added || !Number.isInteger(added.quantity) || added.quantity < 1) throw new Error("Unconfirmed cart result");
+          refreshStoreCart();
           goToCart();
           btn.querySelector(".oa-btn-cart-icon").style.display = "none";
           btn.querySelector(".oa-btn-check-icon").style.display = "inline-block";

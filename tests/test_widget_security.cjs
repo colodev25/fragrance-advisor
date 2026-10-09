@@ -234,6 +234,49 @@ for (const file of files) {
     assert.equal(await page.locator('.oa-card-cart-btn').textContent(), 'Aggiungi al Carrello');
   });
 
+  for (const failure of [false, true]) {
+    test(`${file}: Impulse drawer refreshes only on confirmed addition and stays closed (${failure ? 'error' : 'success'})`, async (t) => {
+      const { page, cartRequests, cartResponses } = await fixture(t, file, {}, true);
+      await page.evaluate(() => {
+        window.Shopify = { theme: { schema_name: 'Impulse', schema_version: '7.4.1' } };
+        window.theme = { CartForm: function CartForm() {} };
+        const drawer = document.createElement('aside');
+        drawer.id = 'CartDrawer';
+        drawer.hidden = true;
+        drawer.innerHTML = '<form id="CartDrawerForm"><span data-items>Prodotto precedente</span><span data-total>80</span></form>';
+        document.body.appendChild(drawer);
+        const count = document.createElement('span');
+        count.className = 'cart-link__bubble-num';
+        count.textContent = '2';
+        document.body.appendChild(count);
+        window.__cartBuilds = 0;
+        window.__drawerOpens = 0;
+        // Model the public event contract observed in Etualy's Impulse theme:
+        // cart:build reconstructs the cart; ajaxProduct:added also opens it.
+        document.addEventListener('cart:build', () => {
+          window.__cartBuilds++;
+          document.querySelector('[data-items]').textContent = 'Prodotto precedente + Iris';
+          document.querySelector('[data-total]').textContent = '170';
+          count.textContent = '3';
+        });
+        document.addEventListener('ajaxProduct:added', () => { window.__drawerOpens++; drawer.hidden = false; });
+      });
+      if (failure) cartResponses.push({ status: 422, body: { status: 422 } });
+      const button = await cartCard(page);
+      assert.equal(await page.evaluate(() => window.__cartBuilds), 0);
+      await button.click();
+      await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.length > 0);
+      assert.equal(cartRequests.length, 1);
+      assert.equal(await page.evaluate(() => window.__cartBuilds), failure ? 0 : 1);
+      assert.equal(await page.evaluate(() => window.__drawerOpens), 0);
+      assert.equal(await page.locator('#CartDrawer').evaluate((el) => el.hidden), true);
+      assert.equal(await page.locator('.cart-link__bubble-num').textContent(), failure ? '2' : '3');
+      assert.equal(await page.locator('[data-total]').textContent(), failure ? '80' : '170');
+      assert.equal(await page.locator('[data-items]').textContent(), failure ? 'Prodotto precedente' : 'Prodotto precedente + Iris');
+      assert.equal(await page.locator('#oaWidget').evaluate((el) => el.classList.contains('is-active')), true);
+    });
+  }
+
   for (const [title, response, message] of [
     ['out of stock', { status: 422, body: { status: 422, description: 'Sold out' } }, 'Shopify non può'],
     ['lost response', { abort: true }, "Non è possibile verificare l'esito"],
