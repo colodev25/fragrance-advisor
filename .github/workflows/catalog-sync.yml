@@ -2,8 +2,8 @@ name: Sincronizzazione Catalogo Shopify
 
 on:
   schedule:
-    # Esegue ogni 2 giorni alle 03:00 UTC
-    - cron: "0 3 */2 * *"
+    # Esegue ogni 2 giorni alle 18:00 UTC
+    - cron: "0 18 */2 * *"
   # Pulsante per esecuzione manuale istantanea su GitHub Actions
   workflow_dispatch:
 

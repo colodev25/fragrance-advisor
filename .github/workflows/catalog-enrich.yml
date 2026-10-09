@@ -2,7 +2,7 @@ name: Arricchimento notturno catalogo
 
 on:
   schedule:
-    - cron: "35 3 * * *"
+    - cron: "35 18 * * *"
   workflow_dispatch:
 
 permissions:
