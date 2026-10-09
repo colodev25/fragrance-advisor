@@ -967,6 +967,29 @@ for (const file of files) {
     assert.equal(requests.length, 0);
   });
 
+  test(`${file}: product clarification choices survive navigation and send the exact selected label on mobile`, async (t) => {
+    const { page, requests, responses } = await fixture(t, file);
+    await page.setViewportSize({ width: 360, height: 740 });
+    const labels = ['Fugazzi — Orange Crush Eau de Parfum', 'Fugazzi — Orange Crush Extrait de Parfum'];
+    responses.push({ status: 200, body: { reply: 'Quale versione intendi?', options: labels, products: [], step: null } });
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('Parlami di Orange Crush'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent.includes('Extrait'));
+    assert.equal(await page.locator('.oa-product-card').count(), 0);
+    assert.deepEqual(await page.locator('#oaChips button').allTextContents(), labels);
+    await page.goto('https://widget.test/widget?product-choice=1', { waitUntil: 'domcontentloaded' });
+    await page.locator('#oaLauncher').click();
+    assert.deepEqual(await page.locator('#oaChips button').allTextContents(), labels);
+    const overflow = await page.locator('#oaWidget').evaluate((node) => node.scrollWidth > node.clientWidth);
+    assert.equal(overflow, false);
+    responses.push({ status: 200, body: { reply: 'Versione scelta', products: [{ name: 'Orange Crush Extrait de Parfum', brand: 'Fugazzi', price: 90 }], options: [], step: null } });
+    await page.locator('#oaChips button').nth(1).click();
+    await page.waitForFunction(() => !window.__widgetTest.active() && Boolean(document.querySelector('.oa-product-card')));
+    assert.equal(requests[1].body.message, labels[1]);
+    assert.equal(requests[1].body.session_id, requests[0].body.session_id);
+    assert.equal(requests[1].body.session_key, requests[0].body.session_key);
+    assert.equal(requests[1].body.session_context.revision, 1);
+  });
+
   test(`${file}: unsent drafts survive navigation without creating requests`, async (t) => {
     const { page, requests } = await fixture(t, file);
     await page.locator('#oaInput').fill('cerco iris');

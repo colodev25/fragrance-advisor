@@ -8,6 +8,10 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Optional
 try:
+    from src.product_identity import ProductIdentity, name_text
+except ModuleNotFoundError:
+    from product_identity import ProductIdentity, name_text
+try:
     from src.recommendation_preferences import (PreferenceMatcher, price_constraints,
         recommendation_request, recipient_evidence, season_evidence, selection_notice, normalized)
 except ModuleNotFoundError:
@@ -164,6 +168,8 @@ class FragranceAdvisor:
         self.guided_states = defaultdict(lambda: {"step": None, "answers": []})
 
         self.catalog_products = self.search_engine.catalog_products
+        self.product_identity = ProductIdentity(self.catalog_products)
+        self.product_identity_catalog = self.catalog_products
         self.preference_matcher = PreferenceMatcher(self.catalog_products)
         self.catalog_notes = set()
 
@@ -206,36 +212,78 @@ class FragranceAdvisor:
         return family_ans, [family_ans]
 
     def _find_mentioned_product(self, query: str) -> dict | None:
-        if not self.catalog_products:
-            return None
+        mention = self._identity().resolve(query)
+        return self._product_data(mention.products[0]) if mention.status == 'matched' else None
 
-        q_clean = " " + re.sub(r"[?!.,;:\"\'\(\)]", " ", query.lower()) + " "
+    def _identity(self):
+        catalog = getattr(self, 'catalog_products', [])
+        if not hasattr(self, 'product_identity') or self.product_identity_catalog is not catalog or len(self.product_identity.entries) != len(catalog):
+            self.product_identity = ProductIdentity(catalog)
+            self.product_identity_catalog = catalog
+        return self.product_identity
 
-        for prod in self.catalog_products:
-            raw_name = prod.get("name", "").strip()
-            if not raw_name:
-                continue
+    def _resolve_product_request(self, query, session_id):
+        """Clarify before searching or sending ambiguous product context to the model."""
+        identity = self._identity()
+        state = self.guided_states[session_id]
+        pending = state.get('pending_product_choice')
+        original = query
+        chosen = None
+        if pending:
+            ids = pending.get('ids', [])
+            choices = pending.get('choices', {})
+            selected = next((identifier for label, identifier in choices.items()
+                             if name_text(label) == name_text(query)), None)
+            if selected:
+                chosen = identity.by_id.get(selected)
+                if chosen is None or chosen.get('in_stock') is not True:
+                    state.pop('pending_product_choice', None)
+                    return query, None, self._reply_without_selection(session_id, query,
+                        'Il prodotto scelto non è più disponibile. Possiamo iniziare una nuova ricerca.')
+                original = pending['query']
+            else:
+                mention = identity.resolve(query)
+                if mention.status == 'none':
+                    mention = identity.resolve(query, ids)
+                    if mention.status != 'none':
+                        original = pending['query']
+                    elif not recommendation_request(query):
+                        return query, None, self._product_clarification(query, session_id, pending['query'],
+                            tuple(identity.by_id[i] for i in ids if i in identity.by_id), 'ambiguous')
+        else:
+            mention = identity.resolve(query)
+        if chosen is None:
+            if mention.status == 'none':
+                state.pop('pending_product_choice', None)
+                return query, None, None
+            if mention.status == 'unavailable':
+                state.pop('pending_product_choice', None)
+                return query, None, self._reply_without_selection(session_id, query,
+                    'Non ho trovato una corrispondenza verificabile per il brand, la concentrazione o il formato richiesti. '
+                    'Puoi precisare il nome? Se il formato è una variante Shopify, verifica le opzioni nella pagina ufficiale del prodotto.')
+            if mention.status in ('ambiguous', 'suggestions'):
+                return query, None, self._product_clarification(query, session_id, original, mention.products, mention.status)
+            chosen = mention.products[0]
+        state.pop('pending_product_choice', None)
+        if pending and original == pending['query']:
+            query = original + '\nProdotto scelto: ' + identity.label(chosen)
+        return query, self._product_data(chosen), None
 
-            norm_name = re.sub(r"\b\d+\s*ml\b", "", raw_name, flags=re.I)
-            norm_name = re.sub(r"\b(eau de parfum|extrait de parfum|edp|edt|millésime)\b", "", norm_name, flags=re.I)
-            norm_name = re.sub(r"[?!.,;:\"\'\(\)]", " ", norm_name).strip().lower()
-            norm_name = re.sub(r"\s+", " ", norm_name)
-
-            if len(norm_name) >= 3 and f" {norm_name} " in q_clean:
-                return {
-                    "id": prod.get("id"),
-                    "name": prod.get("name", ""),
-                    "brand": prod.get("brand", "Profumeria Artistica"),
-                    "price": float(prod.get("price", 0.0)),
-                    "family": prod.get("family", ""),
-                    "ptype": prod.get("ptype", ""),
-                    "add_to_cart_url": prod.get("urls", {}).get("add_to_cart", ""),
-                    "product_page_url": prod.get("urls", {}).get("product_page", ""),
-                    "image_url": prod.get("urls", {}).get("image_url", ""),
-                    "document": prod.get("semantic_text", prod.get("description", ""))
-                }
-
-        return None
+    def _product_clarification(self, query, session_id, original, products, status):
+        labels = [ProductIdentity.label(product) for product in products]
+        # Identical visible identities cannot be disambiguated with arbitrary numbered buttons.
+        normalized_labels = [name_text(label) for label in labels]
+        choices = {label: product['id'] for label, product in zip(labels, products) if normalized_labels.count(name_text(label)) == 1}
+        self.guided_states[session_id]['pending_product_choice'] = {
+            'query': original, 'ids': [product['id'] for product in products], 'choices': choices,
+        }
+        message = ('Non ho trovato il nome esatto. Intendevi uno di questi prodotti?' if status == 'suggestions' else
+                   'Ci sono più prodotti compatibili con il nome indicato. Quale intendi?')
+        if len(products) > 5 or not choices:
+            message += ' Specifica il brand, la concentrazione o il formato per restringere la scelta.'
+        response = self._reply_without_selection(session_id, query, message)
+        response['options'] = list(choices)[:5]
+        return response
 
     def _has_explicit_olfactory_redirect(self, query: str) -> bool:
         q_lower = query.lower()
@@ -580,12 +628,14 @@ class FragranceAdvisor:
         if max_price is not None:
             state["api_max_price"] = max_price
         response = None
+        mentioned_product = None
 
         start_guided_triggers = [
             "guidami", "guida", "ricomincia", "riparti",
             "percorso guidato", "ricomincia percorso", "inizia guida"
         ]
-        if any(t in q_lower for t in start_guided_triggers):
+        if any(re.search(r'\b' + re.escape(t) + r'\b', q_lower) for t in start_guided_triggers):
+            state.pop('pending_product_choice', None)
             state["step"] = 1
             state["answers"] = []
             state["preferences"] = {}
@@ -603,6 +653,7 @@ class FragranceAdvisor:
             "chat libera", "parla liberamente"
         ]
         if response is None and any(t in q_lower for t in start_free_triggers):
+            state.pop('pending_product_choice', None)
             state["step"] = None
             state["answers"] = []
             response = {
@@ -613,6 +664,13 @@ class FragranceAdvisor:
                 "mode": "free"
             }
 
+        if response is None and (state.get('pending_product_choice') or
+                                 (state['step'] is None and step_override is None) or
+                                 re.search(r'\b(?:parlami di|informazioni su|descrivi|quanto costa)\b', q_lower)):
+            user_query, mentioned_product, response = self._resolve_product_request(user_query, session_id)
+            if mentioned_product or response:
+                state['step'] = None
+                state['answers'] = []
         effective_step = step_override if step_override is not None else state["step"]
 
         if response is None and effective_step is not None:
@@ -657,7 +715,7 @@ class FragranceAdvisor:
                 state["step"] = None
                 response = self._generate_guided_recommendations(state["answers"], session_id, state.get("api_max_price"))
 
-        if response is None and active_missing and not self._find_mentioned_product(user_query) and not (
+        if response is None and active_missing and not mentioned_product and not (
             self._has_explicit_olfactory_redirect(user_query) or re.search(r"\b(cerc|alternativ|divers|altr)", q_lower)
         ):
             response = {
@@ -669,7 +727,10 @@ class FragranceAdvisor:
                 {"role": "user", "content": user_query}, {"role": "assistant", "content": response["reply"]},
             ])
         if response is None:
-            response = self._handle_free_chat(user_query, session_id, max_price)
+            if mentioned_product:
+                response = self._handle_free_chat(user_query, session_id, max_price, mentioned_product=mentioned_product)
+            else:
+                response = self._handle_free_chat(user_query, session_id, max_price)
 
         current_chat_budget.get().check_deadline()
         self.sessions[session_id] = self.sessions[session_id][-MAX_HISTORY_MESSAGES:]
@@ -812,9 +873,7 @@ class FragranceAdvisor:
             active = mentioned
         preference_query = normalized(query)
         if mentioned:
-            name = normalized(mentioned["name"])
-            name = re.sub(r"\b(?:\d+\s*ml|eau de parfum|extrait de parfum|edp|edt)\b", "", name).strip()
-            preference_query = re.sub(rf"(?<!\w){re.escape(name)}(?!\w)", " ", preference_query)
+            preference_query = self._identity().erase_mentions(query, mentioned)
         prefs = matcher.update(preference_query, state.get("preferences"), active)
         if active and reference and not prefs.get("families") and not prefs.get("required_notes"):
             prefs = matcher.update(active.get("family", ""), prefs)
@@ -875,18 +934,18 @@ class FragranceAdvisor:
         return {"reply": reply, "options": [], "products": [self._enrich_product_payload(selected, card_type="standard")] if selected else [],
                 "step": None, "mode": "free"}
 
-    def _handle_free_chat(self, user_query: str, session_id: str, max_price: float) -> dict:
+    def _handle_free_chat(self, user_query: str, session_id: str, max_price: float, mentioned_product=None) -> dict:
         history = self.sessions[session_id]
         active_before = self.active_perfumes.get(session_id)
 
-        mentioned_product = self._find_mentioned_product(user_query)
+        mentioned_product = mentioned_product or self._find_mentioned_product(user_query)
         is_new_product_switch = False
 
         if recommendation_request(user_query):
             return self._recommend_free(user_query, session_id, max_price, mentioned_product)
 
         if mentioned_product:
-            if not active_before or active_before.get("name") != mentioned_product.get("name"):
+            if not active_before or active_before.get("id") != mentioned_product.get("id"):
                 is_new_product_switch = True
             self.active_perfumes[session_id] = mentioned_product
             logger.debug("Matched a catalog product in the customer request.")

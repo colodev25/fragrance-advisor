@@ -71,6 +71,8 @@ Recognized preferences are retained in the conversation. The latest non-null API
 
 ### Identified requests and retries
 
+Named-product requests can return a normal `200` clarification: `products` is empty and `options` contains brand/full-title labels for the possible records, up to five choices. Send a selected label as the next ordinary message with a new `request_id` and the latest session context; no new API field is required. The backend maps the label to its saved catalog ID and retains the original request and budget. A distinguishing brand, concentration or declared title size can also resolve the choice. Missing requested versions and indistinguishable records are never silently replaced. See [product identity](ADVISOR.md#product-identity-and-clarification).
+
 The widget assigns a new `request_id` to each message and preserves it for retries, including after page navigation. The backend serializes chat and reset operations for the same session within the running process; other sessions use independent locks. Requests without `request_id` remain compatible but have no duplicate-result recovery.
 
 For identified requests, session state and the completed response, including session metadata, are committed together in SQLite. Sending the same authenticated session, identifier, trimmed message, price constraint, step override and original context again recovers the latest completed response without changing state or calling the model again. Reusing an identifier with different input, including a changed or omitted original context, returns `409` (`request_id_conflict`). Rate limits still apply to every HTTP attempt.

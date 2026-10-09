@@ -28,6 +28,8 @@ Browser interface (index.html)
 
 `src/advisor.py` coordinates the guided and free-form flows, restores conversation state, identifies active-product follow-ups, applies recommendation rules, enriches product cards and prepares catalog context for the LLM. `src/llm_resilience.py` handles retry and fallback behavior for Groq calls. `src/chat_budget.py` scopes the chat deadline and provider-call allowance to each request; catalog enrichment retains its separate batch policy. Transient chat failures are retryable HTTP errors, rather than saved conversation replies.
 
+`src/product_identity.py` prepares deterministic name aliases and matching patterns for the loaded snapshot. It distinguishes brand, concentration and declared title size, prioritizes more specific names and returns an explicit ambiguity instead of the first catalog record. Pending clarification stores candidate IDs and the original request in session state; existing widget quick replies confirm the choice without an additional API endpoint or model call.
+
 `src/recommendation_preferences.py` centralizes evidence and admission for both modes. Required constraints are checked against the complete runtime catalog; semantic retrieval ranks the surviving products. Confirmed preference matches take priority, with explicit notices for partial alternatives. The profile persists with session state, and stock, budget or note exclusions cannot be bypassed by the model's candidate selection.
 
 ### Search and indexing
@@ -75,6 +77,7 @@ Separate GitHub Actions workflows synchronize Shopify and progressively enrich t
 | ----------------------- | ------------------------------------------------ |
 | `src/main.py`           | FastAPI application and routes                   |
 | `src/advisor.py`        | Conversation and recommendation orchestration    |
+| `src/product_identity.py` | Deterministic named-product matching and clarification candidates |
 | `src/recommendation_preferences.py` | Catalog evidence, persistent preferences and deterministic admission |
 | `src/search.py`         | Runtime semantic retrieval and filtering         |
 | `src/reindex.py`        | ChromaDB index generation                        |

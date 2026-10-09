@@ -21,6 +21,16 @@ Customers can describe what they want directly, ask about a product, or refine a
 
 ## Recommendation process
 
+### Product identity and clarification
+
+`src/product_identity.py` prepares catalog name aliases and matching patterns at startup. Complete and more specific names take precedence over nested shorter names. Matching normalizes case, accents and punctuation, accepts common concentration abbreviations and uses the declared brand, concentration and title size to distinguish records. Names and catalog IDs remain separate: a named-product switch and later follow-ups use the ID, including when two brands share a title.
+
+An ambiguous reference receives a local clarification with no product cards, search or model call. Up to five existing quick-reply buttons show the brand and full title. More candidates require a narrower brand, concentration or format. Identical normalized visible identities are not resolved using arbitrary numbered buttons. High-confidence spelling suggestions are offered only for explicit information requests and always require confirmation.
+
+SQLite `guided_state.pending_product_choice` retains the original request, candidate IDs and visible-label mapping. Choosing a button or supplying a distinguishing hint resumes the original intent and budget; navigation and advisor restart preserve this state. A clear new search or conversation restart retires the pending choice. Failed processing retains the pending state, and identified-request recovery follows the existing atomic receipt contract. A removed or unavailable chosen ID is never substituted with another record.
+
+An explicitly requested concentration or size without a verified matching record receives clarification rather than a silent fallback. Size evidence comes from the product title: tags may list several Shopify variants and do not prove which variant supplies the stored price or purchase link. Selecting variants within one Shopify product remains a separate cart/integration concern. These rules are deterministic and do not interpret every possible natural-language spelling or comparison.
+
 For a request that needs product recommendations, the advisor:
 
 1. Updates the session's recognized preferences, requested notes, exclusions and price constraints.
