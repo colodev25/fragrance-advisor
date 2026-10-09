@@ -1823,7 +1823,7 @@
             : {};
         const product = {};
         [
-          "name", "brand", "family", "ptype", "story", "description", "traits",
+          "name", "brand", "family", "ptype", "story", "description", "traits", "variant_title",
         ].forEach((key) => {
           product[key] = plainText(
             source[key],
@@ -1831,6 +1831,7 @@
           );
         });
         product.ptype = displayPerfumeType(product.ptype);
+        product.currency = /^[A-Z]{3}$/.test(source.currency || "") ? source.currency : "EUR";
         product.traits = displayProductTraits(product.traits);
         ["add_to_cart_url", "product_page_url", "image_url"].forEach((key) => {
           product[key] = safeHttpUrl(source[key]);
@@ -1856,7 +1857,12 @@
         product.card_type =
           source.card_type === "slideover" ? "slideover" : "standard";
         product.is_open = source.is_open === true;
-        product.cart_added = source.cart_added === true;
+        // A historical purchase action is not the current Shopify cart state.
+        product.cart_added = false;
+        const linkedVariant = product.add_to_cart_url.match(/\/cart\/([1-9][0-9]*):1(?:\?|$)/)?.[1] || "";
+        const declaredVariant = String(source.variant_id || "");
+        product.variant_id = declaredVariant && declaredVariant !== linkedVariant ? "" : linkedVariant;
+        if (product.variant_title.toLowerCase() === "default title") product.variant_title = "";
         return product;
       }
 
@@ -1919,7 +1925,7 @@
           typeof prod.price === "number"
             ? new Intl.NumberFormat("it-IT", {
                 style: "currency",
-                currency: "EUR",
+                currency: prod.currency,
               }).format(prod.price)
             : prod.price
               ? prod.price + " €"
@@ -2001,13 +2007,22 @@
           }
         }
         const footer = dom("div", "oa-card-footer");
-        footer.appendChild(dom("div", "oa-card-price", price));
+        const priceGroup = dom("div");
+        priceGroup.style.cssText = "min-width:0;flex:1";
+        priceGroup.appendChild(dom("div", "oa-card-price", price));
+        const variantLabel = dom("div", "oa-card-variant", prod.variant_title);
+        variantLabel.style.cssText = "font-size:12px;overflow-wrap:anywhere;margin-top:4px";
+        variantLabel.hidden = !prod.variant_title;
+        priceGroup.appendChild(variantLabel);
+        footer.appendChild(priceGroup);
+        const purchase = shopifyPurchase(prod);
         const cart = dom(
           prod.add_to_cart_url ? "a" : "button",
           "oa-card-cart-btn",
         );
+        cart.style.flexShrink = "0";
         if (prod.add_to_cart_url) {
-          cart.href = prod.add_to_cart_url;
+          cart.href = purchase ? purchase.cart : (prod.product_page_url || prod.add_to_cart_url);
           cart.target = "_blank";
           cart.rel = "noopener noreferrer";
           cart.addEventListener("click", (event) =>
@@ -2029,11 +2044,17 @@
           dom(
             "span",
             "oa-cart-btn-text",
-            prod.cart_added ? "Nel Carrello" : "Aggiungi al Carrello",
+            purchase ? "Aggiungi al Carrello" : "Vedi sul sito",
           ),
         );
         footer.appendChild(cart);
         front.appendChild(footer);
+        const cartStatus = dom("div", "oa-cart-status");
+        cartStatus.hidden = true;
+        cartStatus.setAttribute("role", "status");
+        cartStatus.setAttribute("aria-live", "polite");
+        cartStatus.style.cssText = "font-size:12px;line-height:1.5;overflow-wrap:anywhere;margin-top:8px";
+        front.appendChild(cartStatus);
         card.appendChild(front);
 
         const slide = dom("div", "oa-card-slideover");
@@ -2697,31 +2718,126 @@
         }
       }
 
-      function handleAddToCart(event, btn) {
-        if (event) event.preventDefault();
-        if (!btn || btn.classList.contains("is-adding")) return;
-        const url = safeHttpUrl(btn.getAttribute("href"));
-        if (!url) return;
-        if (btn.classList.contains("is-added")) {
-          window.open(url, "_blank", "noopener,noreferrer");
+      function shopifyPurchase(product) {
+        // Cart mutations are restricted to the store hosting this widget.
+        if (location.protocol !== "https:" || !["etualy.com", "www.etualy.com"].includes(location.hostname)) return null;
+        try {
+          const page = new URL(product.product_page_url);
+          const add = new URL(product.add_to_cart_url);
+          if (page.origin !== location.origin || add.origin !== location.origin ||
+              !/^\/(?:[a-zA-Z-]+\/)?products\/[^/]+$/.test(page.pathname) ||
+              !/^[1-9][0-9]*$/.test(product.variant_id || "")) return null;
+          const route = window.Shopify?.routes?.root;
+          const root = typeof route === "string" && /^\/(?:[a-zA-Z-]+\/)?$/.test(route) ? route : "/";
+          return { id: product.variant_id, cart: location.origin + root + "cart",
+            add: root + "cart/add.js", product: root + "products/" + page.pathname.split("/").pop() + ".js" };
+        } catch (_) { return null; }
+      }
+
+      let cartMutationPending = false;
+      let cartController = null;
+      async function handleAddToCart(event, btn) {
+        const card = btn?.closest(".oa-product-card");
+        const product = cardRecords.get(card);
+        const normalized = normalizeProduct(product);
+        const purchase = shopifyPurchase(normalized);
+        // Ordinary links remain ordinary links outside the Shopify store.
+        if (!purchase || btn.classList.contains("is-added")) return;
+        event?.preventDefault();
+        const status = card.querySelector(".oa-cart-status");
+        status.hidden = false;
+        if (cartMutationPending) {
+          status.textContent = "Un'aggiunta è già in corso. Attendi prima di riprovare.";
           return;
         }
-        const cartIcon = btn.querySelector(".oa-btn-cart-icon");
-        const checkIcon = btn.querySelector(".oa-btn-check-icon");
-        const label = btn.querySelector(".oa-cart-btn-text");
+        cartMutationPending = true;
         btn.classList.add("is-adding");
-        if (cartIcon) cartIcon.style.display = "none";
-        if (checkIcon) checkIcon.style.display = "inline-block";
-        if (label) label.textContent = "Aggiunto!";
-        setTimeout(() => {
-          window.open(url, "_blank", "noopener,noreferrer");
-          btn.classList.remove("is-adding");
+        btn.setAttribute("aria-disabled", "true");
+        btn.setAttribute("aria-busy", "true");
+        const label = btn.querySelector(".oa-cart-btn-text");
+        label.textContent = "Aggiunta…";
+        status.textContent = "";
+        const controller = new AbortController();
+        cartController = controller;
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        let submitted = false;
+        let confirmedFailure = false;
+        const goToCart = () => {
           btn.classList.add("is-added");
-          if (label) label.textContent = "Nel Carrello";
-          const product = cardRecords.get(btn.closest(".oa-product-card"));
-          if (product) product.cart_added = true;
-          saveChatState();
-        }, 600);
+          label.textContent = "Vai al carrello";
+          btn.href = purchase.cart;
+        };
+        try {
+          // Recheck this exact variant before submitting, including old catalog records.
+          const detailsResponse = await fetch(purchase.product, { credentials: "same-origin", cache: "no-store", signal: controller.signal });
+          if (!detailsResponse.ok) throw new Error("Product lookup unavailable");
+          const details = await detailsResponse.json();
+          const variant = Array.isArray(details.variants) && details.variants.find((item) => String(item.id) === purchase.id);
+          if (!variant || variant.available !== true) {
+            status.textContent = "Questa variante non è più disponibile. Consulta il prodotto sul sito.";
+            btn.href = normalized.product_page_url;
+            btn.classList.add("is-added");
+            label.textContent = "Vedi sul sito";
+            return;
+          }
+          const currentTitle = plainText(variant.public_title || variant.title, 1000);
+          const displayTitle = currentTitle.toLowerCase() === "default title" ? "" : currentTitle;
+          const currentPrice = Number.isSafeInteger(variant.price) && variant.price >= 0 ? variant.price / 100 : null;
+          if (currentPrice === null) throw new Error("Invalid commercial data");
+          const activeCurrency = window.Shopify?.currency?.active;
+          const currency = typeof activeCurrency === "string" && /^[A-Z]{3}$/.test(activeCurrency) ? activeCurrency : "EUR";
+          const changed = currentPrice !== normalized.price || displayTitle !== normalized.variant_title || currency !== normalized.currency;
+          product.price = currentPrice;
+          product.currency = currency;
+          product.variant_title = displayTitle;
+          card.querySelector(".oa-card-price").textContent = new Intl.NumberFormat("it-IT", {
+            style: "currency", currency,
+          }).format(currentPrice);
+          const variantLabel = card.querySelector(".oa-card-variant");
+          variantLabel.textContent = displayTitle;
+          variantLabel.hidden = !displayTitle;
+          if (changed) {
+            status.textContent = "Prezzo e variante aggiornati. Controlla i dettagli e premi nuovamente per confermare l'aggiunta.";
+            saveChatState();
+            return;
+          }
+          submitted = true;
+          const response = await fetch(purchase.add, {
+            method: "POST", credentials: "same-origin", signal: controller.signal,
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ items: [{ id: purchase.id, quantity: 1 }] }),
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            confirmedFailure = response.status >= 400 && response.status < 500;
+            status.textContent = response.status === 422
+              ? "Shopify non può aggiungere questa variante: verifica disponibilità e quantità nel carrello."
+              : "Shopify non ha confermato l'aggiunta. Controlla il carrello prima di riprovare.";
+            if (!confirmedFailure) goToCart();
+            return;
+          }
+          const added = result.items?.find((item) => String(item.variant_id || item.id) === purchase.id);
+          if (!added || !Number.isInteger(added.quantity) || added.quantity < 1) throw new Error("Unconfirmed cart result");
+          goToCart();
+          btn.querySelector(".oa-btn-cart-icon").style.display = "none";
+          btn.querySelector(".oa-btn-check-icon").style.display = "inline-block";
+          status.textContent = "Aggiunto! Puoi continuare la conversazione oppure aprire il carrello.";
+        } catch (_) {
+          if (submitted && !confirmedFailure) {
+            goToCart();
+            status.textContent = "Non è possibile verificare l'esito. Controlla il carrello prima di aggiungere nuovamente il prodotto.";
+          } else {
+            status.textContent = "Non è possibile verificare il prodotto. Riprova tra poco o consulta la sua pagina sul sito.";
+          }
+        } finally {
+          clearTimeout(timeout);
+          cartController = null;
+          cartMutationPending = false;
+          btn.classList.remove("is-adding");
+          btn.removeAttribute("aria-disabled");
+          btn.removeAttribute("aria-busy");
+          if (!btn.classList.contains("is-added")) label.textContent = "Aggiungi al Carrello";
+        }
       }
 
       // BEGIN WIDGET REQUEST FLOW

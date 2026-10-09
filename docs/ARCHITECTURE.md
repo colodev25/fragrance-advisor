@@ -24,6 +24,10 @@ Browser interface (index.html)
 
 `src/main.py` initializes the advisor from the verified active index generation. Indexing is performed before startup, never inside the API lifecycle. Missing, incompatible or incomplete generations leave `/health` at `503`; chat requests receive a structured `503` response. The API validates request bounds and applies an in-memory per-client rate limit. The browser interface in `index.html` and its Shopify snippet render received fields through DOM properties and validate HTTP(S) URLs. Conversation state is stored as versioned JSON and recreated safely; its API base URL is configured in the page source. See [widget UI/UX](UI_UX.md).
 
+### Storefront purchases
+
+Cart operations run directly between the widget and Shopify, independently of chat/Render/Groq. On the same Etualy origin, the widget checks the exact variant through the localized Product Ajax API, then adds one unit through Cart Ajax. Changed price/options require explicit confirmation; ambiguous outcomes are not automatically retried. `src/cart_product.py` supplies verified catalog variant fields and legacy permalink compatibility. Theme-specific cart counters/drawers remain an integration task. See [purchase integration](UI_UX.md#purchase-integration).
+
 ### Conversation advisor
 
 `src/advisor.py` coordinates the guided and free-form flows, restores conversation state, identifies active-product follow-ups, applies recommendation rules, enriches product cards and prepares catalog context for the LLM. `src/llm_resilience.py` handles retry and fallback behavior for Groq calls. `src/chat_budget.py` scopes the chat deadline and provider-call allowance to each request; catalog enrichment retains its separate batch policy. Transient chat failures are retryable HTTP errors, rather than saved conversation replies.

@@ -9,7 +9,7 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Quick replies and progress:** contextual choice chips make guided answers easy to select, while a progress bar indicates the current step.
 - **Choosing the right product:** ambiguous names show a short clarification with brand/full-title buttons instead of a guessed product card. The choice survives navigation in the same tab; the original budget and request resume after confirmation. Missing requested versions are explained, and spelling suggestions require confirmation. Existing quick replies support this flow on desktop and mobile.
 - **Preferences that carry forward:** budget, recognized note exclusions and preferences remain active in subsequent searches. Both discovery modes prioritize confirmed matches; partial alternatives explain their differences. Unclear note constraints or conflicting budgets ask for clarification, with no misleading recommendation cards.
-- **Chat continuity:** the session identifier, private credential and version, structured messages, product data, quick replies, guided step and unsent draft are saved in sessionStorage. Restoring recreates elements and actions across pages in the same browser tab. Expanded card panels and cart feedback are also retained; closing the tab ends this local continuity.
+- **Chat continuity:** the session identifier, private credential and version, structured messages, product data, quick replies, guided step and unsent draft are saved in sessionStorage. Restoring recreates elements and actions across pages in the same browser tab. Expanded card panels are also retained; cart confirmations are not restored as current cart contents; closing the tab ends this local continuity.
 - **Natural chat feedback:** message bubbles, smooth scrolling and an animated typing indicator keep the conversation readable. Longer waits show progressive status messages for requests that may be delayed by a backend cold start.
 
 ## Product exploration
@@ -21,7 +21,7 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Clear fragrance profile:** concentration/type, recipient and season are separate items, for example “Eau de Parfum • Unisex • Primavera / Estate”. Source type strings are cleaned to avoid a repeated recipient, and season labels omit internal derivation annotations. Older saved and received profiles use the same display cleanup.
 - **Keyboard navigation:** the detail button exposes its expanded state. The inactive side is excluded from interaction, and closing the panel returns focus to the information button. Both note sections and the expanded state survive page navigation.
 - **Image loading and recovery:** product images load lazily with a shimmer placeholder and fade-in. Failed or unavailable images show a fragrance-themed fallback icon.
-- **Cart feedback:** adding a product gives immediate visual confirmation, then opens the store cart link.
+- **Verified cart:** on etualy.com, the same button checks the selected Shopify variant and adds one unit only after its current price and options have been presented. Success appears only after Shopify confirms the addition. “Vai al carrello” then opens the existing cart in a new tab, without adding again. Pending operations prevent duplicate clicks; unavailable variants and uncertain results receive clear messages. Outside the store, the button opens the product page without claiming an addition.
 
 ## Resilience and mobile interaction
 
@@ -48,3 +48,11 @@ New structured note sections require responses from the deployed backend that co
 ## Visual language
 
 The interface uses a restrained black, white and warm-gold palette, with Cormorant Garamond for editorial fragrance titles and Plus Jakarta Sans for interface text. The floating launcher uses a charcoal gradient, white fragrance icon and soft white glow to harmonize with the storefront's WhatsApp button; hover and keyboard focus keep the same monochrome style. Compact product cards, accord chips and subtle motion keep attention on the recommendation and its olfactory profile.
+
+### Purchase integration
+
+Variant titles come from the selected available Shopify variant, not fragrance tags. New ingestion records expose `variant_id`, `variant_title` and `variant_options`; old catalogs remain usable through their cart permalink ID. Before adding, the widget refreshes the exact variant through Shopify product JSON. A changed price or option requires a second explicit confirmation. Missing variants never fall back to another format. Network timeouts after submission do not trigger automatic retries: the customer is invited to inspect the cart.
+
+The integration uses locale-aware, same-origin Shopify Ajax endpoints on `etualy.com` or `www.etualy.com`. It needs no secret or additional paid service. It does not open or refresh a theme-specific cart drawer; that must be coordinated with the actual Shopify theme. The widget stays open after addition; opening the cart is a separate customer action.
+
+Integration references: [Shopify Cart API](https://shopify.dev/docs/api/ajax/reference/cart) and [Shopify Product API](https://shopify.dev/docs/api/ajax/reference/product).

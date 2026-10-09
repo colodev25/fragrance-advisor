@@ -8,6 +8,10 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Optional
 try:
+    from src.cart_product import cart_product_fields
+except ModuleNotFoundError:
+    from cart_product import cart_product_fields
+try:
     from src.product_identity import ProductIdentity, name_text
 except ModuleNotFoundError:
     from product_identity import ProductIdentity, name_text
@@ -360,6 +364,7 @@ class FragranceAdvisor:
         traits = ""
 
         if cat_match:
+            p_price = float(cat_match.get("price", p_price))
             # Recupero garantito di tutti gli URL e immagini dal catalogo master
             urls = cat_match.get("urls", {})
             p_page = urls.get("product_page", "") or p_page
@@ -424,8 +429,10 @@ class FragranceAdvisor:
 
         return {
             "name": p_name,
+            **cart_product_fields(cat_match or prod_dict),
             "brand": p_brand,
             "price": p_price,
+            "currency": (cat_match or prod_dict).get("currency", "EUR"),
             "family": p_family,
             "ptype": p_ptype,
             "add_to_cart_url": p_cart,
@@ -582,6 +589,7 @@ class FragranceAdvisor:
         urls = product.get("urls", {})
         return {
             "id": product["id"], "name": product["name"], "brand": product.get("brand", ""),
+            **cart_product_fields(product),
             "price": product["price"], "family": product.get("family", ""), "ptype": product.get("ptype", ""),
             "add_to_cart_url": urls.get("add_to_cart", ""), "product_page_url": urls.get("product_page", ""),
             "image_url": urls.get("image_url", ""), "document": product.get("semantic_text") or product.get("description", ""),
@@ -762,6 +770,7 @@ class FragranceAdvisor:
     def _product_data(product):
         urls = product.get("urls", {})
         return {
+            **cart_product_fields(product),
             "id": product["id"], "name": product["name"], "brand": product.get("brand", ""),
             "price": product["price"], "family": product.get("family", ""), "ptype": product.get("ptype", ""),
             "add_to_cart_url": urls.get("add_to_cart", ""), "product_page_url": urls.get("product_page", ""),

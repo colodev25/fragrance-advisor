@@ -111,3 +111,7 @@ The reindexer validates `data/catalog.json`, builds a new collection and activat
 Both support manual dispatch and share a concurrency group to prevent overlapping writes. They check out and publish catalog/queue changes to `feature/new-site`. In Italy, these schedules correspond to 04:00/04:35 in winter and 05:00/05:35 in summer. Scheduled workflows must also exist on the repository's default branch; checking out another branch inside a job does not activate its schedule.
 
 `scartati.json` remains a local report excluded from Git. Neither workflow publishes ChromaDB: Render builds the index during deployment. A commit containing only queue progress may also trigger deployment, depending on Render's build filters; excluding `data/catalog_enrichment_state.json` from deployment triggers can avoid unnecessary rebuilds. Shopify pagination errors or invalid/empty searchable catalogs fail the import; files are replaced atomically, with the primary catalog written after the other reports and before the queue. These writes are not a single transaction: rerunning synchronization or the nightly job reconciles the queue from the datasets.
+
+### Selected purchase variant
+
+Ingestion stores `variant_id`, `variant_title` and `variant_options` from the same first available variant used for SKU, price and the one-unit cart permalink. These fields are commercial data, not LLM enrichment. The next normal catalog sync populates them; existing catalogs remain compatible through permalink IDs, and Shopify checks the actual variant before addition.

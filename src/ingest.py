@@ -622,6 +622,10 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
         "name": title,
         "brand": brand,
         "sku": sku,
+        "variant_id": str(variant_id) if variant_id else "",
+        "variant_title": first_var.get("title", ""),
+        "variant_options": [str(first_var[key]) for key in ("option1", "option2", "option3")
+                            if first_var.get(key) and first_var[key] != "Default Title"],
         "price": price,
         "currency": "EUR",
         "in_stock": in_stock,

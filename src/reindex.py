@@ -16,6 +16,11 @@ except ModuleNotFoundError:
         EMBEDDING_MODEL, MANIFEST_VERSION, atomic_write_json, catalog_fingerprint,
         semantic_document, validate_catalog)
 
+try:
+    from src.cart_product import cart_product_fields
+except ModuleNotFoundError:
+    from cart_product import cart_product_fields
+
 DATA_PATH = CATALOG_PATH
 
 
@@ -41,6 +46,7 @@ def build_index(catalog_path=DATA_PATH, chroma_path=CHROMA_PATH, client_factory=
             "name": product["name"], "brand": product.get("brand", ""),
             "price": float(product["price"]), "family": product.get("family", ""),
             "ptype": product.get("ptype", ""), "in_stock": True,
+            **cart_product_fields(product),
             "add_to_cart_url": product["urls"]["add_to_cart"],
             "product_page_url": product["urls"]["product_page"],
             "image_url": product["urls"].get("image_url", ""),

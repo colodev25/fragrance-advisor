@@ -64,13 +64,17 @@ after(async () => {
   if (browser) await browser.close();
 });
 
-async function fixture(t, file, seed = {}) {
+async function fixture(t, file, seed = {}, store = false) {
+  if (store) seed = { [stateKey]: stored([{ kind: 'welcome' }]), ...seed };
   const revisions = new Map();
   const context = await browser.newContext({ serviceWorkers: 'block' });
   t.after(() => context.close());
   const errors = [];
   const requests = [];
   const responses = [];
+  const cartRequests = [];
+  const cartResponses = [];
+  const productResponses = [];
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('dialog', (dialog) => { errors.push('Unexpected browser dialog'); dialog.dismiss(); });
@@ -88,8 +92,21 @@ async function fixture(t, file, seed = {}) {
   await context.route('**/*', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    if (url.origin === 'https://widget.test' && url.pathname === '/widget') {
+    if (url.origin === (store ? 'https://etualy.com' : 'https://widget.test') && url.pathname === '/widget') {
       return route.fulfill({ contentType: 'text/html; charset=utf-8', body: instrumentedHtml(file) });
+    }
+    if (store && url.origin === 'https://etualy.com' && url.pathname.endsWith('/products/iris.js')) {
+      const response = productResponses.shift() || { status: 200, body: {
+        variants: [{ id: 1, price: 9000, title: '50 ml', available: true }],
+      } };
+      return route.fulfill({ status: response.status, contentType: 'application/json', body: JSON.stringify(response.body) });
+    }
+    if (store && url.origin === 'https://etualy.com' && url.pathname.endsWith('/cart/add.js')) {
+      cartRequests.push({ path: url.pathname, method: request.method(), body: request.postDataJSON() });
+      const response = cartResponses.shift() || { status: 200, body: { items: [{ id: 1, variant_id: 1, quantity: 1 }] } };
+      if (response.abort) return route.abort();
+      if (response.delay) await new Promise((resolve) => setTimeout(resolve, response.delay));
+      return route.fulfill({ status: response.status, contentType: 'application/json', body: JSON.stringify(response.body) });
     }
     if (url.origin === 'https://fragrance-advisor-api.onrender.com') {
       if (request.method() === 'OPTIONS') {
@@ -122,11 +139,11 @@ async function fixture(t, file, seed = {}) {
     // Includes fonts, images and any injected resource: no real network access.
     return route.abort();
   });
-  await page.goto('https://widget.test/widget', { waitUntil: 'domcontentloaded' });
+  await page.goto(store ? 'https://etualy.com/widget' : 'https://widget.test/widget', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => Boolean(window.__widgetTest));
   await page.locator('#oaLauncher').click();
   t.after(() => assert.deepEqual(errors, [], 'No JavaScript errors or unexpected dialogs'));
-  return { page, requests, responses };
+  return { page, requests, responses, cartRequests, cartResponses, productResponses };
 }
 
 function stored(messages, options = []) {
@@ -187,6 +204,147 @@ test('Available widget variants contain the same request coordination', () => {
 });
 
 for (const file of files) {
+  async function cartCard(page, extra = {}) {
+    await page.evaluate((extra) => {
+      window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Prodotto', products: [{
+        name: 'Iris', price: 90, variant_id: '1', variant_title: '50 ml',
+        product_page_url: 'https://etualy.com/products/iris', add_to_cart_url: 'https://etualy.com/cart/1:1',
+        ...extra,
+      }] });
+      window.__widgetTest.saveChatState();
+    }, extra);
+    const buttons = page.locator('#oaMessages .oa-card-cart-btn');
+    return buttons.nth((await buttons.count()) - 1);
+  }
+
+  test(`${file}: Shopify addition is confirmed and subsequent action only opens the cart`, async (t) => {
+    const { page, cartRequests } = await fixture(t, file, {}, true);
+    await page.evaluate(() => { window.Shopify = { routes: { root: '/it/' } }; });
+    const button = await cartCard(page);
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    assert.deepEqual(cartRequests, [{ path: '/it/cart/add.js', method: 'POST', body: { items: [{ id: '1', quantity: 1 }] } }]);
+    assert.equal(await button.textContent(), 'Vai al carrello');
+    assert.equal(await button.getAttribute('href'), 'https://etualy.com/it/cart');
+    assert.equal(await button.getAttribute('target'), '_blank');
+    assert.equal(await page.evaluate(() => window.__opened.length), 0);
+    assert.notEqual(await page.evaluate(() => window.__widgetTest.records().at(-1).products[0].cart_added), true);
+    await page.reload();
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('.oa-card-cart-btn').textContent(), 'Aggiungi al Carrello');
+  });
+
+  for (const [title, response, message] of [
+    ['out of stock', { status: 422, body: { status: 422, description: 'Sold out' } }, 'Shopify non può'],
+    ['lost response', { abort: true }, "Non è possibile verificare l'esito"],
+    ['invalid success', { status: 200, body: { items: [{ id: 2, quantity: 1 }] } }, "Non è possibile verificare l'esito"],
+    ['server failure', { status: 503, body: {} }, 'Shopify non ha confermato'],
+  ]) {
+    test(`${file}: cart ${title} never displays false success or automatically retries`, async (t) => {
+      const { page, cartRequests, cartResponses } = await fixture(t, file, {}, true);
+      cartResponses.push(response);
+      const button = await cartCard(page);
+      await button.click();
+      await page.waitForFunction((message) => document.querySelector('.oa-cart-status').textContent.startsWith(message), message);
+      assert.equal(cartRequests.length, 1);
+      assert.equal(await page.locator('.oa-cart-status').textContent().then((text) => text.includes('Aggiunto!')), false);
+      assert.equal(await button.getAttribute('aria-busy'), null);
+      assert.equal(await button.textContent(), title === 'out of stock' ? 'Aggiungi al Carrello' : 'Vai al carrello');
+    });
+  }
+
+  test(`${file}: current variant price and format require confirmation and fit on mobile`, async (t) => {
+    const { page, cartRequests, productResponses } = await fixture(t, file, {}, true);
+    await page.setViewportSize({ width: 360, height: 740 });
+    productResponses.push({ status: 200, body: { variants: [{ id: 1, price: 9500, title: '100 ml / Edizione speciale', available: true }] } });
+    const button = await cartCard(page, { variant_title: '' });
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Prezzo e variante'));
+    assert.equal(cartRequests.length, 0);
+    assert.equal(await page.locator('.oa-card-variant').textContent(), '100 ml / Edizione speciale');
+    assert.match(await page.locator('.oa-card-price').textContent(), /95/);
+    productResponses.push({ status: 200, body: { variants: [{ id: 1, price: 9500, title: '100 ml / Edizione speciale', available: true }] } });
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    assert.equal(cartRequests.length, 1);
+    assert.equal(await page.locator('.oa-product-card').evaluate((el) => el.scrollWidth <= el.clientWidth), true);
+  });
+
+  test(`${file}: missing or unavailable exact variant never adds a substitute`, async (t) => {
+    const { page, cartRequests, productResponses } = await fixture(t, file, {}, true);
+    productResponses.push({ status: 200, body: { variants: [{ id: 2, available: true, title: '100 ml', price: 12000 }] } });
+    const button = await cartCard(page);
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.includes('non è più disponibile'));
+    assert.equal(cartRequests.length, 0);
+    assert.equal(await button.textContent(), 'Vedi sul sito');
+    assert.equal(await button.getAttribute('href'), 'https://etualy.com/products/iris');
+  });
+
+  test(`${file}: product lookup failure can retry safely without submitting an addition`, async (t) => {
+    const { page, cartRequests, productResponses } = await fixture(t, file, {}, true);
+    productResponses.push({ status: 503, body: {} });
+    const button = await cartCard(page);
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Non è possibile verificare il prodotto'));
+    assert.equal(cartRequests.length, 0);
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    assert.equal(cartRequests.length, 1);
+  });
+
+  test(`${file}: unavailable stock does not mutate cart`, async (t) => {
+    const { page, cartRequests, productResponses } = await fixture(t, file, {}, true);
+    productResponses.push({ status: 200, body: { variants: [{ id: 1, available: false, title: '50 ml', price: 9000 }] } });
+    const button = await cartCard(page);
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.includes('non è più disponibile'));
+    assert.equal(cartRequests.length, 0);
+  });
+
+  test(`${file}: cart timeout preserves uncertainty and never resubmits automatically`, async (t) => {
+    const { page } = await fixture(t, file, {}, true);
+    await page.clock.install();
+    await page.evaluate(() => {
+      const original = window.fetch;
+      window.__cartAttempts = 0;
+      window.fetch = (url, options) => {
+        if (!String(url).endsWith('cart/add.js')) return original(url, options);
+        window.__cartAttempts++;
+        return new Promise((resolve, reject) => options.signal.addEventListener('abort',
+          () => reject(new DOMException('Aborted', 'AbortError')), { once: true }));
+      };
+    });
+    const button = await cartCard(page);
+    await button.click();
+    await page.waitForFunction(() => window.__cartAttempts === 1);
+    await page.clock.fastForward(15001);
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith("Non è possibile verificare l'esito"));
+    assert.equal(await button.textContent(), 'Vai al carrello');
+    assert.equal(await page.evaluate(() => window.__cartAttempts), 1);
+  });
+
+  test(`${file}: cart pending blocks other card additions and shows no premature success`, async (t) => {
+    const { page, cartRequests, cartResponses } = await fixture(t, file, {}, true);
+    cartResponses.push({ status: 200, delay: 600, body: { items: [{ id: 1, quantity: 1 }] } });
+    const first = await cartCard(page);
+    const second = await cartCard(page);
+    await first.click();
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').getAttribute('aria-busy') === 'true');
+    await second.click();
+    assert.match(await page.locator('.oa-cart-status').last().textContent(), /già in corso/);
+    assert.equal(await first.textContent(), 'Aggiunta…');
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    assert.equal(cartRequests.length, 1);
+  });
+
+  test(`${file}: cross-origin and conflicting variants only link to product without cart writes`, async (t) => {
+    const { page, cartRequests } = await fixture(t, file, {}, true);
+    await cartCard(page, { variant_id: '2' });
+    await cartCard(page, { product_page_url: 'https://evil.test/products/iris' });
+    for (const button of await page.locator('.oa-card-cart-btn').all()) assert.equal(await button.textContent(), 'Vedi sul sito');
+    assert.equal(cartRequests.length, 0);
+  });
   test(`${file}: complete script has valid syntax`, () => {
     assert.doesNotThrow(() => new vm.Script(script(file), { filename: file }));
   });
@@ -265,9 +423,8 @@ for (const file of files) {
     await page.waitForFunction(() => document.querySelector('#oaMessages img')?.classList.contains('is-loaded'));
     assert.equal(await page.locator('#oaMessages img').getAttribute('alt'), 'Iris "speciale" <edizione>');
     assert.equal(await page.locator('#oaMessages .oa-card-front .oa-card-title-link').getAttribute('href'), 'https://shop.test/products/iris');
-    await page.locator('#oaMessages .oa-card-cart-btn').click();
-    await page.waitForFunction(() => window.__opened.length === 1);
-    assert.deepEqual(await page.evaluate(() => window.__opened[0]), ['https://shop.test/cart/1:1', '_blank', 'noopener,noreferrer']);
+    assert.equal(await page.locator('#oaMessages .oa-card-cart-btn').textContent(), 'Vedi sul sito');
+    assert.equal(await page.locator('#oaMessages .oa-card-cart-btn').getAttribute('href'), 'https://shop.test/products/iris');
     await assertSafe(page);
   });
 

@@ -99,3 +99,9 @@ One earlier Windows run encountered a temporary `PermissionError` during a catal
 ## Adding coverage
 
 Choose tests by the behavior being changed: parser and rule tests for extraction logic, API tests for request or response contracts, session-store tests for persistence, and scenario tests for complete advisor flows. Add live-service checks only when an external call is required; keep deterministic behavior covered with mocks.
+
+## Verified Shopify cart — R04
+
+On 9 October 2026, the offline Python suite passed **368 tests**, with 6 live-service tests deselected. A complete browser run passed **222 checks**; the final focused run passed **42 checks**, including 3 newly added virtual-clock cart timeouts. The browser suite now contains 222 distinct checks when the local DevTools snippet is present. Every external request was intercepted; no store cart was changed and no Groq quota was used.
+
+Cart regressions cover confirmed one-unit additions, locale-aware endpoints, no premature success, errors and lost/invalid responses, timeout without resubmission, changed price/options requiring confirmation, unavailable/missing variants, simultaneous card actions, origin restrictions, mobile layout and restoration without stale cart claims. Python checks cover selected-variant ingestion and legacy purchase links. Live acceptance must still check the actual theme's cart counter/drawer and preservation of existing items; the widget does not manipulate theme-specific drawer components.

@@ -154,3 +154,7 @@ CORS exposes `Retry-After` so the storefront can read the cooldown header. `ALLO
 Keep credentials out of source control. The advisor and ingestion modules load a root `.env` file, which is suitable for local `GROQ_API_KEY`, `SESSIONS_DB_PATH` and `SHOPIFY_STORE_URL` configuration. `ALLOWED_ORIGINS` is read by `src/main.py` when the app module is imported, before the advisor loads `.env`; set it in the process environment before starting the server (or configure Uvicorn to load the file). The model names are read when `src/llm_resilience.py` is imported, so configure `GROQ_PRIMARY_MODEL` and `GROQ_FALLBACK_MODEL` in the process environment before startup as well.
 
 Set `RATE_LIMIT_TRUST_PROXY_HEADERS=true` only when the application is behind a trusted proxy that overwrites `X-Forwarded-For`, such as the configured production proxy. Otherwise a direct caller could provide a forged header and bypass an IP-based limit.
+
+### Commercial card fields
+
+Product cards include `variant_id` (a string) and `variant_title` from the master catalog. Legacy catalogs derive only the ID from the exact one-unit Shopify permalink; format is never inferred from tags. Cart writes run directly from the storefront widget through Shopify Ajax, not through the chatbot API or Groq. Prices are catalog snapshots; the widget checks current variant data before a purchase and asks for confirmation if it differs.
