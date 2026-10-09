@@ -1348,7 +1348,13 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Cardamomo",
+      "Rosa di Taif",
+      "Davana",
+      "Oud",
+      "Musk"
+    ],
     "family": "Legnosa",
     "family_inference": null,
     "data_provenance": {
@@ -1357,9 +1363,87 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Cardamomo",
+          "position": null,
+          "evidence": "abbraccio caldo e speziato del cardamomo",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Rosa di Taif",
+          "position": null,
+          "evidence": "raffinatezza vellutata della rosa di Taif",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Davana",
+          "position": null,
+          "evidence": "sfumature aromatiche della davana",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Oud",
+          "position": null,
+          "evidence": "Nel cuore, l’oud rivela una bellezza senza tempo",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Musk",
+          "position": null,
+          "evidence": "Sul fondo, il musk svela la sua anima più morbida e pura",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "5415f0d93095c7ec2de6f97f3ec247f6c2b04af715ab0a39ebbf8735c2228b08",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Cardamomo",
+            "position": null,
+            "evidence": "abbraccio caldo e speziato del cardamomo"
+          },
+          {
+            "name": "Rosa di Taif",
+            "position": null,
+            "evidence": "raffinatezza vellutata della rosa di Taif"
+          },
+          {
+            "name": "Davana",
+            "position": null,
+            "evidence": "sfumature aromatiche della davana"
+          },
+          {
+            "name": "Oud",
+            "position": null,
+            "evidence": "Nel cuore, l’oud rivela una bellezza senza tempo"
+          },
+          {
+            "name": "Musk",
+            "position": null,
+            "evidence": "Sul fondo, il musk svela la sua anima più morbida e pura"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Legnosa"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Oud Blond Parfum",
       "brand": "Pesade",
@@ -1395,7 +1479,7 @@
       "add_to_cart": "https://etualy.com/cart/55204734730574:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-oud-blond-parfum-30-ml.png?v=1765978039"
     },
-    "semantic_text": "Profumo Oud Blond Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Carattere, contesto d'uso e occasioni: Ideale per personalità raffinate e sicure, che cercano un profumo intenso ma equilibrato. Perfetto per chi ama le fragranze di nicchia unisex, sofisticate, calde e avvolgenti, capaci di distinguersi senza ostentazione. Particolarmente indicato per la sera e per occasioni speciali, questo profumo esp"
+    "semantic_text": "Profumo Oud Blond Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Note citate senza posizione dichiarata: Cardamomo, Rosa di Taif, Davana, Oud, Musk. Carattere, contesto d'uso e occasioni: Ideale per personalità raffinate e sicure, che cercano un profumo intenso ma equilibrato. Perfetto per chi ama le fragranze di nicchia unisex, sofisticate, calde e avvolgenti, capaci di distinguersi senza ostentazione. Particolarmente indicato per la sera e per occasioni speciali, questo profumo esp"
   },
   {
     "id": "sh_10853323178318",
@@ -1424,7 +1508,11 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Iris",
+      "Vetiver",
+      "Cuoio"
+    ],
     "family": "Orientale, Legnosa, Cuoiata",
     "family_inference": null,
     "data_provenance": {
@@ -1433,9 +1521,57 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Iris",
+          "position": null,
+          "evidence": "l’iris misterioso",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vetiver",
+          "position": null,
+          "evidence": "struttura intensa del vetiver",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cuoio",
+          "position": null,
+          "evidence": "cuoio, delicato ma audace",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "46381729e01e8b361fb7bf977f56c8df46710e3a143152dbb255b7fe3d725cb9",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Iris",
+            "position": null,
+            "evidence": "l’iris misterioso"
+          },
+          {
+            "name": "Vetiver",
+            "position": null,
+            "evidence": "struttura intensa del vetiver"
+          },
+          {
+            "name": "Cuoio",
+            "position": null,
+            "evidence": "cuoio, delicato ma audace"
+          }
+        ],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "De Nude Parfum",
       "brand": "Pesade",
@@ -1473,7 +1609,7 @@
       "add_to_cart": "https://etualy.com/cart/55204040933710:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-de-nude-edp-30-ml.png?v=1765964961"
     },
-    "semantic_text": "Profumo De Nude Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Orientale, Legnosa, Cuoiata. Tag: 100 ml, 30 ml, Cuoiata, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Orientale, Per lei, Per lui. Carattere, contesto d'uso e occasioni: De Nude è ideale per chi ama i profumi intensi e raffinati, per personalità sicure, eleganti e profondamente sensoriali. Perfetto per chi cerca una fragranza unisex di nicchia, capace di esprimere carattere senza eccessi e di raccontare una bellezza autentica. Particolarmente indicato per la sera e "
+    "semantic_text": "Profumo De Nude Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Orientale, Legnosa, Cuoiata. Tag: 100 ml, 30 ml, Cuoiata, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Orientale, Per lei, Per lui. Note citate senza posizione dichiarata: Iris, Vetiver, Cuoio. Carattere, contesto d'uso e occasioni: De Nude è ideale per chi ama i profumi intensi e raffinati, per personalità sicure, eleganti e profondamente sensoriali. Perfetto per chi cerca una fragranza unisex di nicchia, capace di esprimere carattere senza eccessi e di raccontare una bellezza autentica. Particolarmente indicato per la sera e "
   },
   {
     "id": "sh_10853295784270",
@@ -1502,7 +1638,13 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Neroli",
+      "Petitgrain",
+      "Cashmeran",
+      "Musk",
+      "Cetalox"
+    ],
     "family": "Legnosa, Floreale, Muschiata",
     "family_inference": null,
     "data_provenance": {
@@ -1511,9 +1653,87 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Neroli",
+          "position": null,
+          "evidence": "L’apertura è affidata al neroli",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Petitgrain",
+          "position": null,
+          "evidence": "Nel cuore, l’intensità raffinata del petitgrain",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cashmeran",
+          "position": null,
+          "evidence": "cashmeran",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Musk",
+          "position": null,
+          "evidence": "fondo di musk",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cetalox",
+          "position": null,
+          "evidence": "cetalox",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "dad2df69cdf3fbdba6b969507faae4f2789f7e97e9dcae3fbf774f70d2a4fab6",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "neroli",
+            "position": null,
+            "evidence": "L’apertura è affidata al neroli"
+          },
+          {
+            "name": "petitgrain",
+            "position": null,
+            "evidence": "Nel cuore, l’intensità raffinata del petitgrain"
+          },
+          {
+            "name": "cashmeran",
+            "position": null,
+            "evidence": "cashmeran"
+          },
+          {
+            "name": "musk",
+            "position": null,
+            "evidence": "fondo di musk"
+          },
+          {
+            "name": "cetalox",
+            "position": null,
+            "evidence": "cetalox"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Legnosa, Floreale, Muschiata"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "An Unseen Parfum",
       "brand": "Pesade",
@@ -1551,7 +1771,7 @@
       "add_to_cart": "https://etualy.com/cart/55203896918350:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-an-unseen-edp-30-ml.png?v=1765963610"
     },
-    "semantic_text": "Profumo An Unseen Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa, Floreale, Muschiata. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Floreale, Fragranze, Legnosa, Muschiata, Per lei, Per lui. Carattere, contesto d'uso e occasioni: An Unseen è perfetto per chi ama i profumi puliti, eleganti e contemporanei, per personalità sensibili, curate e naturalmente sofisticate. Ideale per chi cerca una fragranza unisex di nicchia, delicata ma riconoscibile, capace di accompagnare con discrezione. Perfetto per il giorno, per ambienti lum"
+    "semantic_text": "Profumo An Unseen Parfum di Pesade. Tipologia: Parfum, unisex. Famiglia olfattiva: Legnosa, Floreale, Muschiata. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Floreale, Fragranze, Legnosa, Muschiata, Per lei, Per lui. Note citate senza posizione dichiarata: Neroli, Petitgrain, Cashmeran, Musk, Cetalox. Carattere, contesto d'uso e occasioni: An Unseen è perfetto per chi ama i profumi puliti, eleganti e contemporanei, per personalità sensibili, curate e naturalmente sofisticate. Ideale per chi cerca una fragranza unisex di nicchia, delicata ma riconoscibile, capace di accompagnare con discrezione. Perfetto per il giorno, per ambienti lum"
   },
   {
     "id": "sh_10852483072334",
@@ -1579,7 +1799,10 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Tè Nero",
+      "Legno di Cedro"
+    ],
     "family": "Orientale, Legnosa",
     "family_inference": null,
     "data_provenance": {
@@ -1588,9 +1811,44 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Tè Nero",
+          "position": null,
+          "evidence": "combinazione misteriosa di tè nero delicato",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Legno di Cedro",
+          "position": null,
+          "evidence": "fondo caldo e morbido di legno di cedro",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "410304573b0648b2f1cb9738bc8d236d1753b2817fec45ee8012ef04cd1892ec",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Tè Nero",
+            "position": null,
+            "evidence": "combinazione misteriosa di tè nero delicato"
+          },
+          {
+            "name": "Legno di Cedro",
+            "position": null,
+            "evidence": "fondo caldo e morbido di legno di cedro"
+          }
+        ],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "The new error edp",
       "brand": "Pesade",
@@ -1627,7 +1885,7 @@
       "add_to_cart": "https://etualy.com/cart/55199424938318:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-the-new-error-edp-30-ml.png?v=1765874722"
     },
-    "semantic_text": "Profumo The new error edp di Pesade. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Orientale, Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Orientale, Per lei, Per lui. Carattere, contesto d'uso e occasioni: The New Error è pensato per persone raffinate e sofisticate, che amano fragranze ricercate e non convenzionali. Ideale per chi sfida le regole, rifiuta le definizioni rigide e sceglie un profumo unisex di nicchia come espressione della propria individualità. Perfetto sia di giorno che di sera, The N"
+    "semantic_text": "Profumo The new error edp di Pesade. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Orientale, Legnosa. Tag: 100 ml, 30 ml, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Orientale, Per lei, Per lui. Note citate senza posizione dichiarata: Tè Nero, Legno di Cedro. Carattere, contesto d'uso e occasioni: The New Error è pensato per persone raffinate e sofisticate, che amano fragranze ricercate e non convenzionali. Ideale per chi sfida le regole, rifiuta le definizioni rigide e sceglie un profumo unisex di nicchia come espressione della propria individualità. Perfetto sia di giorno che di sera, The N"
   },
   {
     "id": "sh_10845509189966",
@@ -1655,7 +1913,16 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Patchouli",
+      "Rosa",
+      "Orchidea",
+      "Mughetto",
+      "Legno di Cedro",
+      "Ambra",
+      "Muschio",
+      "Limone"
+    ],
     "family": "Legnosa, Aromatica",
     "family_inference": null,
     "data_provenance": {
@@ -1664,9 +1931,126 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Patchouli",
+          "position": null,
+          "evidence": "patchouli fresco",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Rosa",
+          "position": null,
+          "evidence": "Rosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Orchidea",
+          "position": null,
+          "evidence": "Orchidea",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Mughetto",
+          "position": null,
+          "evidence": "Mughetto",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Legno di Cedro",
+          "position": null,
+          "evidence": "Legno di Cedro",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambra",
+          "position": null,
+          "evidence": "Ambra",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio",
+          "position": null,
+          "evidence": "Muschio",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Limone",
+          "position": null,
+          "evidence": "Limone",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "19f63c0e2e99d05ec49c44978492c234b3508a9f592c408cd7f975ad3b495603",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Patchouli",
+            "position": null,
+            "evidence": "patchouli fresco"
+          },
+          {
+            "name": "Rosa",
+            "position": null,
+            "evidence": "Rosa"
+          },
+          {
+            "name": "Orchidea",
+            "position": null,
+            "evidence": "Orchidea"
+          },
+          {
+            "name": "Mughetto",
+            "position": null,
+            "evidence": "Mughetto"
+          },
+          {
+            "name": "Legno di Cedro",
+            "position": null,
+            "evidence": "Legno di Cedro"
+          },
+          {
+            "name": "Ambra",
+            "position": null,
+            "evidence": "Ambra"
+          },
+          {
+            "name": "Muschio",
+            "position": null,
+            "evidence": "Muschio"
+          },
+          {
+            "name": "Limone",
+            "position": null,
+            "evidence": "Limone"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Legnosa, Aromatica"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Mid Mountain EDP",
       "brand": "Pesade",
@@ -1703,7 +2087,7 @@
       "add_to_cart": "https://etualy.com/cart/55173048697166:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/pesade-mid-mountain-edp-30-ml_1.png?v=1765961481"
     },
-    "semantic_text": "Profumo Mid Mountain EDP di Pesade. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Legnosa, Aromatica. Tag: 100 ml, 30 ml, Aromatica, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Carattere, contesto d'uso e occasioni: Perfetto per chi ama i profumi sofisticati ma non convenzionali, per chi cerca sensualità senza eccessi e ama distinguersi con discrezione. Ideale per personalità romantiche, curiose, un po’ misteriose, che preferiscono lasciare il segno con eleganza. Mid Mountain è il compagno ideale per la sera, p"
+    "semantic_text": "Profumo Mid Mountain EDP di Pesade. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Legnosa, Aromatica. Tag: 100 ml, 30 ml, Aromatica, da 101€ a 200€, da 51€ a 100€, Eau de Parfum, Fragranze, Legnosa, Per lei, Per lui. Note citate senza posizione dichiarata: Patchouli, Rosa, Orchidea, Mughetto, Legno di Cedro, Ambra, Muschio, Limone. Carattere, contesto d'uso e occasioni: Perfetto per chi ama i profumi sofisticati ma non convenzionali, per chi cerca sensualità senza eccessi e ama distinguersi con discrezione. Ideale per personalità romantiche, curiose, un po’ misteriose, che preferiscono lasciare il segno con eleganza. Mid Mountain è il compagno ideale per la sera, p"
   },
   {
     "id": "sh_10837739176270",
@@ -1729,7 +2113,14 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Bocciolo di ribes nero",
+      "Rosa fumosa",
+      "Incenso",
+      "Inchiostro nero",
+      "Aldeidi metalliche",
+      "Resina di opoponax"
+    ],
     "family": "Chypre",
     "family_inference": null,
     "data_provenance": {
@@ -1738,9 +2129,100 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Bocciolo di ribes nero",
+          "position": null,
+          "evidence": "Bocciolo di ribes nero",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Rosa fumosa",
+          "position": null,
+          "evidence": "Rosa fumosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Incenso",
+          "position": null,
+          "evidence": "Incenso",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Inchiostro nero",
+          "position": null,
+          "evidence": "Inchiostro nero",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Aldeidi metalliche",
+          "position": null,
+          "evidence": "Aldeidi metalliche",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Resina di opoponax",
+          "position": null,
+          "evidence": "Resina di opoponax",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "7478ac9008c2f869be533c219403c39ae430975c7d2b4f197a6fae820f26895b",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Bocciolo di ribes nero",
+            "position": null,
+            "evidence": "Bocciolo di ribes nero"
+          },
+          {
+            "name": "Rosa fumosa",
+            "position": null,
+            "evidence": "Rosa fumosa"
+          },
+          {
+            "name": "Incenso",
+            "position": null,
+            "evidence": "Incenso"
+          },
+          {
+            "name": "Inchiostro nero",
+            "position": null,
+            "evidence": "Inchiostro nero"
+          },
+          {
+            "name": "Aldeidi metalliche",
+            "position": null,
+            "evidence": "Aldeidi metalliche"
+          },
+          {
+            "name": "Resina di opoponax",
+            "position": null,
+            "evidence": "Resina di opoponax"
+          }
+        ],
+        "family": {
+          "name": "Chypre",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Chypre"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Ensang Noir EDP",
       "brand": "L'Entropiste",
@@ -1776,7 +2258,7 @@
       "add_to_cart": "https://etualy.com/cart/55146266788174:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/l_entropiste-ensang-noir-100-ml_2ce84e6b-3f8e-4a74-90bc-f37d70f0d082.png?v=1763991096"
     },
-    "semantic_text": "Profumo Ensang Noir EDP di L'Entropiste. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Chypre. Tag: 100 ml, 200€ e oltre, 50 ml, Chypre, Eau de Parfum, Fragranze, Per lei, Per lui. Carattere, contesto d'uso e occasioni: Ensang Noir L’Entropiste è perfetto per chi ama profumi che raccontano una storia, per gli spiriti intensi, poetici, un po’ enigmatici. È la fragranza ideale per chi non teme le ombre, per chi trova bellezza nei contrasti e desidera indossare qualcosa di profondamente personale, quasi intimo. Si ada"
+    "semantic_text": "Profumo Ensang Noir EDP di L'Entropiste. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Chypre. Tag: 100 ml, 200€ e oltre, 50 ml, Chypre, Eau de Parfum, Fragranze, Per lei, Per lui. Note citate senza posizione dichiarata: Bocciolo di ribes nero, Rosa fumosa, Incenso, Inchiostro nero, Aldeidi metalliche, Resina di opoponax. Carattere, contesto d'uso e occasioni: Ensang Noir L’Entropiste è perfetto per chi ama profumi che raccontano una storia, per gli spiriti intensi, poetici, un po’ enigmatici. È la fragranza ideale per chi non teme le ombre, per chi trova bellezza nei contrasti e desidera indossare qualcosa di profondamente personale, quasi intimo. Si ada"
   },
   {
     "id": "sh_10832073228622",
@@ -2045,7 +2527,11 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Pepe Rosa",
+      "Rosa",
+      "Hedione"
+    ],
     "family": "Floreale, Gourmand",
     "family_inference": null,
     "data_provenance": {
@@ -2054,9 +2540,57 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Pepe Rosa",
+          "position": null,
+          "evidence": "brivido di pepe rosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Rosa",
+          "position": null,
+          "evidence": "rosa carnale",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Hedione",
+          "position": null,
+          "evidence": "magia dell’Hedione",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "68daa993784210b90d2e66c1e243771dcc81b039954e377b2e7feaff440dbee1",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Pepe Rosa",
+            "position": null,
+            "evidence": "brivido di pepe rosa"
+          },
+          {
+            "name": "Rosa",
+            "position": null,
+            "evidence": "rosa carnale"
+          },
+          {
+            "name": "Hedione",
+            "position": null,
+            "evidence": "magia dell’Hedione"
+          }
+        ],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "Can't Get Enough EDP 90 ml",
       "brand": "Initio",
@@ -2090,7 +2624,7 @@
       "add_to_cart": "https://etualy.com/cart/54987021713742:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/initio-cant-get-enough-edp.png?v=1760607383"
     },
-    "semantic_text": "Profumo Can't Get Enough EDP 90 ml di Initio. Tipologia: Eau de Parfum, femminile. Famiglia olfattiva: Floreale, Gourmand. Tag: 200€ e oltre, 90 ml, Floreale, Gourmand, Per lei. Carattere, contesto d'uso e occasioni: Perfetto per chi ama i profumi sensuali ma con carattere, per chi non teme di essere notato e desiderato. Can’t Get Enough è per la donna che sa dosare il mistero con l’audacia, per chi gioca con la seduzione come con un’arte segreta. Da indossare la sera — quando le luci si abbassano e gli sguardi "
+    "semantic_text": "Profumo Can't Get Enough EDP 90 ml di Initio. Tipologia: Eau de Parfum, femminile. Famiglia olfattiva: Floreale, Gourmand. Tag: 200€ e oltre, 90 ml, Floreale, Gourmand, Per lei. Note citate senza posizione dichiarata: Pepe Rosa, Rosa, Hedione. Carattere, contesto d'uso e occasioni: Perfetto per chi ama i profumi sensuali ma con carattere, per chi non teme di essere notato e desiderato. Can’t Get Enough è per la donna che sa dosare il mistero con l’audacia, per chi gioca con la seduzione come con un’arte segreta. Da indossare la sera — quando le luci si abbassano e gli sguardi "
   },
   {
     "id": "sh_10803412566350",
