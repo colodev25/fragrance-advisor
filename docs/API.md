@@ -158,3 +158,7 @@ Set `RATE_LIMIT_TRUST_PROXY_HEADERS=true` only when the application is behind a 
 ### Commercial card fields
 
 Product cards include `variant_id` (a string) and `variant_title` from the master catalog. Legacy catalogs derive only the ID from the exact one-unit Shopify permalink; format is never inferred from tags. Cart writes run directly from the storefront widget through Shopify Ajax, not through the chatbot API or Groq. Prices are catalog snapshots; the widget checks current variant data before a purchase and asks for confirmation if it differs.
+
+### Purchase-preparation metadata
+
+Product cards expose their catalog `id` and can include `purchase_intent` (boolean) and `requested_size` (normalized text such as `100 ml`). These fields prepare the storefront card, not an API-side purchase. The widget selects only a unique available matching live Shopify variant; otherwise it asks the customer to choose. Confirmation adds one unit through the existing Shopify flow. Replayed chat responses and restored local cards never automatically add products. No new request field or endpoint is required.

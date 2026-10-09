@@ -127,3 +127,9 @@ Catalog enrichment uses the separate existing policy in `src/catalog_enrichment.
 | `src/session_store.py` | SQLite session persistence |
 | `src/llm_resilience.py` | Groq attempts, validation and model fallback |
 | `src/chat_budget.py` | Per-request processing deadline and call allowance |
+
+## Purchase preparation and live format questions
+
+`src/purchase_intent.py` recognizes explicit Italian cart commands and format/size-price questions deterministically. The advisor resolves catalog identity first, preserving brand and concentration clarification. A requested Shopify size absent from the catalog title is resolved against that product's live variants in the browser, rather than rejected or inferred by the model. Product-choice clarification retains the original purchase request and size. References following several displayed products ask which product is intended.
+
+The response prepares a product card; it does not execute an order or a cart mutation. `purchase_intent` changes its action to “Conferma aggiunta”, and `requested_size` asks the frontend to select a unique available size. Unknown names never reuse the previous active product for a purchase. Available formats and specified-size prices are verified through Shopify cards, with no model call for these recognized flows. Other wording remains part of the normal conversation; an explicit card confirmation is always required to add an item.

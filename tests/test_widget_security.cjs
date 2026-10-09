@@ -105,6 +105,7 @@ async function fixture(t, file, seed = {}, store = false) {
       cartRequests.push({ path: url.pathname, method: request.method(), body: request.postDataJSON() });
       const response = cartResponses.shift() || { status: 200, body: { items: [{ id: 1, variant_id: 1, quantity: 1 }] } };
       if (response.abort) return route.abort();
+      if (response.gate) await response.gate;
       if (response.delay) await new Promise((resolve) => setTimeout(resolve, response.delay));
       return route.fulfill({ status: response.status, contentType: 'application/json', body: JSON.stringify(response.body) });
     }
@@ -204,6 +205,83 @@ test('Available widget variants contain the same request coordination', () => {
 });
 
 for (const file of files) {
+  async function variantFixture(t, file, extra = {}, variants = null) {
+    const setup = await fixture(t, file, {}, true);
+    await setup.page.evaluate(() => { window.Shopify = { theme: { schema_name: 'Impulse' }, currency: { active: 'EUR' } }; });
+    const data = variants || [{ id: 1, price: 9000, title: '50 ml', available: true },
+      { id: 2, price: 14000, title: '100 ml', available: true },
+      { id: 3, price: 18000, title: '150 ml', available: false }];
+    await setup.page.route('**/products/iris.js', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ variants: data }) }));
+    const button = await cartCard(setup.page, extra);
+    await setup.page.waitForFunction(() => document.querySelector('.oa-product-card').dataset.variantsLoading === 'false');
+    return { ...setup, button };
+  }
+
+  test(`${file}: explicit variant buttons update price and selection while sold-out options are disabled`, async (t) => {
+    const { page, button, cartResponses, cartRequests } = await variantFixture(t, file);
+    await page.setViewportSize({ width: 360, height: 740 });
+    assert.equal(await page.locator('.oa-variant-button').count(), 3);
+    const unavailable = page.locator('.oa-variant-button').filter({ hasText: '150 ml' });
+    assert.equal(await unavailable.isDisabled(), true);
+    assert.match(await unavailable.textContent(), /Esaurito/);
+    await page.locator('.oa-variant-button').filter({ hasText: '100 ml' }).click();
+    assert.match(await page.locator('.oa-card-price').textContent(), /140/);
+    assert.equal(await page.locator('.oa-variant-button[aria-pressed="true"]').textContent(), '100 ml · 140,00 €');
+    cartResponses.push({ status: 200, body: { items: [{ id: 2, variant_id: 2, quantity: 1 }] } });
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    assert.equal(cartRequests[0].body.items[0].id, '2');
+    assert.equal(await page.locator('.oa-product-card').evaluate((el) => el.scrollWidth <= el.clientWidth), true);
+    await page.reload();
+    await page.locator('#oaLauncher').click();
+    // A restored card keeps the selected ID but never automatically adds it again.
+    assert.equal(cartRequests.length, 1);
+    assert.match(await page.locator('.oa-card-price').textContent(), /140/);
+  });
+
+  test(`${file}: chat purchase selects requested size and requires explicit confirmation`, async (t) => {
+    const { page, button, cartRequests, cartResponses } = await variantFixture(t, file, { purchase_intent: true, requested_size: '100 ml' });
+    assert.equal(cartRequests.length, 0);
+    assert.equal(await button.textContent(), 'Conferma aggiunta');
+    assert.equal(await page.locator('.oa-card-variant').textContent(), '100 ml');
+    assert.match(await page.locator('.oa-card-price').textContent(), /140/);
+    cartResponses.push({ status: 200, body: { items: [{ id: 2, quantity: 1 }] } });
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    assert.equal(cartRequests[0].body.items[0].id, '2');
+  });
+
+  test(`${file}: unavailable requested chat format never silently adds the default`, async (t) => {
+    const { page, button, cartRequests } = await variantFixture(t, file, { purchase_intent: true, requested_size: '150 ml' });
+    assert.equal(await page.locator('.oa-variant-button[aria-pressed="true"]').count(), 0);
+    assert.equal(await button.getAttribute('aria-disabled'), 'true');
+    await button.evaluate((el) => el.click());
+    assert.equal(cartRequests.length, 0);
+    assert.match(await page.locator('.oa-cart-status').textContent(), /Scegli un formato disponibile/);
+    await page.locator('.oa-variant-button').filter({ hasText: /^50 ml/ }).click();
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    assert.equal(cartRequests[0].body.items[0].id, '1');
+  });
+
+  test(`${file}: hostile variant titles remain plain text`, async (t) => {
+    const { page } = await variantFixture(t, file, {}, [{ id: 1, price: 9000, title: attack, available: true }]);
+    assert.equal(await page.locator('.oa-variant-button').textContent(), attack + ' · 90,00 €');
+    await assertSafe(page);
+  });
+
+  test(`${file}: stock changes after format loading disable the old choice before addition`, async (t) => {
+    const variants = [{ id: 1, price: 9000, title: '50 ml', available: true },
+      { id: 2, price: 14000, title: '100 ml', available: true }];
+    const { page, button, cartRequests } = await variantFixture(t, file, {}, variants);
+    variants[0].available = false;
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-product-card').dataset.needsVariant === 'true');
+    assert.equal(cartRequests.length, 0);
+    assert.equal(await button.getAttribute('aria-disabled'), 'true');
+    assert.equal(await page.locator('.oa-variant-button').filter({ hasText: /^50 ml/ }).isDisabled(), true);
+    assert.equal(await page.locator('.oa-variant-button').filter({ hasText: /^100 ml/ }).isEnabled(), true);
+  });
   async function cartCard(page, extra = {}) {
     await page.evaluate((extra) => {
       window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Prodotto', products: [{
@@ -320,8 +398,8 @@ for (const file of files) {
     await button.click();
     await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.includes('non è più disponibile'));
     assert.equal(cartRequests.length, 0);
-    assert.equal(await button.textContent(), 'Vedi sul sito');
-    assert.equal(await button.getAttribute('href'), 'https://etualy.com/products/iris');
+    assert.equal(await button.textContent(), 'Aggiungi al Carrello');
+    assert.equal(await page.locator('.oa-variant-button').filter({ hasText: '100 ml' }).isEnabled(), true);
   });
 
   test(`${file}: product lookup failure can retry safely without submitting an addition`, async (t) => {
@@ -369,7 +447,10 @@ for (const file of files) {
 
   test(`${file}: cart pending blocks other card additions and shows no premature success`, async (t) => {
     const { page, cartRequests, cartResponses } = await fixture(t, file, {}, true);
-    cartResponses.push({ status: 200, delay: 600, body: { items: [{ id: 1, quantity: 1 }] } });
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    t.after(() => release());
+    cartResponses.push({ status: 200, gate, body: { items: [{ id: 1, quantity: 1 }] } });
     const first = await cartCard(page);
     const second = await cartCard(page);
     await first.click();
@@ -377,6 +458,7 @@ for (const file of files) {
     await second.click();
     assert.match(await page.locator('.oa-cart-status').last().textContent(), /già in corso/);
     assert.equal(await first.textContent(), 'Aggiunta…');
+    release();
     await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
     assert.equal(cartRequests.length, 1);
   });

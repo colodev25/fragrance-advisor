@@ -1832,6 +1832,8 @@
         });
         product.ptype = displayPerfumeType(product.ptype);
         product.currency = /^[A-Z]{3}$/.test(source.currency || "") ? source.currency : "EUR";
+        product.purchase_intent = source.purchase_intent === true;
+        product.requested_size = /^\d+(?:\.\d+)? ml$/.test(source.requested_size || "") ? source.requested_size : "";
         product.traits = displayProductTraits(product.traits);
         ["add_to_cart_url", "product_page_url", "image_url"].forEach((key) => {
           product[key] = safeHttpUrl(source[key]);
@@ -2007,6 +2009,12 @@
           }
         }
         const footer = dom("div", "oa-card-footer");
+        const variantOptions = dom("div", "oa-variant-options");
+        variantOptions.setAttribute("role", "group");
+        variantOptions.setAttribute("aria-label", "Formato e prezzo di " + name);
+        variantOptions.style.cssText = "display:none;flex-wrap:wrap;gap:6px;margin:8px 0";
+        variantOptions.hidden = true;
+        front.appendChild(variantOptions);
         const priceGroup = dom("div");
         priceGroup.style.cssText = "min-width:0;flex:1";
         priceGroup.appendChild(dom("div", "oa-card-price", price));
@@ -2044,7 +2052,7 @@
           dom(
             "span",
             "oa-cart-btn-text",
-            purchase ? "Aggiungi al Carrello" : "Vedi sul sito",
+            purchase ? (prod.purchase_intent ? "Conferma aggiunta" : "Aggiungi al Carrello") : "Vedi sul sito",
           ),
         );
         footer.appendChild(cart);
@@ -2118,6 +2126,7 @@
         slideFooter.appendChild(back);
         slide.append(slideHeader, body, slideFooter);
         card.appendChild(slide);
+        if (purchase && window.Shopify?.theme) queueMicrotask(() => loadProductVariants(card));
         return card;
       }
 
@@ -2736,6 +2745,167 @@
 
       let cartMutationPending = false;
       let cartController = null;
+      const variantControllers = new Set();
+      const cardVariantLists = new WeakMap();
+      function cancelVariantLoads() {
+        variantControllers.forEach((controller) => controller.abort());
+        variantControllers.clear();
+      }
+      function liveCurrency() {
+        const value = window.Shopify?.currency?.active;
+        return typeof value === "string" && /^[A-Z]{3}$/.test(value) ? value : "EUR";
+      }
+      function variantMoney(price) {
+        return new Intl.NumberFormat("it-IT", { style: "currency", currency: liveCurrency() }).format(price);
+      }
+      function cartLabel(product) {
+        return product.purchase_intent ? "Conferma aggiunta" : "Aggiungi al Carrello";
+      }
+      function selectProductVariant(card, variant, manual = false) {
+        const product = cardRecords.get(card);
+        const purchase = shopifyPurchase(normalizeProduct(product));
+        if (!purchase || !variant.available) return;
+        product.variant_id = variant.id;
+        product.variant_title = variant.title;
+        product.price = variant.price;
+        product.currency = liveCurrency();
+        product.add_to_cart_url = purchase.cart + "/" + variant.id + ":1";
+        if (manual) product.requested_size = "";
+        card.dataset.needsVariant = "false";
+        card.querySelector(".oa-card-price").textContent = variantMoney(variant.price);
+        const label = card.querySelector(".oa-card-variant");
+        label.textContent = variant.title;
+        label.hidden = !variant.title;
+        const cart = card.querySelector(".oa-card-cart-btn");
+        cart.removeAttribute("aria-disabled");
+        cart.style.opacity = "";
+        if (!cart.classList.contains("is-added") || manual) {
+          cart.classList.remove("is-added");
+          cart.href = purchase.cart;
+          cart.querySelector(".oa-cart-btn-text").textContent = cartLabel(product);
+          cart.querySelector(".oa-btn-cart-icon").style.display = "";
+          cart.querySelector(".oa-btn-check-icon").style.display = "none";
+        }
+        card.querySelectorAll(".oa-variant-button").forEach((button) => {
+          const selected = button.dataset.variantId === variant.id;
+          button.setAttribute("aria-pressed", String(selected));
+          if (!button.disabled) {
+            button.style.background = selected ? "#111" : "#fff";
+            button.style.color = selected ? "#fff" : "#111";
+          }
+        });
+      }
+      function renderProductVariants(card, details, honorRequest = false) {
+        const stickToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight <= 32;
+        const product = cardRecords.get(card);
+        const variants = Array.isArray(details.variants) ? details.variants.slice(0, 250).flatMap((item) => {
+          const id = String(item.id || "");
+          if (!/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(item.price) || item.price < 0) return [];
+          const rawTitle = plainText(item.public_title || item.title, 1000);
+          return [{ id, price: item.price / 100, title: rawTitle.toLowerCase() === "default title" ? "" : rawTitle,
+            available: item.available === true }];
+        }) : [];
+        cardVariantLists.set(card, variants);
+        const container = card.querySelector(".oa-variant-options");
+        container.replaceChildren();
+        container.hidden = variants.length < 2 && !variants.some((variant) => variant.title);
+        container.style.display = container.hidden ? "none" : "flex";
+        const requested = honorRequest && normalizeProduct(product).requested_size;
+        let chosen = variants.find((variant) => variant.id === normalizeProduct(product).variant_id);
+        if (requested) {
+          const size = Number.parseFloat(requested);
+          const matches = variants.filter((variant) => Array.from(variant.title.matchAll(/\b(\d+(?:[.,]\d+)?)\s*ml\b/gi))
+            .some((match) => Number(match[1].replace(",", ".")) === size));
+          chosen = matches.length === 1 && matches[0].available ? matches[0] : null;
+        }
+        variants.forEach((variant) => {
+          const button = dom("button", "oa-variant-button",
+            (variant.title || "Formato unico") + " · " + variantMoney(variant.price) + (variant.available ? "" : " · Esaurito"));
+          button.type = "button";
+          button.dataset.variantId = variant.id;
+          button.disabled = !variant.available;
+          button.setAttribute("aria-pressed", String(Boolean(chosen && chosen.id === variant.id)));
+          button.style.cssText = "font:inherit;font-size:11px;line-height:1.4;padding:7px 9px;border:1px solid #ccc;border-radius:6px;white-space:normal;overflow-wrap:anywhere;max-width:100%;";
+          button.style.background = variant.available ? "#fff" : "#eee";
+          button.style.color = variant.available ? "#111" : "#666";
+          button.style.cursor = variant.available ? "pointer" : "not-allowed";
+          button.addEventListener("click", () => {
+            if (cartMutationPending || card.dataset.cartUncertain === "true") return;
+            // Re-selecting the same confirmed format must not turn the cart link into another add.
+            if (product.variant_id === variant.id && card.querySelector(".oa-card-cart-btn").classList.contains("is-added")) return;
+            selectProductVariant(card, variant, true);
+            const status = card.querySelector(".oa-cart-status");
+            status.hidden = false;
+            status.textContent = "Formato selezionato: " + (variant.title || "Formato unico") + ". Controlla il prezzo e conferma l'aggiunta.";
+            const overflow = card.querySelector(".oa-card-cart-btn").getBoundingClientRect().bottom
+              - messagesContainer.getBoundingClientRect().bottom + 8;
+            if (overflow > 0) messagesContainer.scrollTop += overflow;
+            saveChatState();
+          });
+          container.appendChild(button);
+        });
+        const status = card.querySelector(".oa-cart-status");
+        if (chosen?.available) {
+          selectProductVariant(card, chosen);
+          if (honorRequest) {
+            status.textContent = product.purchase_intent ? "Controlla il formato selezionato e il prezzo, poi conferma l'aggiunta di una confezione." : "";
+            status.hidden = !status.textContent;
+          }
+        } else {
+          card.dataset.needsVariant = "true";
+          card.querySelector(".oa-card-price").textContent = "—";
+          const currentLabel = card.querySelector(".oa-card-variant");
+          currentLabel.textContent = "Seleziona un formato disponibile";
+          currentLabel.hidden = false;
+          card.querySelector(".oa-card-cart-btn").setAttribute("aria-disabled", "true");
+          card.querySelector(".oa-card-cart-btn").style.opacity = "0.55";
+          status.hidden = false;
+          status.textContent = requested ? "Il formato richiesto non è disponibile o non è univoco. Scegli un'opzione disponibile." :
+            "Questa variante non è più disponibile. Scegli un altro formato disponibile o consulta il prodotto sul sito.";
+        }
+        saveChatState();
+        if (stickToBottom) scrollToBottom();
+        return variants;
+      }
+      async function loadProductVariants(card) {
+        if (!card.isConnected) return;
+        const product = cardRecords.get(card);
+        const purchase = shopifyPurchase(normalizeProduct(product));
+        if (!purchase) return;
+        const controller = new AbortController();
+        variantControllers.add(controller);
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        const status = card.querySelector(".oa-cart-status");
+        const wasAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight <= 32;
+        const initialScroll = messagesContainer.scrollTop;
+        const container = card.querySelector(".oa-variant-options");
+        container.hidden = false;
+        container.style.display = "flex";
+        container.textContent = "Caricamento formati…";
+        card.dataset.variantsLoading = "true";
+        if (product.requested_size) card.dataset.needsVariant = "true";
+        try {
+          const response = await fetch(purchase.product, { credentials: "same-origin", cache: "no-store", signal: controller.signal });
+          if (!response.ok) throw new Error("Variant lookup failed");
+          const details = await response.json();
+          if (controller.signal.aborted || !card.isConnected || cartMutationPending ||
+              card.querySelector(".oa-card-cart-btn").classList.contains("is-added")) return;
+          renderProductVariants(card, details, true);
+          if (wasAtBottom && Math.abs(messagesContainer.scrollTop - initialScroll) < 4) scrollToBottom();
+        } catch (_) {
+          if (!controller.signal.aborted && card.isConnected) {
+            status.hidden = false;
+            status.textContent = "Non è possibile caricare i formati. Premi il pulsante per riprovare oppure consulta il prodotto sul sito.";
+            container.replaceChildren();
+            container.hidden = true;
+            container.style.display = "none";
+          }
+        } finally {
+          card.dataset.variantsLoading = "false";
+          clearTimeout(timeout);
+          variantControllers.delete(controller);
+        }
+      }
       function refreshStoreCart() {
         // Impulse rebuilds items, totals, quantity controls and the header counter
         // on cart:build. ajaxProduct:added would also open its drawer.
@@ -2758,6 +2928,14 @@
         event?.preventDefault();
         const status = card.querySelector(".oa-cart-status");
         status.hidden = false;
+        if (card.dataset.variantsLoading === "true") {
+          status.textContent = "Sto verificando i formati disponibili. Attendi un momento.";
+          return;
+        }
+        if (card.dataset.needsVariant === "true" && cardVariantLists.has(card)) {
+          status.textContent = "Scegli un formato disponibile prima di confermare l'aggiunta.";
+          return;
+        }
         if (cartMutationPending) {
           status.textContent = "Un'aggiunta è già in corso. Attendi prima di riprovare.";
           return;
@@ -2784,6 +2962,12 @@
           const detailsResponse = await fetch(purchase.product, { credentials: "same-origin", cache: "no-store", signal: controller.signal });
           if (!detailsResponse.ok) throw new Error("Product lookup unavailable");
           const details = await detailsResponse.json();
+          renderProductVariants(card, details, Boolean(product.requested_size));
+          if (card.dataset.needsVariant === "true") return;
+          if (String(product.variant_id) !== purchase.id) {
+            status.textContent = "Formato richiesto selezionato. Controlla il prezzo aggiornato e conferma l'aggiunta.";
+            return;
+          }
           const variant = Array.isArray(details.variants) && details.variants.find((item) => String(item.id) === purchase.id);
           if (!variant || variant.available !== true) {
             status.textContent = "Questa variante non è più disponibile. Consulta il prodotto sul sito.";
@@ -2814,6 +2998,7 @@
             return;
           }
           submitted = true;
+          label.textContent = "Aggiunta…";
           const response = await fetch(purchase.add, {
             method: "POST", credentials: "same-origin", signal: controller.signal,
             headers: { "Content-Type": "application/json", "Accept": "application/json" },
@@ -2825,7 +3010,11 @@
             status.textContent = response.status === 422
               ? "Shopify non può aggiungere questa variante: verifica disponibilità e quantità nel carrello."
               : "Shopify non ha confermato l'aggiunta. Controlla il carrello prima di riprovare.";
-            if (!confirmedFailure) goToCart();
+            if (!confirmedFailure) {
+              card.dataset.cartUncertain = "true";
+              card.querySelectorAll(".oa-variant-button").forEach((button) => { button.disabled = true; });
+              goToCart();
+            }
             return;
           }
           const added = result.items?.find((item) => String(item.variant_id || item.id) === purchase.id);
@@ -2837,6 +3026,8 @@
           status.textContent = "Aggiunto! Puoi continuare la conversazione oppure aprire il carrello.";
         } catch (_) {
           if (submitted && !confirmedFailure) {
+            card.dataset.cartUncertain = "true";
+            card.querySelectorAll(".oa-variant-button").forEach((button) => { button.disabled = true; });
             goToCart();
             status.textContent = "Non è possibile verificare l'esito. Controlla il carrello prima di aggiungere nuovamente il prodotto.";
           } else {
@@ -2847,9 +3038,10 @@
           cartController = null;
           cartMutationPending = false;
           btn.classList.remove("is-adding");
-          btn.removeAttribute("aria-disabled");
+          if (card.dataset.needsVariant === "true") btn.setAttribute("aria-disabled", "true");
+          else btn.removeAttribute("aria-disabled");
           btn.removeAttribute("aria-busy");
-          if (!btn.classList.contains("is-added")) label.textContent = "Aggiungi al Carrello";
+          if (!btn.classList.contains("is-added")) label.textContent = cartLabel(product);
         }
       }
 

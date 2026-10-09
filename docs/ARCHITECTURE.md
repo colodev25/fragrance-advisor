@@ -96,3 +96,7 @@ Separate GitHub Actions workflows synchronize Shopify and progressively enrich t
 | `index.html`            | Browser chat interface                           |
 | `tests/`                | API, parser, session, resilience and E2E tests   |
 | `.github/workflows/`    | CI tests and scheduled catalog synchronization   |
+
+### Shared live variant flow
+
+`src/purchase_intent.py` prepares explicit purchase and format requests without provider calls. Catalog identity and pending clarifications remain in the advisor's authenticated session. The browser uses the same live-variant selection and confirmation flow for recommendation cards and chat purchase cards: initial read, explicit option selection, fresh preflight, then one confirmed Ajax addition. Variant IDs/options/prices come from Shopify product JSON; history retains the chosen ID and display data but reloads availability. The existing Impulse adapter refreshes the drawer only after a verified addition.

@@ -109,3 +109,9 @@ Cart regressions cover confirmed one-unit additions, locale-aware endpoints, no 
 ### Impulse drawer synchronization
 
 On 9 October 2026, the public Etualy theme source (Impulse 7.4.1) confirmed that `cart:build` rebuilds cart items, totals, discounts, quantity controls and header counts; `ajaxProduct:added` also opens the drawer and is deliberately not emitted. All **228 browser checks** passed after the adapter change, including 6 new simulated-theme checks covering success/error behavior on all three widgets. The backend was unchanged, so Python tests were not rerun. All browser requests were intercepted; no live cart mutation occurred. The drawer contract is simulated in tests; acceptance on the actual site remains necessary through the updated DevTools snippet.
+
+### Explicit formats and chat purchase preparation
+
+On 9 October 2026, the final offline suite passed **382 Python tests** (6 live-service tests deselected) and **240 browser checks** across the three widgets, followed by 3 additional live-stock-change checks on the final interface. The complete browser suite now contains 243 checks. New regressions cover deterministic purchase parsing, missing/ambiguous product references, preserved requested sizes, format and size-price questions without LLM calls, live option buttons, disabled unavailable formats, price/ID switching, explicit chat confirmation, no default substitution, hostile titles, mobile layout and restoration without automatic purchases. All external service requests were simulated; no live Shopify cart was changed and no Groq quota was consumed.
+
+A simultaneous-add browser check initially depended on a short fixed response delay and failed under load. Its response is now held until the assertions finish, making the concurrency check deterministic. The subsequent complete run passed. Live acceptance should repeat size switching, unavailable options and chat confirmation on Etualy with the updated DevTools snippet.

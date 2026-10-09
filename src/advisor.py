@@ -8,6 +8,10 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Optional
 try:
+    from src.purchase_intent import purchase_request, format_request, requested_size, refers_to_active, SIZE
+except ModuleNotFoundError:
+    from purchase_intent import purchase_request, format_request, requested_size, refers_to_active, SIZE
+try:
     from src.cart_product import cart_product_fields
 except ModuleNotFoundError:
     from cart_product import cart_product_fields
@@ -231,6 +235,15 @@ class FragranceAdvisor:
         identity = self._identity()
         state = self.guided_states[session_id]
         pending = state.get('pending_product_choice')
+        variant_lookup = purchase_request(query) or format_request(query) or bool(
+            pending and (purchase_request(pending['query']) or format_request(pending['query'])))
+
+        def resolve(text, ids=None):
+            result = identity.resolve(text, ids)
+            if variant_lookup and result.status == 'unavailable':
+                # A Shopify format may not be part of the catalog product title.
+                result = identity.resolve(SIZE.sub(' ', text), ids)
+            return result
         original = query
         chosen = None
         if pending:
@@ -246,16 +259,16 @@ class FragranceAdvisor:
                         'Il prodotto scelto non è più disponibile. Possiamo iniziare una nuova ricerca.')
                 original = pending['query']
             else:
-                mention = identity.resolve(query)
+                mention = resolve(query)
                 if mention.status == 'none':
-                    mention = identity.resolve(query, ids)
+                    mention = resolve(query, ids)
                     if mention.status != 'none':
                         original = pending['query']
                     elif not recommendation_request(query):
                         return query, None, self._product_clarification(query, session_id, pending['query'],
                             tuple(identity.by_id[i] for i in ids if i in identity.by_id), 'ambiguous')
         else:
-            mention = identity.resolve(query)
+            mention = resolve(query)
         if chosen is None:
             if mention.status == 'none':
                 state.pop('pending_product_choice', None)
@@ -429,6 +442,7 @@ class FragranceAdvisor:
 
         return {
             "name": p_name,
+            "id": (cat_match or prod_dict).get("id", ""),
             **cart_product_fields(cat_match or prod_dict),
             "brand": p_brand,
             "price": p_price,
@@ -674,6 +688,7 @@ class FragranceAdvisor:
 
         if response is None and (state.get('pending_product_choice') or
                                  (state['step'] is None and step_override is None) or
+                                 purchase_request(user_query) or format_request(user_query) or
                                  re.search(r'\b(?:parlami di|informazioni su|descrivi|quanto costa)\b', q_lower)):
             user_query, mentioned_product, response = self._resolve_product_request(user_query, session_id)
             if mentioned_product or response:
@@ -740,6 +755,8 @@ class FragranceAdvisor:
             else:
                 response = self._handle_free_chat(user_query, session_id, max_price)
 
+        if response.get('products'):
+            state['last_presented_product_ids'] = [card['id'] for card in response['products'] if card.get('id')]
         current_chat_budget.get().check_deadline()
         self.sessions[session_id] = self.sessions[session_id][-MAX_HISTORY_MESSAGES:]
         receipt = {} if request_id is None else {
@@ -949,6 +966,27 @@ class FragranceAdvisor:
 
         mentioned_product = mentioned_product or self._find_mentioned_product(user_query)
         is_new_product_switch = False
+
+        buying = purchase_request(user_query)
+        if buying or format_request(user_query):
+            previous_ids = self.guided_states[session_id].get('last_presented_product_ids', [])
+            if not mentioned_product and refers_to_active(user_query) and len(previous_ids) > 1:
+                candidates = tuple(self._identity().by_id[i] for i in previous_ids if i in self._identity().by_id)
+                return self._product_clarification(user_query, session_id, user_query, candidates, 'ambiguous')
+            selected = mentioned_product or (active_before if refers_to_active(user_query) else None)
+            if selected is None:
+                return self._reply_without_selection(session_id, user_query,
+                    'Quale profumo vuoi scegliere? Indica il nome e, se necessario, il brand o la concentrazione.')
+            self.active_perfumes[session_id] = selected
+            card = self._enrich_product_payload(selected, card_type='standard')
+            card['purchase_intent'] = buying
+            card['requested_size'] = requested_size(user_query.split('\nProdotto scelto:', 1)[0])
+            reply = ('Controlla il formato e il prezzo aggiornati nella scheda, poi premi “Conferma aggiunta”. '
+                     'Verrà aggiunta una confezione; se il formato non è disponibile, scegli un\'altra opzione.' if buying else
+                     'Nella scheda puoi consultare i formati e i prezzi aggiornati dal negozio. '
+                     'Le opzioni non disponibili sono indicate e non possono essere acquistate.')
+            self.sessions[session_id].extend([{'role': 'user', 'content': user_query}, {'role': 'assistant', 'content': reply}])
+            return {'reply': reply, 'options': [], 'products': [card], 'step': None, 'mode': 'free'}
 
         if recommendation_request(user_query):
             return self._recommend_free(user_query, session_id, max_price, mentioned_product)
