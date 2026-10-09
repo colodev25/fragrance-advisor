@@ -3,6 +3,7 @@ test_parsers.py - Validazione della logica estrattiva, semantica e di stato
 Verifica: pulizia note (ingest), stopwords, genere, stagione, vincoli prezzo, intent router e quiz guidato.
 """
 
+from tests.session_client import client_advise
 from collections import defaultdict
 from unittest.mock import MagicMock
 import pytest
@@ -155,22 +156,22 @@ def test_guided_flow_state_transitions(advisor_mock):
     session_id = "test_user_guided_flow"
 
     # Step 1
-    res1 = advisor_mock.advise("guidami", session_id=session_id)
+    res1 = client_advise(advisor_mock, "guidami", session_id=session_id)
     assert res1["step"] == 1
     assert res1["mode"] == "guided"
     assert len(res1["options"]) > 0
 
     # Step 2
-    res2 = advisor_mock.advise("🍋 Fresco o Agrumato", session_id=session_id)
+    res2 = client_advise(advisor_mock, "🍋 Fresco o Agrumato", session_id=session_id)
     assert res2["step"] == 2
     assert advisor_mock.session_store.get_session(session_id)["guided_state"]["answers"] == ["🍋 Fresco o Agrumato"]
 
     # Step 3
-    res3 = advisor_mock.advise("Per Lui", session_id=session_id)
+    res3 = client_advise(advisor_mock, "Per Lui", session_id=session_id)
     assert res3["step"] == 3
     assert advisor_mock.session_store.get_session(session_id)["guided_state"]["answers"] == ["🍋 Fresco o Agrumato", "Per Lui"]
 
     # Step 4
-    res4 = advisor_mock.advise("Primavera / Estate", session_id=session_id)
+    res4 = client_advise(advisor_mock, "Primavera / Estate", session_id=session_id)
     assert res4["step"] == 4
     assert advisor_mock.session_store.get_session(session_id)["guided_state"]["answers"] == ["🍋 Fresco o Agrumato", "Per Lui", "Primavera / Estate"]

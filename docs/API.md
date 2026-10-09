@@ -17,6 +17,7 @@ The FastAPI application in `src/main.py` exposes the chat service to the browser
 {
   "message": "Cerco un profumo legnoso ed elegante",
   "session_id": "example-session",
+  "session_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
   "request_id": "req_example-001",
   "max_price": 150,
   "step_override": null
@@ -26,8 +27,9 @@ The FastAPI application in `src/main.py` exposes the chat service to the browser
 | Field | Type | Required | Behavior |
 | --- | --- | --- | --- |
 | `message` | string | Yes | Trimmed user message, from 1 to 2,000 characters. |
-| `session_id` | string | Yes | Session key: 1–128 letters, digits, `_` or `-`. Missing, `null`, empty and `default` values are rejected. |
-| `session_context` | object or `null` | No | After the first reply, send its `token` and `revision` to detect expired, lost or outdated conversation state. |
+| `session_id` | string | Yes | Conversation identifier: 1–128 letters, digits, `_` or `-`. Missing, `null`, empty and `default` values are rejected. |
+| `session_key` | string | Yes | Private session credential: 64 lowercase hexadecimal characters, generated from 32 cryptographically random bytes before the first message. Required for chat, replay and reset. Never reuse the example value. |
+| `session_context` | object or `null` | After first reply | Send the reply's `token` and `revision` for each new message. A retry retains the exact original context, including its absence on the first request. |
 | `request_id` | string or `null` | No | Unique identifier for one logical message, from 1 to 128 letters, digits, `_` or `-`. Reuse it with the same payload when retrying that message. |
 | `max_price` | number or `null` | No | Inclusive price ceiling from 0 to 10,000. Combined with the textual budget using the smaller ceiling; applies to both recommendation modes. |
 | `step_override` | integer or `null` | No | Optional guided-flow step from 1 to 4. |
@@ -71,7 +73,7 @@ Recognized preferences are retained in the conversation. The latest non-null API
 
 The widget assigns a new `request_id` to each message and preserves it for retries, including after page navigation. The backend serializes chat and reset operations for the same session within the running process; other sessions use independent locks. Requests without `request_id` remain compatible but have no duplicate-result recovery.
 
-For identified requests, session state and the completed response, including session metadata, are committed together in SQLite. Sending the same session, identifier, trimmed message, price constraint and step override again recovers that response without changing state or calling the model again, subject to the session checks below. Reusing an identifier with different input returns `409` (`request_id_conflict`). Rate limits still apply to every HTTP attempt.
+For identified requests, session state and the completed response, including session metadata, are committed together in SQLite. Sending the same authenticated session, identifier, trimmed message, price constraint, step override and original context again recovers the latest completed response without changing state or calling the model again. Reusing an identifier with different input, including a changed or omitted original context, returns `409` (`request_id_conflict`). Rate limits still apply to every HTTP attempt.
 
 The latest 100 complete responses per session are retained. Older identifiers keep their payload fingerprint: retrying one returns `409` (`request_result_expired`) rather than processing it again. Reset clears both session state and request records. Database initialization adds the request table automatically; no catalog ingestion or reindexing is needed.
 
@@ -87,9 +89,11 @@ Every new completed message renews a **24-hour inactivity deadline**. Reads, fai
 - A supplied revision that differs from the stored conversation returns `409` with `session_out_of_sync`. A retry may use its original revision to recover the latest completed response; if another message has advanced the session, that older result is rejected.
 - Expired state and its request receipts are deleted in small batches at startup and hourly, skipping sessions being processed. Expiry is enforced even before cleanup runs.
 
-Clients supplying only a valid session ID remain supported, but cannot detect lost state or revision mismatches. Session metadata is a continuity mechanism, not user authentication.
+The server atomically binds a previously unused identifier to the hash of `session_key` before processing its first message. This initial claim has revision zero and a 24-hour expiry; failed processing leaves it owned by the same client, without partial history or a completed receipt. Only SHA-256 hashes of these high-entropy credentials are stored. Credential checks precede state loading, response recovery and deletion. Invalid credentials return `403` (`session_access_denied`); missing or malformed credentials return `422`. No ID-only compatibility path exists. A new message without context in an established conversation returns `409` (`session_context_required`). The original first request can still recover its latest completed response without context, with the correct credential.
 
-The widget performs these checks through the normal chat exchange, without an extra page-load request. On expiry or loss it starts a fresh local conversation, explains the restart and preserves the message in the input for deliberate resubmission. Version-1 saved widget state is retired once on upgrade; any pending message or draft is retained.
+Keep the credential in same-tab `sessionStorage` and send it only in HTTPS JSON bodies; never include it in URLs, logs, analytics or model prompts. It protects an anonymous browser conversation, not an authenticated customer account. Other scripts running on the same storefront origin can access sessionStorage, so this does not replace site-wide script security or privacy controls.
+
+The widget performs these checks through the normal chat exchange, without an extra page-load request. On expiry, authorization failure or loss it rotates both identifier and credential, explains the restart and preserves the message in the input for deliberate resubmission. Saved widget versions 1 and 2 are retired once on upgrade to version 3; any pending message or draft is retained. Existing SQLite sessions without an owner hash cannot be adopted and return `409` (`session_migration_required`); maintenance removes them on expiry.
 
 The current Render Free deployment has no persistent disk: SQLite can be lost on deploy, restart or spin-down. The 24-hour deadline therefore does not guarantee 24 hours of availability. Durable recovery requires retained storage; see [deployment storage](INDEX_OPERATIONS.md#session-storage-on-render-free).
 
@@ -97,11 +101,12 @@ The current Render Free deployment has no persistent disk: SQLite can be lost on
 
 ```json
 {
-  "session_id": "example-session"
+  "session_id": "example-session",
+  "session_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 }
 ```
 
-The response is `{"status":"ok","session_id":"example-session","message":"Sessione azzerata"}`. Reset requires a valid session ID and also rejects `default`. It removes the stored history, active product, guided state and completed request records for the given session. It waits for any operation already holding that session's lock. The widget immediately uses a new session identifier and discards replies from the previous session; aborting the browser request does not cancel model work already running on the backend.
+The response is `{"status":"ok","session_id":"example-session","message":"Sessione azzerata"}`. Reset requires a valid session ID and its matching credential, and also rejects `default`. It removes the stored history, active product, guided state, owner hash and completed request records. A missing or expired session returns `409`; an unavailable advisor returns `503`. It waits for any operation already holding that session's lock. The widget immediately uses a new identifier and credential, authenticates remote reset with the previous pair and discards replies from the previous session; aborting the browser request does not cancel model work already running on the backend.
 
 ## Validation, limits and errors
 
@@ -116,7 +121,7 @@ Requests use one error format:
 }
 ```
 
-The API returns `422` for invalid request data, `409` for a conflicting identifier or an unavailable older result, `429` when a route limit is exceeded, and `503` when the advisor is starting or a downstream service cannot complete the request. An application `429` includes the standard `Retry-After` header. Provider failures can return `503` with codes such as `llm_rate_limit`, `llm_timeout`, `llm_unavailable`, `llm_invalid_response`, `llm_attempts_exhausted` or `chat_deadline_exceeded`; a provider cooldown is forwarded through `Retry-After` when available.
+The API returns `422` for invalid request data, `403` for an incorrect session credential, `409` for a conflicting identifier or an unavailable older result, `429` when a route limit is exceeded, and `503` when the advisor is starting or a downstream service cannot complete the request. An application `429` includes the standard `Retry-After` header. Provider failures can return `503` with codes such as `llm_rate_limit`, `llm_timeout`, `llm_unavailable`, `llm_invalid_response`, `llm_attempts_exhausted` or `chat_deadline_exceeded`; a provider cooldown is forwarded through `Retry-After` when available.
 
 The built-in rate limiter is in-memory and applies separately to chat and reset routes. It is intentionally lightweight for a single service instance: counters are reset after a restart and are not shared between multiple instances.
 

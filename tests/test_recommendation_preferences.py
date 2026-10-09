@@ -1,4 +1,5 @@
 """Recommendation admission, ranking and conversational continuity without network calls."""
+from tests.session_client import client_advise
 from collections import defaultdict
 from unittest.mock import MagicMock
 
@@ -188,7 +189,7 @@ def test_guided_alternative_contains_deterministic_notice(tmp_path):
 
 def test_hard_empty_results_never_call_embedding_or_llm(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
-    result = advisor.advise("cerco un profumo senza vaniglia", "customer")
+    result = client_advise(advisor, "cerco un profumo senza vaniglia", "customer")
     assert result["products"] == []
     advisor.search_engine.search.assert_not_called()
     advisor._chat_completion.assert_not_called()
@@ -196,10 +197,10 @@ def test_hard_empty_results_never_call_embedding_or_llm(tmp_path):
 
 def test_inconsistent_bounds_preserve_previous_preferences_and_skip_llm(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
-    advisor.advise("con iris massimo 100€", "customer")
+    client_advise(advisor, "con iris massimo 100€", "customer")
     before = advisor.session_store.get_session("customer")["guided_state"]["preferences"]
     calls = advisor._chat_completion.call_count
-    result = advisor.advise("cerco un profumo tra 120 e 200 euro", "customer", max_price=100)
+    result = client_advise(advisor, "cerco un profumo tra 120 e 200 euro", "customer", max_price=100)
     assert "si contraddicono" in result["reply"] and result["products"] == []
     assert advisor._chat_completion.call_count == calls
     assert advisor.session_store.get_session("customer")["guided_state"]["preferences"] == before
@@ -208,11 +209,11 @@ def test_inconsistent_bounds_preserve_previous_preferences_and_skip_llm(tmp_path
 def test_persisted_preferences_survive_navigation_and_follow_up(tmp_path):
     catalog = [product(price=90), product("p2", name="Creazione B", price=70), product("p3", price=50, notes=["Iris", "Rosa"])]
     advisor = advisor_for(tmp_path, catalog)
-    first = advisor.advise("con iris senza rosa massimo 100€ per lei in estate", "customer", max_price=95)
+    first = client_advise(advisor, "con iris senza rosa massimo 100€ per lei in estate", "customer", max_price=95)
     assert first["products"][0]["price"] == 90
     # A fresh advisor sees the same stored preference profile, with no prior RAM state.
     restarted = advisor_for(tmp_path, catalog)
-    second = restarted.advise("vorrei qualcosa di più economico", "customer", session_context=first["session_context"])
+    second = client_advise(restarted, "vorrei qualcosa di più economico", "customer", session_context=first["session_context"])
     assert second["products"][0]["price"] == 70
     prefs = restarted.session_store.get_session("customer")["guided_state"]["preferences"]
     assert prefs["excluded_notes"] == ["rosa"] and prefs["season"] == "summer" and prefs["recipient"] == "female"
@@ -221,30 +222,30 @@ def test_persisted_preferences_survive_navigation_and_follow_up(tmp_path):
 
 def test_guided_restart_clears_preferences(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
-    advisor.advise("senza rosa massimo 100€", "customer")
-    advisor.advise("ricomincia percorso guidato", "customer")
+    client_advise(advisor, "senza rosa massimo 100€", "customer")
+    client_advise(advisor, "ricomincia percorso guidato", "customer")
     assert advisor.session_store.get_session("customer")["guided_state"]["preferences"] == {}
 
 
 def test_named_recommendation_obeys_cap_while_information_can_show_price(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
-    refused = advisor.advise("Vorrei Creazione A sotto 50€", "customer")
+    refused = client_advise(advisor, "Vorrei Creazione A sotto 50€", "customer")
     assert refused["products"] == []
     advisor._chat_completion.assert_not_called()
-    info = advisor.advise("Quanto costa Creazione A?", "customer")
+    info = client_advise(advisor, "Quanto costa Creazione A?", "customer")
     assert info["products"][0]["price"] == 90
 
 
 def test_named_reference_search_does_not_return_the_reference_product(tmp_path):
     advisor = advisor_for(tmp_path, [product(price=120), product("p2", name="Creazione B", price=90)])
-    result = advisor.advise("Una alternativa a Creazione A sotto 100€", "customer")
+    result = client_advise(advisor, "Una alternativa a Creazione A sotto 100€", "customer")
     assert result["products"][0]["name"] == "Creazione B"
 
 
 def test_candidates_outside_semantic_shortlist_can_still_be_found(tmp_path):
     advisor = advisor_for(tmp_path, [product(notes=["Rosa"]), product("p2", notes=["Iris"])])
     advisor.search_engine.search.return_value = {"ids": [["p1"]]}
-    result = advisor.advise("con iris senza rosa", "customer")
+    result = client_advise(advisor, "con iris senza rosa", "customer")
     assert result["products"][0]["name"] == "Creazione A"
     assert advisor.active_perfumes == {}
     assert advisor.session_store.get_session("customer")["active_perfume"]["id"] == "p2"
@@ -268,7 +269,7 @@ def test_search_can_retrieve_more_than_ten_candidates():
 def test_unknown_exclusions_ask_for_clarification_without_model_calls(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
     for query in ("senza unicorno", "senza alcool", "senza rosa e unicorno"):
-        response = advisor.advise(query, "customer")
+        response = client_advise(advisor, query, "customer")
         assert "Riformula" in response["reply"] and response["products"] == []
     advisor._chat_completion.assert_not_called()
 
@@ -276,14 +277,14 @@ def test_unknown_exclusions_ask_for_clarification_without_model_calls(tmp_path):
 @pytest.mark.parametrize("query", ["con unicorno", "con iris e unicorno", "alla mozzarella"])
 def test_unknown_required_notes_are_not_silently_dropped(tmp_path, query):
     advisor = advisor_for(tmp_path, [product()])
-    result = advisor.advise(query, "customer")
+    result = client_advise(advisor, query, "customer")
     assert "Riformula" in result["reply"] and result["products"] == []
     advisor._chat_completion.assert_not_called()
 
 
 def test_semantic_query_does_not_promote_excluded_notes(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
-    advisor.advise("con iris senza rosa massimo 100€", "customer")
+    client_advise(advisor, "con iris senza rosa massimo 100€", "customer")
     query = advisor.search_engine.search.call_args.kwargs["query"]
     assert "rosa" not in query and "iris" in query and "100" not in query
 
@@ -317,11 +318,11 @@ def test_common_english_note_names_use_the_same_exclusion_and_requirement():
 
 def test_guided_budget_clarification_retains_other_answers(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
-    advisor.advise("guidami", "customer", max_price=100)
+    client_advise(advisor, "guidami", "customer", max_price=100)
     for answer in ["agrumato senza rosa", "per lei", "estate", "oltre 200€"]:
-        result = advisor.advise(answer, "customer")
+        result = client_advise(advisor, answer, "customer")
     assert "si contraddicono" in result["reply"]
-    response = advisor.advise("massimo 95€", "customer")
+    response = client_advise(advisor, "massimo 95€", "customer")
     assert len(response["products"]) == 1
     prefs = advisor.session_store.get_session("customer")["guided_state"]["preferences"]
     assert prefs["families"] == ["agrumata"] and prefs["excluded_notes"] == ["rosa"] and prefs["season"] == "summer"
@@ -329,12 +330,12 @@ def test_guided_budget_clarification_retains_other_answers(tmp_path):
 
 def test_unresolved_guided_note_constraint_is_not_lost_between_answers(tmp_path):
     advisor = advisor_for(tmp_path, [product()])
-    advisor.advise("guidami", "customer")
+    client_advise(advisor, "guidami", "customer")
     for answer in ["agrumato senza unicorno", "unisex", "estate", "nessun limite di budget"]:
-        result = advisor.advise(answer, "customer")
+        result = client_advise(advisor, answer, "customer")
     assert "Riformula" in result["reply"] and result["products"] == []
     advisor._chat_completion.assert_not_called()
-    resolved = advisor.advise("senza rosa", "customer")
+    resolved = client_advise(advisor, "senza rosa", "customer")
     assert len(resolved["products"]) == 1
 
 
@@ -355,8 +356,8 @@ def test_negative_family_replaces_an_earlier_conflicting_requirement():
 @pytest.mark.parametrize("query", ["Non mi piace questo profumo", "Non mi piace Creazione A"])
 def test_rejecting_a_product_searches_for_a_different_one(tmp_path, query):
     advisor = advisor_for(tmp_path, [product(), product("p2", name="Creazione B")])
-    advisor.advise("con iris", "customer")
-    assert advisor.advise(query, "customer")["products"][0]["name"] == "Creazione B"
+    client_advise(advisor, "con iris", "customer")
+    assert client_advise(advisor, query, "customer")["products"][0]["name"] == "Creazione B"
 
 
 def test_sweet_style_is_a_family_preference_and_can_be_excluded():

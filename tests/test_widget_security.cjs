@@ -81,6 +81,7 @@ async function fixture(t, file, seed = {}) {
     if (!sessionStorage.getItem('__test_seeded')) {
       sessionStorage.setItem('__test_seeded', '1');
       sessionStorage.setItem('etualy_advisor_session_id', 'sess_security');
+      sessionStorage.setItem('etualy_advisor_session_key', 'b'.repeat(64));
       Object.entries(initial).forEach(([key, value]) => sessionStorage.setItem(key, value));
     }
   }, seed);
@@ -129,7 +130,7 @@ async function fixture(t, file, seed = {}) {
 }
 
 function stored(messages, options = []) {
-  return JSON.stringify({ version: 2, session_id: 'sess_security', session_context: {
+  return JSON.stringify({ version: 3, session_id: 'sess_security', session_key: 'b'.repeat(64), session_context: {
     token: 'a'.repeat(32), revision: 1, expires_at: Date.parse('2099-01-01T00:00:00Z'),
   }, messages,
     options, step: 2, last_message: 'iris' });
@@ -526,7 +527,7 @@ for (const file of files) {
     assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), 'sess_security');
     assert.equal(await page.locator('#oaMessages .oa-msg').count(), 1);
     const saved = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), stateKey);
-    assert.equal(saved.version, 2);
+    assert.equal(saved.version, 3);
     assert.deepEqual(saved.messages, [{ kind: 'welcome' }]);
     await assertSafe(page);
   });
@@ -853,21 +854,23 @@ for (const file of files) {
     await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
     const context = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).session_context, stateKey);
     assert.equal(context.revision, 1);
+    assert.equal(requests[0].body.session_key, 'b'.repeat(64));
     await page.goto('https://widget.test/widget?metadata=1', { waitUntil: 'domcontentloaded' });
     await page.locator('#oaLauncher').click();
     await page.evaluate(() => { void window.__widgetTest.sendUserMessage('quanto costa?'); });
     await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
     assert.deepEqual(requests[1].body.session_context, { token: context.token, revision: 1 });
+    assert.equal(requests[1].body.session_key, requests[0].body.session_key);
     assert.equal(await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).session_context.revision, stateKey), 2);
   });
 
-  for (const code of ['session_expired', 'session_out_of_sync']) {
+  for (const code of ['session_expired', 'session_out_of_sync', 'session_access_denied', 'session_context_required', 'session_migration_required']) {
     test(`${file}: ${code} restarts locally and keeps the unsent message without auto-resending`, async (t) => {
       const { page, requests, responses } = await fixture(t, file);
       await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
       await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
       const sid = await page.evaluate(() => window.__widgetTest.session());
-      responses.push({ status: 409, body: { error: { code, message: 'Ripartiamo' } } });
+      responses.push({ status: code === 'session_access_denied' ? 403 : 409, body: { error: { code, message: 'Ripartiamo' } } });
       await page.evaluate(() => { void window.__widgetTest.sendUserMessage('quanto costa?'); });
       await page.waitForFunction((sid) => window.__widgetTest.session() !== sid, sid);
       assert.equal(requests.length, 2);
@@ -883,6 +886,8 @@ for (const file of files) {
       assert.equal(requests.length, 3);
       assert.notEqual(requests[2].body.session_id, sid);
       assert.notEqual(requests[2].body.request_id, requests[1].body.request_id);
+      assert.notEqual(requests[2].body.session_key, requests[1].body.session_key);
+      assert.match(requests[2].body.session_key, /^[a-f0-9]{64}$/);
       assert.equal(requests[2].body.session_context, undefined);
     });
   }
@@ -890,7 +895,7 @@ for (const file of files) {
   test(`${file}: expired local state resets on navigation and preserves a pending draft`, async (t) => {
     const state = JSON.parse(stored([{ kind: 'welcome' }, { kind: 'user', text: 'iris' }]));
     state.session_context.expires_at = 1;
-    state.pending_request = { message: 'quanto costa?', session_id: 'sess_security', request_id: 'req_pending' };
+    state.pending_request = { message: 'quanto costa?', session_id: 'sess_security', session_key: 'b'.repeat(64), request_id: 'req_pending' };
     const { page, requests } = await fixture(t, file, { [stateKey]: JSON.stringify(state) });
     assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), 'sess_security');
     assert.equal(await page.locator('#oaInput').inputValue(), 'quanto costa?');
@@ -913,14 +918,52 @@ for (const file of files) {
     assert.equal(requests.length, 1);
   });
 
-  test(`${file}: old schema is retired with a clear notice and pending draft retained`, async (t) => {
+  for (const version of [1, 2]) {
+  test(`${file}: old schema ${version} is retired with a clear notice and pending draft retained`, async (t) => {
     const state = JSON.parse(stored([{ kind: 'welcome' }]));
-    state.version = 1;
-    state.pending_request = { message: 'iris', session_id: 'sess_security', request_id: 'req_old' };
+    state.version = version;
+    state.pending_request = { message: 'iris', session_id: 'sess_security', session_key: 'b'.repeat(64), request_id: 'req_old' };
     const { page, requests } = await fixture(t, file, { [stateKey]: JSON.stringify(state) });
     assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), 'sess_security');
     assert.match(await page.locator('.oa-error-text').textContent(), /aggiornato/);
     assert.equal(await page.locator('#oaInput').inputValue(), 'iris');
+    assert.equal(requests.length, 0);
+  });
+  }
+
+  test(`${file}: a fresh credential is cryptographic, persisted before send and rotated on reset`, async (t) => {
+    const { page, requests } = await fixture(t, file, { etualy_advisor_session_key: '' });
+    const initial = await page.evaluate(() => ({
+      id: window.__widgetTest.session(), key: sessionStorage.getItem('etualy_advisor_session_key'),
+    }));
+    assert.notEqual(initial.id, 'sess_security');
+    assert.match(initial.key, /^[a-f0-9]{64}$/);
+    assert.notEqual(initial.key, 'b'.repeat(64));
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+    assert.equal(requests[0].body.session_key, initial.key);
+    assert.equal(await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)).session_key, stateKey), initial.key);
+    assert.equal((await page.locator('#oaMessages').textContent()).includes(initial.key), false);
+    await page.locator('#oaRestartBtn').click();
+    await page.waitForFunction((key) => sessionStorage.getItem('etualy_advisor_session_key') !== key, initial.key);
+    await page.waitForFunction(() => document.querySelector('#oaInput').disabled === false);
+    await page.evaluate(() => { void window.__widgetTest.sendUserMessage('rosa'); });
+    await page.waitForFunction(() => !window.__widgetTest.active() && document.querySelector('#oaChips')?.textContent === 'Per Lui');
+    const reset = requests.find((request) => request.path === '/reset');
+    assert.equal(reset.body.session_key, initial.key);
+    assert.equal(reset.body.session_id, initial.id);
+    const next = requests.filter((request) => request.path === '/chat').at(-1).body;
+    assert.notEqual(next.session_key, initial.key);
+    assert.notEqual(next.session_id, initial.id);
+  });
+
+  test(`${file}: losing a saved credential restarts safely and preserves the interrupted message`, async (t) => {
+    const state = JSON.parse(stored([{ kind: 'welcome' }]));
+    state.pending_request = { message: 'iris', session_id: 'sess_security', session_key: 'b'.repeat(64), request_id: 'req_pending' };
+    const { page, requests } = await fixture(t, file, { [stateKey]: JSON.stringify(state), etualy_advisor_session_key: '' });
+    assert.notEqual(await page.evaluate(() => window.__widgetTest.session()), 'sess_security');
+    assert.equal(await page.locator('#oaInput').inputValue(), 'iris');
+    assert.equal(await page.locator('.oa-retry-btn').count(), 0);
     assert.equal(requests.length, 0);
   });
 

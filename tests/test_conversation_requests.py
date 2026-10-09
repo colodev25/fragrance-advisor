@@ -41,18 +41,18 @@ def advisor(tmp_path):
 
 
 def test_duplicate_returns_result_without_processing_or_state_change(advisor):
-    first = advisor.advise("iris", "customer", request_id="req_1")
+    first = advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     original = advisor.session_store.get_session("customer")
-    again = advisor.advise(" iris ", "customer", request_id="req_1")
+    again = advisor.advise(" iris ", "customer", request_id="req_1", session_key="b" * 64)
     assert again == first
     assert advisor._handle_free_chat.call_count == 1
     assert advisor.session_store.get_session("customer") == original
 
 
 def test_receipt_survives_advisor_and_store_restart(advisor):
-    expected = advisor.advise("iris", "customer", request_id="req_1")
+    expected = advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     restarted = make_advisor(SessionStore(str(advisor.session_store.db_path)))
-    assert restarted.advise("iris", "customer", request_id="req_1") == expected
+    assert restarted.advise("iris", "customer", request_id="req_1", session_key="b" * 64) == expected
     restarted._handle_free_chat.assert_not_called()
 
 
@@ -60,8 +60,8 @@ def test_receipt_survives_advisor_and_store_restart(advisor):
     {"user_query": "rosa"}, {"max_price": 90}, {"step_override": 2},
 ])
 def test_id_conflict_rejects_changed_payload(advisor, changed):
-    advisor.advise("iris", "customer", request_id="req_1")
-    args = {"user_query": "iris", "session_id": "customer", "request_id": "req_1", **changed}
+    advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
+    args = {"user_query": "iris", "session_id": "customer", "request_id": "req_1", **changed, "session_key": "b" * 64}
     with pytest.raises(RequestConflict) as error:
         advisor.advise(**args)
     assert error.value.code == "request_id_conflict"
@@ -69,10 +69,12 @@ def test_id_conflict_rejects_changed_payload(advisor, changed):
 
 
 def test_identifiers_are_scoped_to_session_and_optional(advisor):
-    advisor.advise("iris", "first", request_id="req_1")
-    advisor.advise("rosa", "second", request_id="req_1")
-    advisor.advise("iris", "first")
-    advisor.advise("iris", "first")
+    advisor.advise("iris", "first", request_id="req_1", session_key="b" * 64)
+    advisor.advise("rosa", "second", request_id="req_1", session_key="b" * 64)
+    advisor.advise("iris", "first", session_key="b" * 64,
+                   session_context=advisor.session_store.get_session("first")["session_context"])
+    advisor.advise("iris", "first", session_key="b" * 64,
+                   session_context=advisor.session_store.get_session("first")["session_context"])
     assert advisor._handle_free_chat.call_count == 4
 
 
@@ -87,10 +89,10 @@ def test_same_request_in_parallel_is_processed_once(advisor):
 
     advisor._handle_free_chat.side_effect = delayed
     with ThreadPoolExecutor(max_workers=2) as executor:
-        first = executor.submit(advisor.advise, "iris", "customer", request_id="req_1")
+        first = executor.submit(advisor.advise, "iris", "customer", request_id="req_1", session_key="b" * 64)
         try:
             assert entered.wait(5)
-            duplicate = executor.submit(advisor.advise, "iris", "customer", request_id="req_1")
+            duplicate = executor.submit(advisor.advise, "iris", "customer", request_id="req_1", session_key="b" * 64)
             with pytest.raises(TimeoutError):
                 duplicate.result(timeout=0.1)
         finally:
@@ -100,19 +102,21 @@ def test_same_request_in_parallel_is_processed_once(advisor):
     assert len(advisor.session_store.get_session("customer")["history"]) == 2
 
 
-def test_parallel_messages_preserve_all_exchanges(advisor):
+def test_parallel_messages_without_context_do_not_mutate_completed_state(advisor):
     with ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(advisor.advise, f"iris {i}", "customer", request_id=f"req_{i}")
+        futures = [executor.submit(advisor.advise, f"iris {i}", "customer", request_id=f"req_{i}", session_key="b" * 64)
                    for i in range(20)]
+        completed = 0
         for future in futures:
-            future.result(timeout=10)
+            try:
+                future.result(timeout=10)
+                completed += 1
+            except RequestConflict as exc:
+                assert exc.code == "session_context_required"
     history = advisor.session_store.get_session("customer")["history"]
-    assert len(history) == 40
-    assert {message["content"] for message in history if message["role"] == "user"} == {
-        f"iris {i}" for i in range(20)
-    }
-    for index in range(0, 40, 2):
-        assert history[index + 1]["content"] == "Risposta a " + history[index]["content"]
+    assert completed == 1
+    assert len(history) == 2
+    assert history[1]["content"] == "Risposta a " + history[0]["content"]
     assert session_coordinator._entries == {}
 
 
@@ -128,18 +132,18 @@ def test_reset_waits_for_active_chat_and_other_sessions_continue(advisor):
 
     def reset():
         reset_started.set()
-        advisor.reset_session("customer")
+        advisor.reset_session("customer", session_key="b" * 64)
 
     advisor._handle_free_chat.side_effect = delayed
     with ThreadPoolExecutor(max_workers=3) as executor:
-        chat = executor.submit(advisor.advise, "iris", "customer", request_id="req_1")
+        chat = executor.submit(advisor.advise, "iris", "customer", request_id="req_1", session_key="b" * 64)
         try:
             assert entered.wait(5)
             reset_future = executor.submit(reset)
             assert reset_started.wait(5)
             with pytest.raises(TimeoutError):
                 reset_future.result(timeout=0.1)
-            unrelated = executor.submit(advisor.advise, "rosa", "other", request_id="req_1")
+            unrelated = executor.submit(advisor.advise, "rosa", "other", request_id="req_1", session_key="b" * 64)
             assert unrelated.result(timeout=5)["reply"] == "Risposta a rosa"
         finally:
             release.set()
@@ -161,22 +165,22 @@ def test_failure_before_commit_can_be_retried_without_partial_history(advisor):
 
     advisor._handle_free_chat.side_effect = failure
     with pytest.raises(RuntimeError):
-        advisor.advise("iris", "customer", request_id="req_1")
+        advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     assert advisor.session_store.get_session("customer")["history"] == []
     assert session_coordinator._entries == {}
     advisor._handle_free_chat.side_effect = original
-    advisor.advise("iris", "customer", request_id="req_1")
+    advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     assert len(advisor.session_store.get_session("customer")["history"]) == 2
 
 
 def test_completed_fallback_response_is_reused(advisor):
     advisor._handle_free_chat.side_effect = None
     advisor._handle_free_chat.return_value = {"reply": "Riprova tra poco", "products": []}
-    result = advisor.advise("iris", "customer", request_id="req_1")
+    result = advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     assert result["reply"] == "Riprova tra poco"
     assert result["products"] == []
     assert result["session_context"]["revision"] == 1
-    advisor.advise("iris", "customer", request_id="req_1")
+    advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     assert advisor._handle_free_chat.call_count == 1
 
 
@@ -191,14 +195,17 @@ def test_state_and_receipt_rollback_together(advisor):
 
 def test_pruned_result_keeps_identity_without_reprocessing(advisor, monkeypatch):
     monkeypatch.setattr("src.session_store.MAX_STORED_RESPONSES", 2)
-    advisor.advise("other", "other", request_id="req_1")
+    advisor.advise("other", "other", request_id="req_1", session_key="b" * 64)
+    contexts = []
     for index in range(3):
-        advisor.advise(f"iris {index}", "customer", request_id=f"req_{index}")
+        contexts.append(advisor.session_store.get_session("customer")["session_context"])
+        advisor.advise(f"iris {index}", "customer", request_id=f"req_{index}", session_key="b" * 64,
+                       session_context=contexts[-1])
     with pytest.raises(RequestConflict) as error:
-        advisor.advise("iris 0", "customer", request_id="req_0")
+        advisor.advise("iris 0", "customer", request_id="req_0", session_key="b" * 64)
     assert error.value.code == "request_result_expired"
-    advisor.advise("iris 2", "customer", request_id="req_2")
-    advisor.advise("other", "other", request_id="req_1")
+    advisor.advise("iris 2", "customer", request_id="req_2", session_key="b" * 64, session_context=contexts[2])
+    advisor.advise("other", "other", request_id="req_1", session_key="b" * 64)
     assert advisor._handle_free_chat.call_count == 4
 
 
@@ -232,7 +239,7 @@ def client(advisor, monkeypatch):
 
 
 def test_api_identified_request_replay_and_conflict(client, advisor):
-    payload = {"message": "iris", "session_id": "customer", "request_id": "req_1"}
+    payload = {"message": "iris", "session_id": "customer", "request_id": "req_1", "session_key": "b" * 64}
     first = client.post("/chat", json=payload)
     replay = client.post("/chat/", json=payload)
     assert first.status_code == replay.status_code == 200
@@ -245,14 +252,14 @@ def test_api_identified_request_replay_and_conflict(client, advisor):
 
 @pytest.mark.parametrize("request_id", ["", "with spaces", "a" * 129, 42, {}, []])
 def test_api_rejects_invalid_request_ids(client, request_id):
-    response = client.post("/chat", json={"message": "iris", "session_id": "customer", "request_id": request_id})
+    response = client.post("/chat", json={"message": "iris", "session_id": "customer", "request_id": request_id, "session_key": "b" * 64})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_error"
 
 
 def test_api_reset_removes_receipts(client, advisor):
-    client.post("/chat", json={"message": "iris", "session_id": "customer", "request_id": "req_1"})
-    assert client.post("/reset", json={"session_id": "customer"}).status_code == 200
+    client.post("/chat", json={"message": "iris", "session_id": "customer", "request_id": "req_1", "session_key": "b" * 64})
+    assert client.post("/reset", json={"session_id": "customer", "session_key": "b" * 64}).status_code == 200
     assert advisor.session_store.get_session("customer")["history"] == []
     with advisor.session_store._get_connection() as conn:
         assert conn.execute("SELECT COUNT(*) FROM chat_requests").fetchone()[0] == 0
@@ -261,7 +268,7 @@ def test_api_reset_removes_receipts(client, advisor):
 def test_api_http_failure_keeps_same_id_retryable(client, advisor):
     original = advisor._handle_free_chat.side_effect
     advisor._handle_free_chat.side_effect = RuntimeError("simulated failure")
-    payload = {"message": "iris", "session_id": "customer", "request_id": "req_1"}
+    payload = {"message": "iris", "session_id": "customer", "request_id": "req_1", "session_key": "b" * 64}
     assert client.post("/chat", json=payload).status_code == 503
     advisor._handle_free_chat.side_effect = original
     assert client.post("/chat", json=payload).status_code == 200

@@ -40,9 +40,9 @@ Browser interface (index.html)
 
 ### Session persistence
 
-`src/session_store.py` stores conversation history, active fragrance, guided-flow state, update timestamp and version/expiry metadata in SQLite. The default database is `data/sessions.db`; `SESSIONS_DB_PATH` can override it. WAL mode is enabled and each connection is explicitly closed after use.
+`src/session_store.py` stores conversation history, active fragrance, guided-flow state, update timestamp, version/expiry metadata and a private credential hash in SQLite. The default database is `data/sessions.db`; `SESSIONS_DB_PATH` can override it. WAL mode is enabled and each connection is explicitly closed after use.
 
-Sessions expire after 24 hours without a new completed message. An off-thread maintenance task runs at startup and hourly, deleting expired state and receipts in bounded batches under per-session locks. Request processing also checks expiry, clears temporary RAM copies on completion and refreshes the active product by catalog ID. The widget sends its token/revision in normal chat requests to detect missing or stale state and restart coherently while preserving the customer's draft. No extra page-load HTTP check is introduced.
+Sessions expire after 24 hours without a new completed message. An off-thread maintenance task runs at startup and hourly, deleting expired state and receipts in bounded batches under per-session locks. Request processing also checks expiry, clears temporary RAM copies on completion and refreshes the active product by catalog ID. The widget creates a cryptographic credential before its first message and sends it in normal chat/reset JSON bodies. The server atomically claims a new identifier, stores only the credential hash and checks ownership before continuing, replaying or clearing a session. The widget also sends its token/revision in normal chat requests to detect missing or stale state and restart coherently while preserving the customer's draft. No extra page-load HTTP check is introduced.
 
 Render Free has no persistent disk: these sessions can disappear before their inactivity deadline on deploy, restart or spin-down. The current design handles that loss explicitly; it does not provide durable storage across those events. See [session storage](INDEX_OPERATIONS.md#session-storage-on-render-free).
 

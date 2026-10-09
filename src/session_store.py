@@ -1,5 +1,8 @@
 """SQLite state, atomic request receipts and 24-hour inactivity expiry."""
 import json
+import hashlib
+import hmac
+import re
 import os
 import sqlite3
 import time
@@ -9,10 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 try:
-    from src.conversation_requests import RequestConflict, session_coordinator
+    from src.conversation_requests import RequestConflict, SessionAccessError, session_coordinator
     from src.chat_budget import ChatUnavailable
 except ModuleNotFoundError:
-    from conversation_requests import RequestConflict, session_coordinator
+    from conversation_requests import RequestConflict, SessionAccessError, session_coordinator
     from chat_budget import ChatUnavailable
 
 MAX_STORED_RESPONSES = 100
@@ -57,6 +60,7 @@ class SessionStore:
                 ("session_token", "TEXT NOT NULL DEFAULT ''"),
                 ("revision", "INTEGER NOT NULL DEFAULT 0"),
                 ("expires_at", "REAL NOT NULL DEFAULT 0"),
+                ("credential_hash", "TEXT NOT NULL DEFAULT ''"),
             ):
                 if name not in columns:
                     conn.execute(f"ALTER TABLE sessions ADD COLUMN {name} {declaration}")
@@ -81,8 +85,37 @@ class SessionStore:
 
     @staticmethod
     def _context(row):
+        if row["revision"] == 0 and row["credential_hash"]:
+            return None  # Claimed before processing the first message.
         return {"token": row["session_token"], "revision": row["revision"],
                 "expires_at": int(row["expires_at"] * 1000)}
+
+    def authorize_session(self, session_id, session_key, *, allow_create=False):
+        """Atomically claim a new ID; never adopt an existing legacy session."""
+        if not isinstance(session_key, str) or not re.fullmatch(r"[a-f0-9]{64}", session_key):
+            raise SessionAccessError()
+        digest = hashlib.sha256(session_key.encode("ascii")).hexdigest()
+        now = time.time()
+        with self._get_connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT credential_hash, expires_at FROM sessions WHERE session_id = ?",
+                               (session_id,)).fetchone()
+            if row is None:
+                if not allow_create:
+                    raise RequestConflict("session_expired", "La sessione non è più disponibile. Inizia una nuova consulenza.")
+                conn.execute("""INSERT INTO sessions
+                    (session_id, history, guided_state, updated_at, session_token, revision, expires_at, credential_hash)
+                    VALUES (?, '[]', ?, ?, ?, 0, ?, ?)""",
+                    (session_id, json.dumps({"step": None, "answers": []}),
+                     datetime.fromtimestamp(now, timezone.utc).isoformat(), uuid.uuid4().hex,
+                     now + SESSION_TTL_SECONDS, digest))
+                return
+            if not row["credential_hash"]:
+                raise RequestConflict("session_migration_required", "Inizia una nuova consulenza per aggiornare la protezione della sessione.")
+            if not hmac.compare_digest(row["credential_hash"], digest):
+                raise SessionAccessError()
+            if row["expires_at"] <= now:
+                raise RequestConflict("session_expired", "La sessione è scaduta. Inizia una nuova consulenza.")
 
     def get_request_response(self, session_id: str, request_id: str, fingerprint: str):
         with self._get_connection() as conn:

@@ -36,23 +36,23 @@ def advisor(tmp_path, clock):
 
 
 def test_ttl_renews_only_for_completed_new_messages(advisor, clock):
-    first = advisor.advise("iris", "customer", request_id="req_1")
+    first = advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     context = first["session_context"]
     assert context["expires_at"] == int((clock.now + SESSION_TTL_SECONDS) * 1000)
     clock.now += 100
-    assert advisor.advise("iris", "customer", request_id="req_1") == first
+    assert advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64) == first
     assert advisor.session_store.get_session("customer")["session_context"] == context
-    second = advisor.advise("rosa", "customer", session_context=context, request_id="req_2")
+    second = advisor.advise("rosa", "customer", session_context=context, request_id="req_2", session_key="b" * 64)
     assert second["session_context"]["token"] == context["token"]
     assert second["session_context"]["revision"] == 2
     assert second["session_context"]["expires_at"] == int((clock.now + SESSION_TTL_SECONDS) * 1000)
 
 
 def test_expired_session_rejects_replay_without_any_processing(advisor, clock):
-    first = advisor.advise("iris", "customer", request_id="req_1")
+    first = advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     clock.now += SESSION_TTL_SECONDS
     with pytest.raises(RequestConflict, match="scaduta") as error:
-        advisor.advise("iris", "customer", request_id="req_1", session_context=first["session_context"])
+        advisor.advise("iris", "customer", request_id="req_1", session_context=first["session_context"], session_key="b" * 64)
     assert error.value.code == "session_expired"
     assert advisor._handle_free_chat.call_count == 1
     assert advisor.session_store.get_session("customer")["history"] == []
@@ -60,55 +60,55 @@ def test_expired_session_rejects_replay_without_any_processing(advisor, clock):
 
 
 def test_missing_database_after_deploy_is_detected_before_processing(advisor, clock, tmp_path):
-    first = advisor.advise("iris", "customer")
+    first = advisor.advise("iris", "customer", session_key="b" * 64)
     advisor.session_store = SessionStore(str(tmp_path / "fresh_deploy.db"))
     with pytest.raises(RequestConflict) as error:
-        advisor.advise("quanto costa", "customer", session_context=first["session_context"])
+        advisor.advise("quanto costa", "customer", session_context=first["session_context"], session_key="b" * 64)
     assert error.value.code == "session_expired"
     assert advisor._handle_free_chat.call_count == 1
 
 
 def test_same_sid_with_new_session_token_cannot_resume_old_state(advisor):
-    first = advisor.advise("iris", "customer")
-    advisor.reset_session("customer")
-    renewed = advisor.advise("rosa", "customer")
+    first = advisor.advise("iris", "customer", session_key="b" * 64)
+    advisor.reset_session("customer", session_key="b" * 64)
+    renewed = advisor.advise("rosa", "customer", session_key="b" * 64)
     assert renewed["session_context"]["token"] != first["session_context"]["token"]
     with pytest.raises(RequestConflict) as error:
-        advisor.advise("quanto costa", "customer", session_context=first["session_context"])
+        advisor.advise("quanto costa", "customer", session_context=first["session_context"], session_key="b" * 64)
     assert error.value.code == "session_expired"
 
 
 def test_stale_revision_is_rejected_without_processing(advisor):
-    first = advisor.advise("iris", "customer")
-    advisor.advise("rosa", "customer", session_context=first["session_context"])
+    first = advisor.advise("iris", "customer", session_key="b" * 64)
+    advisor.advise("rosa", "customer", session_context=first["session_context"], session_key="b" * 64)
     with pytest.raises(RequestConflict) as error:
-        advisor.advise("altra", "customer", session_context=first["session_context"])
+        advisor.advise("altra", "customer", session_context=first["session_context"], session_key="b" * 64)
     assert error.value.code == "session_out_of_sync"
     assert advisor._handle_free_chat.call_count == 2
 
 
 def test_replay_of_last_completed_request_recovers_using_original_revision(advisor):
-    first = advisor.advise("iris", "customer", request_id="req_1")
-    second = advisor.advise("rosa", "customer", request_id="req_2", session_context=first["session_context"])
+    first = advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
+    second = advisor.advise("rosa", "customer", request_id="req_2", session_context=first["session_context"], session_key="b" * 64)
     assert advisor.advise("rosa", "customer", request_id="req_2",
-                          session_context=first["session_context"]) == second
+                          session_context=first["session_context"], session_key="b" * 64) == second
     assert advisor._handle_free_chat.call_count == 2
-    advisor.advise("oud", "customer", session_context=second["session_context"])
+    advisor.advise("oud", "customer", session_context=second["session_context"], session_key="b" * 64)
     with pytest.raises(RequestConflict) as error:
-        advisor.advise("rosa", "customer", request_id="req_2", session_context=first["session_context"])
+        advisor.advise("rosa", "customer", request_id="req_2", session_context=first["session_context"], session_key="b" * 64)
     assert error.value.code == "session_out_of_sync"
 
 
 def test_database_restart_retains_token_revision_and_expiry(advisor):
-    first = advisor.advise("iris", "customer", request_id="req_1")
+    first = advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     restarted = make_advisor(SessionStore(str(advisor.session_store.db_path)))
-    assert restarted.advise("iris", "customer", request_id="req_1") == first
+    assert restarted.advise("iris", "customer", request_id="req_1", session_key="b" * 64) == first
     assert restarted.session_store.get_session("customer")["session_context"] == first["session_context"]
 
 
 def test_no_inactive_customer_copies_remain_in_memory(advisor):
     for index in range(20):
-        advisor.advise("iris", f"customer_{index}")
+        advisor.advise("iris", f"customer_{index}", session_key="b" * 64)
         assert advisor.sessions == advisor.active_perfumes == advisor.guided_states == {}
     assert session_coordinator._entries == {}
 
@@ -131,8 +131,8 @@ def expire(store, sid):
 
 
 def test_cleanup_removes_state_and_receipts_together_but_keeps_fresh_sessions(advisor):
-    advisor.advise("iris", "expired", request_id="req_1")
-    advisor.advise("rosa", "fresh", request_id="req_1")
+    advisor.advise("iris", "expired", request_id="req_1", session_key="b" * 64)
+    advisor.advise("rosa", "fresh", request_id="req_1", session_key="b" * 64)
     expire(advisor.session_store, "expired")
     assert advisor.session_store.cleanup_old_sessions() == 1
     with advisor.session_store._get_connection() as connection:
@@ -142,7 +142,7 @@ def test_cleanup_removes_state_and_receipts_together_but_keeps_fresh_sessions(ad
 
 def test_cleanup_is_bounded(advisor):
     for index in range(5):
-        advisor.advise("iris", f"expired_{index}")
+        advisor.advise("iris", f"expired_{index}", session_key="b" * 64)
         expire(advisor.session_store, f"expired_{index}")
     assert advisor.session_store.cleanup_old_sessions(limit=2) == 2
     assert advisor.session_store.cleanup_old_sessions(limit=2) == 2
@@ -150,7 +150,7 @@ def test_cleanup_is_bounded(advisor):
 
 
 def test_cleanup_skips_busy_sessions_without_waiting(advisor):
-    advisor.advise("iris", "customer")
+    advisor.advise("iris", "customer", session_key="b" * 64)
     expire(advisor.session_store, "customer")
     with session_coordinator.hold("customer"):
         with ThreadPoolExecutor(max_workers=1) as executor:
@@ -159,7 +159,7 @@ def test_cleanup_skips_busy_sessions_without_waiting(advisor):
 
 
 def test_cleanup_rechecks_expiry_after_candidate_selection(advisor, monkeypatch, clock):
-    advisor.advise("iris", "customer")
+    advisor.advise("iris", "customer", session_key="b" * 64)
     expire(advisor.session_store, "customer")
     original = session_coordinator.hold
     @contextmanager
@@ -214,9 +214,11 @@ def test_legacy_active_product_uses_only_unique_name_and_brand(advisor):
 @pytest.mark.parametrize("catalog", [[], [dict(product(), in_stock=False)]])
 def test_removed_or_unavailable_active_product_is_cleared_and_explained(advisor, catalog):
     advisor.catalog_products = catalog
+    advisor.session_store.authorize_session("customer", "b" * 64, allow_create=True)
     advisor.session_store.save_session("customer", [], {"id": "p1", "name": "Iris"},
                                        {"step": None, "answers": []})
-    result = advisor.advise("quanto costa?", "customer")
+    result = advisor.advise("quanto costa?", "customer", session_key="b" * 64,
+                           session_context=advisor.session_store.get_session("customer")["session_context"])
     assert "non è più disponibile" in result["reply"]
     assert result["products"] == []
     assert advisor.session_store.get_session("customer")["active_perfume"] is None
@@ -226,16 +228,16 @@ def test_removed_or_unavailable_active_product_is_cleared_and_explained(advisor,
 @pytest.mark.parametrize("sid", [None, "", "default", "not valid", "a" * 129])
 def test_advisor_requires_a_real_session_identifier(advisor, sid):
     with pytest.raises(ValueError):
-        advisor.advise("iris", sid)
+        advisor.advise("iris", sid, session_key="b" * 64)
     advisor._handle_free_chat.assert_not_called()
 
 
 @pytest.mark.parametrize("payload", [
-    {"message": "iris"}, {"message": "iris", "session_id": None},
-    {"message": "iris", "session_id": "default"},
-    {"message": "iris", "session_id": "customer", "session_context": {"token": "x", "revision": 1}},
-    {"message": "iris", "session_id": "customer", "session_context": {"token": "a" * 32, "revision": 0}},
-    {"message": "iris", "session_id": "customer", "session_context": {"token": "a" * 32, "revision": True}},
+    {"message": "iris"}, {"message": "iris", "session_id": None, "session_key": "b" * 64},
+    {"message": "iris", "session_id": "default", "session_key": "b" * 64},
+    {"message": "iris", "session_id": "customer", "session_context": {"token": "x", "revision": 1}, "session_key": "b" * 64},
+    {"message": "iris", "session_id": "customer", "session_context": {"token": "a" * 32, "revision": 0}, "session_key": "b" * 64},
+    {"message": "iris", "session_id": "customer", "session_context": {"token": "a" * 32, "revision": True}, "session_key": "b" * 64},
 ])
 def test_api_rejects_missing_identifiers_and_malformed_context(advisor, monkeypatch, payload):
     monkeypatch.setattr(api, "advisor", advisor)
@@ -251,7 +253,7 @@ def test_http_lost_session_returns_409_and_never_calls_processing(advisor, monke
     response = TestClient(api.app).post("/chat", json={
         "message": "iris", "session_id": "customer",
         "session_context": {"token": "a" * 32, "revision": 1},
-    })
+     "session_key": "b" * 64})
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "session_expired"
     advisor._handle_free_chat.assert_not_called()

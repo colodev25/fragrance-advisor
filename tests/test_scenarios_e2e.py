@@ -4,6 +4,7 @@ Verifica: ricerca semantica reale con ChromaDB persistente e Groq attivo.
 Ogni test è auto-consistente e può essere eseguito singolarmente.
 """
 
+from tests.session_client import client_advise
 import os
 from pathlib import Path
 import pytest
@@ -37,7 +38,7 @@ def test_scenario_note_and_season(live_advisor):
     session_id = "e2e_session_cannella"
     query = "vorrei un profumo invernale alla cannella"
 
-    res = live_advisor.advise(query, session_id=session_id)
+    res = client_advise(live_advisor, query, session_id=session_id)
 
     assert res["mode"] == "free"
     assert len(res["products"]) == 1
@@ -64,12 +65,12 @@ def test_scenario_note_and_season(live_advisor):
 def test_scenario_follow_up_stays_on_active(live_advisor):
     session_id = "e2e_session_followup"
     # Pre-condizione auto-consistente
-    live_advisor.advise("consigliami un profumo alla vaniglia", session_id=session_id)
+    client_advise(live_advisor, "consigliami un profumo alla vaniglia", session_id=session_id)
     active_before = live_advisor.session_store.get_session(session_id)["active_perfume"]
     assert active_before is not None
 
     follow_up_query = "quali sono le sue note olfattive e quanto dura sulla pelle?"
-    res = live_advisor.advise(follow_up_query, session_id=session_id)
+    res = client_advise(live_advisor, follow_up_query, session_id=session_id)
 
     # Risposta discorsiva: nessuna card aggiuntiva
     assert len(res["products"]) == 0
@@ -86,11 +87,11 @@ def test_scenario_follow_up_stays_on_active(live_advisor):
 def test_scenario_switch_with_relative_price(live_advisor):
     session_id = "e2e_session_switch"
     # Pre-condizione auto-consistente
-    live_advisor.advise("consigliami un profumo orientale costoso", session_id=session_id)
+    client_advise(live_advisor, "consigliami un profumo orientale costoso", session_id=session_id)
     prev_perfume = live_advisor.session_store.get_session(session_id)["active_perfume"]
     prev_price = float(prev_perfume["price"])
 
-    res = live_advisor.advise("vorrei qualcosa di più economico", session_id=session_id)
+    res = client_advise(live_advisor, "vorrei qualcosa di più economico", session_id=session_id)
 
     assert len(res["products"]) == 1
     new_prod = res["products"][0]
@@ -107,7 +108,7 @@ def test_scenario_nonexistent_request_graceful_rejection(live_advisor):
     session_id = "e2e_session_impossible"
     query = "cerco un profumo che odora esattamente di pizza al pomodoro e mozzarella"
 
-    res = live_advisor.advise(query, session_id=session_id)
+    res = client_advise(live_advisor, query, session_id=session_id)
 
     # Nessun profumo del catalogo deve essere forzato
     assert len(res["products"]) == 0, f"Assegnato erroneamente un profumo: {res['products']}"
@@ -121,20 +122,20 @@ def test_scenario_nonexistent_request_graceful_rejection(live_advisor):
 def test_scenario_guided_flow_end_to_end(live_advisor):
     session_id = "e2e_session_full_quiz"
 
-    res1 = live_advisor.advise("🎯 Guidami nella scelta", session_id=session_id)
+    res1 = client_advise(live_advisor, "🎯 Guidami nella scelta", session_id=session_id)
     assert res1["step"] == 1
 
-    res2 = live_advisor.advise("🪵 Legnoso o Intenso", session_id=session_id)
+    res2 = client_advise(live_advisor, "🪵 Legnoso o Intenso", session_id=session_id)
     assert res2["step"] == 2
 
-    res3 = live_advisor.advise("Unisex", session_id=session_id)
+    res3 = client_advise(live_advisor, "Unisex", session_id=session_id)
     assert res3["step"] == 3
 
-    res4 = live_advisor.advise("Sera / Occasioni speciali", session_id=session_id)
+    res4 = client_advise(live_advisor, "Sera / Occasioni speciali", session_id=session_id)
     assert res4["step"] == 4
 
     # Risposta alla domanda sul budget: conclusione del quiz
-    res_final = live_advisor.advise("Nessun limite di budget", session_id=session_id)
+    res_final = client_advise(live_advisor, "Nessun limite di budget", session_id=session_id)
     
     # 1. Il quiz si è concluso con successo
     assert res_final["step"] is None

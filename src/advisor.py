@@ -468,7 +468,7 @@ class FragranceAdvisor:
     def advise(
         self, user_query: str, session_id: str,
         max_price: float = None, step_override: int = None, request_id: str = None,
-        session_context: dict = None,
+        session_context: dict = None, session_key: str = None,
     ) -> dict:
         if not isinstance(session_id, str) or session_id == "default" or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", session_id):
             raise ValueError("Un identificativo di sessione valido è obbligatorio.")
@@ -480,6 +480,7 @@ class FragranceAdvisor:
                     budget.check()
                     if not hasattr(self, "session_store") or self.session_store is None:
                         self.session_store = SessionStore()
+                    self.session_store.authorize_session(session_id, session_key, allow_create=session_context is None)
                     state = self.session_store.get_session(session_id, include_expired=True)
                     actual = state["session_context"]
                     if (actual and actual["expires_at"] <= time.time() * 1000) or (
@@ -491,16 +492,20 @@ class FragranceAdvisor:
                         payload = json.dumps({
                             "message": user_query.strip(), "max_price": max_price,
                             "step_override": step_override,
+                            "session_context": ({"token": session_context["token"], "revision": session_context["revision"]}
+                                                if session_context is not None else None),
                         }, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
                         fingerprint = hashlib.sha256(payload.encode("utf-8")).hexdigest()
                         previous = self.session_store.get_request_response(session_id, request_id, fingerprint)
                         if previous is not None:
                             saved_context = previous.get("session_context")
-                            if session_context is not None and (
-                                not saved_context or saved_context["revision"] != actual["revision"]
+                            if (
+                                not saved_context or not actual or saved_context["revision"] != actual["revision"]
                             ):
                                 raise RequestConflict("session_out_of_sync", "La conversazione è stata aggiornata altrove. Iniziamo una nuova consulenza.")
                             return previous
+                    if actual is not None and session_context is None:
+                        raise RequestConflict("session_context_required", "Lo stato della conversazione è necessario. Inizia una nuova consulenza.")
                     if session_context is not None and session_context["revision"] != actual["revision"]:
                         raise RequestConflict("session_out_of_sync", "La conversazione è stata aggiornata altrove. Iniziamo una nuova consulenza.")
                     return self._advise_locked(user_query, session_id, max_price, step_override, request_id, fingerprint, state)
@@ -980,10 +985,13 @@ class FragranceAdvisor:
             else:
                 return self._recommend_free(user_query, session_id, max_price, mentioned_product)
             
-    def reset_session(self, session_id: str):
+    def reset_session(self, session_id: str, session_key: str = None):
         if not session_id:
             return
         with session_coordinator.hold(session_id):
+            if not hasattr(self, "session_store") or self.session_store is None:
+                self.session_store = SessionStore()
+            self.session_store.authorize_session(session_id, session_key)
             if hasattr(self, "session_store") and self.session_store:
                 self.session_store.clear_session(session_id)
             self.sessions.pop(session_id, None)

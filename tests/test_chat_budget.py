@@ -297,6 +297,7 @@ def test_session_lock_timeout_does_not_release_another_requests_lock():
 def test_failed_llm_request_preserves_state_and_can_recover_with_same_identifier(tmp_path, clock):
     store = SessionStore(str(tmp_path / "recover.db"))
     original = {"name": "Attivo"}
+    store.authorize_session("customer", "b" * 64, allow_create=True)
     store.save_session("customer", [{"role": "user", "content": "prima"}], original,
                        {"step": None, "answers": ["Legnoso"]})
     saved = store.get_session("customer")
@@ -311,16 +312,16 @@ def test_failed_llm_request_preserves_state_and_can_recover_with_same_identifier
         return {"reply": reply, "products": []}
     advisor._handle_free_chat = processing
     with pytest.raises(ChatUnavailable):
-        advisor.advise("iris", "customer", request_id="req_retry")
+        advisor.advise("iris", "customer", request_id="req_retry", session_key="b" * 64, session_context=saved["session_context"])
     assert store.get_session("customer") == saved
     assert current_chat_budget.get() is None
     assert session_coordinator._entries == {}
     with store._get_connection() as conn:
         assert conn.execute("SELECT COUNT(*) FROM chat_requests").fetchone()[0] == 0
     client.chat.completions.create.side_effect = None
-    result = advisor.advise("iris", "customer", request_id="req_retry")
+    result = advisor.advise("iris", "customer", request_id="req_retry", session_key="b" * 64, session_context=saved["session_context"])
     assert result["reply"] == "Risposta valida"
-    assert advisor.advise("iris", "customer", request_id="req_retry") == result
+    assert advisor.advise("iris", "customer", request_id="req_retry", session_key="b" * 64, session_context=saved["session_context"]) == result
     assert client.chat.completions.create.call_count == 2
 
 
@@ -333,7 +334,7 @@ def test_expired_processing_cannot_commit_history_or_receipt(tmp_path, clock):
         return {"reply": "Troppo tardi"}
     advisor._handle_free_chat = slow
     with pytest.raises(ChatUnavailable, match="chat_deadline_exceeded"):
-        advisor.advise("iris", "customer", request_id="req_1")
+        advisor.advise("iris", "customer", request_id="req_1", session_key="b" * 64)
     assert store.get_session("customer")["history"] == []
     with store._get_connection() as conn:
         assert conn.execute("SELECT COUNT(*) FROM chat_requests").fetchone()[0] == 0
@@ -350,11 +351,11 @@ def test_guided_cards_can_complete_with_fixed_intro_and_be_replayed(tmp_path, cl
         "documents": [["Note: iris"]],
     }
     advisor.client.chat.completions.create.side_effect = limited("40")
-    result = advisor.advise("Nessun limite", "customer", step_override=4, request_id="req_guided")
+    result = advisor.advise("Nessun limite", "customer", step_override=4, request_id="req_guided", session_key="b" * 64)
     assert len(result["products"]) == 1
     assert result["reply"].startswith("Ecco le fragranze selezionate")
     assert advisor.client.chat.completions.create.call_args.kwargs["max_tokens"] == 1024
-    assert advisor.advise("Nessun limite", "customer", step_override=4, request_id="req_guided") == result
+    assert advisor.advise("Nessun limite", "customer", step_override=4, request_id="req_guided", session_key="b" * 64) == result
     assert advisor.client.chat.completions.create.call_count == 1
 
 
@@ -409,7 +410,7 @@ def test_http_failures_are_retryable_and_expose_retry_after(monkeypatch, code):
     api.rate_limiter.reset()
     client = TestClient(api.app)
     response = client.post("/chat", headers={"Origin": "https://store.test"},
-                           json={"message": "iris", "session_id": "customer", "request_id": "req_1"})
+                           json={"message": "iris", "session_id": "customer", "request_id": "req_1", "session_key": "b" * 64})
     assert response.status_code == 503
     assert response.json()["error"]["code"] == code
     assert response.headers["Retry-After"] == "13"

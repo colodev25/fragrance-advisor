@@ -14,6 +14,15 @@ class RequestConflict(ValueError):
         self.code = code
 
 
+class SessionAccessError(ValueError):
+    """Do not disclose the stored credential or session contents."""
+
+    code = "session_access_denied"
+
+    def __init__(self):
+        super().__init__("Non è possibile autorizzare questa sessione. Inizia una nuova consulenza.")
+
+
 class SessionCoordinator:
     """Serializza solo la stessa sessione, senza trattenere lock inutilizzati."""
 

@@ -68,7 +68,8 @@ def test_chat_endpoint_free_chat_contract(api_client):
         response = api_client.post("/chat", json={
             "message": "cerco un profumo marino",
             "session_id": "test_session_api",
-            "max_price": 300.0
+            "max_price": 300.0,
+            "session_key": "b" * 64,
         })
 
     assert response.status_code == 200
@@ -119,7 +120,8 @@ def test_chat_endpoint_guided_step_contract(api_client):
         # Test con rotta alternativa con slash finale (/chat/)
         response = api_client.post("/chat/", json={
             "message": "🎯 Guidami nella scelta",
-            "session_id": "test_guided_api"
+            "session_id": "test_guided_api",
+            "session_key": "b" * 64,
         })
 
     assert response.status_code == 200
@@ -141,13 +143,13 @@ def test_reset_endpoint_invokes_advisor_cleanup(api_client):
     mock_advisor = MagicMock()
 
     with patch("src.main.advisor", mock_advisor):
-        response = api_client.post("/reset", json={"session_id": "user_to_reset_123"})
+        response = api_client.post("/reset", json={"session_id": "user_to_reset_123", "session_key": "b" * 64})
 
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
     assert data["session_id"] == "user_to_reset_123"
-    mock_advisor.reset_session.assert_called_once_with("user_to_reset_123")
+    mock_advisor.reset_session.assert_called_once_with("user_to_reset_123", session_key="b" * 64)
 
 
 # ==============================================================================
@@ -156,7 +158,7 @@ def test_reset_endpoint_invokes_advisor_cleanup(api_client):
 
 def test_chat_endpoint_missing_required_fields(api_client):
     """Invio di un payload privo del campo 'message'."""
-    response = api_client.post("/chat", json={"session_id": "only_session"})
+    response = api_client.post("/chat", json={"session_id": "only_session", "session_key": "b" * 64})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_error"
 
@@ -172,7 +174,7 @@ def test_chat_endpoint_rejects_blank_or_unsafe_inputs(api_client):
     blank_message = api_client.post("/chat", json={"message": "   "})
     invalid_session = api_client.post(
         "/chat",
-        json={"message": "Consigliami un profumo", "session_id": "session id con spazi"},
+        json={"message": "Consigliami un profumo", "session_id": "session id con spazi", "session_key": "b" * 64},
     )
 
     assert blank_message.status_code == 422
@@ -192,10 +194,10 @@ def test_chat_endpoint_rate_limit(api_client):
 
     with patch("src.main.advisor", mock_advisor):
         for _ in range(CHAT_RATE_LIMIT_PER_MINUTE):
-            response = api_client.post("/chat", json={"message": "Test rate limit", "session_id": "rate_test"})
+            response = api_client.post("/chat", json={"message": "Test rate limit", "session_id": "rate_test", "session_key": "b" * 64})
             assert response.status_code == 200
 
-        blocked = api_client.post("/chat", json={"message": "Test rate limit", "session_id": "rate_test"})
+        blocked = api_client.post("/chat", json={"message": "Test rate limit", "session_id": "rate_test", "session_key": "b" * 64})
 
     assert blocked.status_code == 429
     assert blocked.json()["error"]["code"] == "rate_limit_exceeded"

@@ -73,9 +73,9 @@ Each `session_id` stores:
 - Conversation history
 - The active fragrance, if one is selected
 - Guided-flow step and collected answers
-- Last update time, inactivity deadline, session token and revision
+- Last update time, inactivity deadline, session token and revision, and the SHA-256 hash of the private session credential
 
-`SessionStore` reloads persisted state for each request. Conversation continuity after a restart requires the SQLite file to survive; the current Render Free filesystem is ephemeral. Session IDs are mandatory and the shared `default` value is rejected. `POST /reset` clears the session.
+`SessionStore` reloads persisted state for each request. Conversation continuity after a restart requires the SQLite file to survive; the current Render Free filesystem is ephemeral. Session IDs are mandatory and the shared `default` value is rejected. `POST /reset` clears the session only with its matching `session_key`. The advisor checks this credential before state loading or cached-result recovery; new messages in an established session also require the current context. A failed first message leaves an owned, expiring empty claim so it can be retried safely. Existing sessions without an owner hash cannot be adopted.
 
 New completed messages renew a 24-hour inactivity deadline; reads, failed processing and cached retries do not. Expiry and supplied token/revision checks run before model work. The API starts maintenance at startup and hourly, in batches of 100 expired sessions and at most 10 batches per cycle. Cleanup uses the same session locks, skips busy conversations and deletes state and receipts together. SQLite connections close after every operation, including failures. Inactive customer copies are removed from the advisor's RAM maps after each request.
 

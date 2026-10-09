@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from src.rate_limit import InMemoryRateLimiter
-from src.conversation_requests import RequestConflict
+from src.conversation_requests import RequestConflict, SessionAccessError
 from src.chat_budget import ChatUnavailable
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -129,6 +129,7 @@ class SessionContext(BaseModel):
 
 
 class ChatRequest(BaseModel):
+    session_key: str = Field(pattern=r"^[a-f0-9]{64}$", strict=True)
     message: str = Field(min_length=1, max_length=MAX_MESSAGE_LENGTH)
     session_id: str = Field(min_length=1, max_length=128)
     session_context: Optional[SessionContext] = None
@@ -153,6 +154,7 @@ class ChatRequest(BaseModel):
 
 
 class ResetRequest(BaseModel):
+    session_key: str = Field(pattern=r"^[a-f0-9]{64}$", strict=True)
     session_id: str = Field(min_length=1, max_length=128)
 
     @field_validator("session_id")
@@ -245,10 +247,13 @@ def chat_endpoint(req: ChatRequest, request: Request):
         return advisor.advise(
             user_query=req.message,
             session_id=req.session_id,
+            session_key=req.session_key,
             max_price=req.max_price,
             step_override=req.step_override,
             **identified_request,
         )
+    except SessionAccessError as exc:
+        raise ApiError(403, exc.code, str(exc)) from exc
     except RequestConflict as exc:
         raise ApiError(409, exc.code, str(exc)) from exc
     except ChatUnavailable as exc:
@@ -267,12 +272,17 @@ def chat_endpoint(req: ChatRequest, request: Request):
 def reset_endpoint(req: ResetRequest, request: Request):
     """Cancella lo stato della sessione su SQLite per ricominciare da zero."""
     _enforce_rate_limit(request, "reset", RESET_RATE_LIMIT_PER_MINUTE)
-    if advisor is not None:
-        try:
-            advisor.reset_session(req.session_id)
-        except Exception:
-            logger.exception("Session reset failed.")
-            raise ApiError(503, "session_reset_failed", "Non è stato possibile reimpostare la sessione. Riprova.")
+    if advisor is None:
+        raise ApiError(503, "service_starting", "Il servizio è in fase di avvio. Riprova tra qualche secondo.")
+    try:
+        advisor.reset_session(req.session_id, session_key=req.session_key)
+    except SessionAccessError as exc:
+        raise ApiError(403, exc.code, str(exc)) from exc
+    except RequestConflict as exc:
+        raise ApiError(409, exc.code, str(exc)) from exc
+    except Exception:
+        logger.exception("Session reset failed.")
+        raise ApiError(503, "session_reset_failed", "Non è stato possibile reimpostare la sessione. Riprova.")
     return {"status": "ok", "session_id": req.session_id, "message": "Sessione azzerata"}
 
 

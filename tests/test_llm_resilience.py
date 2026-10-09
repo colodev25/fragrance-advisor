@@ -3,6 +3,7 @@ test_llm_resilience.py - Stress test per il wrapper di resilienza Groq
 Valida: backoff temporale, failover 120B -> 20B, timeout, concorrenza e test live.
 """
 
+from tests.session_client import client_advise
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -110,6 +111,8 @@ def test_history_limit_preserves_active_product_and_guided_preferences(tmp_path)
     store = SessionStore(str(tmp_path / "history.db"))
     history = [{"role": "user" if i % 2 == 0 else "assistant", "content": str(i)} for i in range(60)]
     product = {"name": "Attivo"}
+    import hashlib
+    store.authorize_session("test", hashlib.sha256(b"test-client:test").hexdigest(), allow_create=True)
     store.save_session("test", history, product, {"step": None, "answers": ["Legnoso"]})
     advisor = FragranceAdvisor.__new__(FragranceAdvisor)
     advisor.session_store = store
@@ -119,7 +122,7 @@ def test_history_limit_preserves_active_product_and_guided_preferences(tmp_path)
         advisor.sessions[session_id].extend([{"role": "user", "content": query}, {"role": "assistant", "content": "Risposta"}])
         return {"reply": "Risposta"}
     advisor._handle_free_chat = free_chat
-    advisor.advise("Una domanda", "test")
+    client_advise(advisor, "Una domanda", "test")
     saved = store.get_session("test")
     assert len(saved["history"]) == MAX_HISTORY_MESSAGES
     assert saved["history"][-1]["content"] == "Risposta"

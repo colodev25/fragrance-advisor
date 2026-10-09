@@ -147,6 +147,7 @@ def test_fastapi_reset_clears_database(tmp_path):
     test_store = SessionStore(db_path=str(test_db))
 
     session_id = "http_reset_session"
+    test_store.authorize_session(session_id, "b" * 64, allow_create=True)
     test_store.save_session(
         session_id,
         history=[{"role": "user", "content": "messaggio da rimuovere"}],
@@ -158,7 +159,7 @@ def test_fastapi_reset_clears_database(tmp_path):
         import src.main
         src.main.advisor.session_store = test_store
 
-        resp = client.post("/reset", json={"session_id": session_id})
+        resp = client.post("/reset", json={"session_id": session_id, "session_key": "b" * 64})
         assert resp.status_code == 200
 
     # Verifica sul DB che i dati siano stati azzerati
