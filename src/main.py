@@ -16,11 +16,12 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.rate_limit import InMemoryRateLimiter
 from src.conversation_requests import RequestConflict, SessionAccessError
 from src.chat_budget import ChatUnavailable
+from src.capacity import CapacityMiddleware, run_admitted
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DIR = BASE_DIR / "chroma_db"
@@ -49,6 +50,8 @@ def _read_bool(name: str, default: bool = False) -> bool:
 
 RATE_LIMIT_ENABLED = _read_bool("RATE_LIMIT_ENABLED", True)
 RATE_LIMIT_TRUST_PROXY_HEADERS = _read_bool("RATE_LIMIT_TRUST_PROXY_HEADERS")
+if RATE_LIMIT_TRUST_PROXY_HEADERS:
+    logger.warning("RATE_LIMIT_TRUST_PROXY_HEADERS is deprecated and ignored; configure trusted proxies in Uvicorn.")
 CHAT_RATE_LIMIT_PER_MINUTE = _read_positive_int("CHAT_RATE_LIMIT_PER_MINUTE", 30)
 RESET_RATE_LIMIT_PER_MINUTE = _read_positive_int("RESET_RATE_LIMIT_PER_MINUTE", 10)
 rate_limiter = InMemoryRateLimiter()
@@ -107,6 +110,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Consulente Olfattivo AI - Etualy", lifespan=lifespan)
+app.add_middleware(CapacityMiddleware)
 
 # Configurazione CORS conforme agli standard browser W3C
 raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
@@ -124,11 +128,15 @@ app.add_middleware(
 
 
 class SessionContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     token: str = Field(pattern=r"^[a-f0-9]{32}$")
     revision: int = Field(ge=1, le=9_007_199_254_740_991, strict=True)
+    # A returned context may be echoed whole; expiry remains server-owned.
+    expires_at: Optional[int] = Field(default=None, ge=1, le=9_007_199_254_740_991, strict=True)
 
 
 class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     session_key: str = Field(pattern=r"^[a-f0-9]{64}$", strict=True)
     message: str = Field(min_length=1, max_length=MAX_MESSAGE_LENGTH)
     session_id: str = Field(min_length=1, max_length=128)
@@ -154,6 +162,7 @@ class ChatRequest(BaseModel):
 
 
 class ResetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     session_key: str = Field(pattern=r"^[a-f0-9]{64}$", strict=True)
     session_id: str = Field(min_length=1, max_length=128)
 
@@ -188,11 +197,7 @@ async def validation_error_handler(_: Request, exc: RequestValidationError):
 
 
 def _client_identifier(request: Request) -> str:
-    if RATE_LIMIT_TRUST_PROXY_HEADERS:
-        forwarded_for = request.headers.get("x-forwarded-for", "")
-        if forwarded_for:
-            return forwarded_for.split(",", 1)[0].strip()
-
+    # Uvicorn normalizes the client only for its explicitly trusted proxy peers.
     return request.client.host if request.client else "unknown"
 
 
@@ -235,7 +240,11 @@ def readiness_check():
 
 @app.post("/chat")
 @app.post("/chat/")
-def chat_endpoint(req: ChatRequest, request: Request):
+async def chat_endpoint(req: ChatRequest, request: Request):
+    return await run_admitted(request, _chat_response, req, request)
+
+
+def _chat_response(req: ChatRequest, request: Request):
     _enforce_rate_limit(request, "chat", CHAT_RATE_LIMIT_PER_MINUTE)
     if advisor is None:
         raise ApiError(503, startup_error or "service_starting", "Il servizio è in fase di avvio. Riprova tra qualche secondo.")
@@ -243,7 +252,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
     try:
         identified_request = {} if req.request_id is None else {"request_id": req.request_id}
         if req.session_context is not None:
-            identified_request["session_context"] = req.session_context.model_dump()
+            identified_request["session_context"] = req.session_context.model_dump(exclude={"expires_at"})
         return advisor.advise(
             user_query=req.message,
             session_id=req.session_id,
@@ -269,7 +278,11 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
 @app.post("/reset")
 @app.post("/reset/")
-def reset_endpoint(req: ResetRequest, request: Request):
+async def reset_endpoint(req: ResetRequest, request: Request):
+    return await run_admitted(request, _reset_response, req, request)
+
+
+def _reset_response(req: ResetRequest, request: Request):
     """Cancella lo stato della sessione su SQLite per ricominciare da zero."""
     _enforce_rate_limit(request, "reset", RESET_RATE_LIMIT_PER_MINUTE)
     if advisor is None:

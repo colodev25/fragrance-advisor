@@ -8,8 +8,10 @@ from typing import List, Dict, Any, Optional, Callable
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 try:
     from src.chat_budget import ChatUnavailable
+    from src.capacity import current_provider_capacity
 except ModuleNotFoundError:
     from chat_budget import ChatUnavailable
+    from capacity import current_provider_capacity
 
 logger = logging.getLogger("fragrance_advisor.llm")
 
@@ -176,6 +178,9 @@ class ResilientGroqClient:
         last_kind = "llm_unavailable"
         for attempt in range(min(call_limit, budget.MAX_CALLS - budget.calls)):
             timeout = budget.reserve_call(call_timeout)
+            capacity = current_provider_capacity.get()
+            if capacity is not None:
+                capacity.reserve()
             model = models[attempt % len(models)]
             kwargs = {"model": model, "messages": messages, "temperature": temperature,
                       "max_tokens": max_tokens, "timeout": timeout}
@@ -200,6 +205,10 @@ class ResilientGroqClient:
                 last_kind = ("llm_rate_limit" if isinstance(error, RateLimitError) else
                              "llm_timeout" if isinstance(error, APITimeoutError) else "llm_unavailable")
                 hint = retry_after_seconds(error)
+                if isinstance(error, RateLimitError) and capacity is not None:
+                    delay = capacity.defer(hint)
+                    budget.defer_retry(delay)
+                    raise ChatUnavailable("llm_rate_limit", budget.retry_after()) from error
                 logger.warning("[CHAT %s] modello=%s chiamata=%s Retry-After=%s",
                                last_kind.upper(), model, budget.calls, hint)
                 if hint is not None and hint > budget.MAX_INLINE_WAIT:

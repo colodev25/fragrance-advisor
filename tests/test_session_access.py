@@ -26,7 +26,9 @@ def protected(tmp_path, monkeypatch):
 @pytest.mark.parametrize('credential', [None, '', 'x' * 64, 123, 'b' * 63, 'b' * 65])
 def test_missing_or_invalid_credential_is_rejected(protected, endpoint, credential):
     advisor, client = protected
-    payload = {'session_id': 'customer', 'message': 'iris'}
+    payload = {'session_id': 'customer'}
+    if endpoint == '/chat':
+        payload['message'] = 'iris'
     if credential is not None:
         payload['session_key'] = credential
     response = client.post(endpoint, json=payload)
@@ -40,8 +42,10 @@ def test_known_id_and_context_do_not_grant_access(protected, endpoint):
     payload = {'session_id': 'customer', 'session_key': KEY, 'message': 'iris', 'request_id': 'req_first'}
     first = client.post('/chat', json=payload).json()
     before = advisor.session_store.get_session('customer')
-    for context in [None, first['session_context']]:
-        denied = client.post(endpoint, json={**payload, 'session_key': OTHER, 'session_context': context})
+    for context in ([None, first['session_context']] if endpoint == '/chat' else [None]):
+        attempt = ({**payload, 'session_key': OTHER, 'session_context': context} if endpoint == '/chat'
+                   else {'session_id': 'customer', 'session_key': OTHER})
+        denied = client.post(endpoint, json=attempt)
         assert denied.status_code == 403
         assert denied.json()['error']['code'] == 'session_access_denied'
         assert KEY not in denied.text and OTHER not in denied.text
@@ -111,7 +115,10 @@ def test_legacy_session_is_never_adopted(protected):
     advisor.session_store.save_session('legacy', [{'role': 'user', 'content': 'private'}], None, {})
     before = advisor.session_store.get_session('legacy')
     for endpoint in ['/chat', '/reset']:
-        response = client.post(endpoint, json={'message': 'iris', 'session_id': 'legacy', 'session_key': KEY})
+        payload = {'session_id': 'legacy', 'session_key': KEY}
+        if endpoint == '/chat':
+            payload['message'] = 'iris'
+        response = client.post(endpoint, json=payload)
         assert response.status_code == 409
         assert response.json()['error']['code'] == 'session_migration_required'
     assert advisor.session_store.get_session('legacy') == before

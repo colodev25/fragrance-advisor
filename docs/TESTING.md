@@ -18,6 +18,7 @@ The project uses pytest. Tests cover the HTTP API, catalog parsing and advisor r
 | tests/test_chat_budget.py | Shared deadlines and call allowance, SDK retries disabled using an in-memory transport, fast replies without added waits, reduced timeouts, completion ceilings, short and long provider cooldowns, failed-state rollback, guided-card fallback and retryable HTTP errors. No external services. |
 | tests/test_llm_resilience.py | Retry delays, fallback model, concurrent calls, private reasoning protection, truncated answers, candidate selection validation, graceful failure and an optional live Groq check. |
 | tests/test_rate_limit.py | Per-client and per-route request limits. |
+| tests/test_capacity.py | Offline payload/stream limits, unknown fields, admission saturation and worker cancellation, health availability, proxy trust and shared provider call/cooldown budgets. |
 | tests/test_offline_policy.py | Dummy credentials, isolated session database, blocked external DNS/IP connections and allowed local loopback. |
 | tests/test_maintenance_config.py | Exact dependency versions, shared runtime/catalog/dev pins, npm lock consistency and offline CI discovery/browser jobs. |
 | tests/test_catalog_integrity.py | Catalog validation, atomic writes, generation activation, failed builds, removed products and interrupted ingestion, without external services. |
@@ -101,6 +102,10 @@ A local timing sample during point 6 used the 643-product catalog and 30 repetit
 One earlier Windows run encountered a temporary `PermissionError` during a catalog-test file replacement. The isolated test and subsequent full runs passed. The final Python run used temporary files outside OneDrive; the cause of the original access error was not established. On a synchronized checkout, use `--basetemp` and a pytest cache directory outside the synced tree if temporary-file access is unreliable. Verification directories were removed after the successful runs.
 
 ## Adding coverage
+
+### Capacity protection — R08 / audit R10 (11 October 2026)
+
+The final complete offline Python suite passed **407 tests**, with **6 live-service tests deselected**, using the existing local Python 3.13.15 environment. The 25 capacity regressions cover early body limits, unknown fields, streamed/slow uploads, two-worker saturation, health availability, worker cancellation, trusted proxy handling, shared rolling provider allowance, cooldown and compatibility of echoed expiry metadata. An initial full run exposed five contract failures: returned expiry is now explicitly accepted and discarded before advisor processing; reset security tests now submit only reset fields, preserving their access-control assertions. The Windows sandbox blocked the event loop's local socket pair before request execution; the successful runs allowed local connections while the existing offline fixtures blocked external network access. No live Groq/Shopify requests were made. Widget files were unchanged and browser tests were not rerun. Actual Render proxy identification, quota suitability and traffic performance require production acceptance.
 
 ### Frontend stability — R07 (11 October 2026)
 

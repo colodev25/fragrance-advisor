@@ -44,6 +44,10 @@ Cart operations run directly between the widget and Shopify, independently of ch
 
 `src/ingest.py` reads Shopify's public `/products.json`, normalizes commercial data and extracts fragrance fields deterministically, without LLM requests. Valid cached enrichment is preserved across price and availability changes. `src/catalog_jobs.py` maintains a persistent queue and processes incomplete available products separately, with token reservations, request pacing and deferred retries. `src/catalog_enrichment.py` validates source evidence and distinguishes explicit fragrance information from inferred classifications. See [catalog pipeline](DATA_PIPELINE.md).
 
+### API capacity
+
+`src/capacity.py` admits at most two combined chat/reset requests before parsing or worker dispatch, bounds bodies to 16 KiB and applies a five-second upload deadline. Excess load receives an immediate structured response without an application waiting queue. API workers share a rolling Groq call allowance and provider cooldown; model-free paths remain available. Counters are process-local and suit the current single-worker deployment. Client IP normalization belongs to Uvicorn's trusted proxy configuration. See [API configuration](API.md#configuration).
+
 ### Session persistence
 
 `src/session_store.py` stores conversation history, active fragrance, guided-flow state, update timestamp, version/expiry metadata and a private credential hash in SQLite. The default database is `data/sessions.db`; `SESSIONS_DB_PATH` can override it. WAL mode is enabled and each connection is explicitly closed after use.
@@ -88,6 +92,7 @@ Separate GitHub Actions workflows synchronize Shopify and progressively enrich t
 | `src/ingest.py`         | Shopify product ingestion and normalization      |
 | `src/catalog_jobs.py`   | Persistent enrichment queue and nightly budgets  |
 | `src/catalog_enrichment.py` | Source evidence validation and extraction cache |
+| `src/capacity.py` | Bounded HTTP bodies, immediate process-wide admission and shared API chat provider allowance/cooldown |
 | `src/session_store.py`  | SQLite session persistence                       |
 | `src/conversation_requests.py` | Per-session coordination and request conflicts |
 | `src/llm_resilience.py` | LLM retry and model fallback                     |

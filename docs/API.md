@@ -125,7 +125,13 @@ Requests use one error format:
 
 The API returns `422` for invalid request data, `403` for an incorrect session credential, `409` for a conflicting identifier or an unavailable older result, `429` when a route limit is exceeded, and `503` when the advisor is starting or a downstream service cannot complete the request. An application `429` includes the standard `Retry-After` header. Provider failures can return `503` with codes such as `llm_rate_limit`, `llm_timeout`, `llm_unavailable`, `llm_invalid_response`, `llm_attempts_exhausted` or `chat_deadline_exceeded`; a provider cooldown is forwarded through `Retry-After` when available.
 
-The built-in rate limiter is in-memory and applies separately to chat and reset routes. It is intentionally lightweight for a single service instance: counters are reset after a restart and are not shared between multiple instances.
+The built-in per-client rate limiter applies separately to chat and reset routes. An additional process-wide admission gate permits two combined chat/reset requests at a time, before JSON parsing or worker scheduling. Excess requests return `503` with code `service_capacity_exceeded` and `Retry-After: 2`, without entering a waiting queue. Health checks and CORS preflight bypass admission. An HTTP task ending does not release admission while its admitted worker is still running.
+
+Chat/reset bodies are limited to 16 KiB, including streamed bodies and misleading/missing Content-Length headers. Oversized requests return `413` (`request_too_large`); incomplete uploads exceed a five-second total body-read deadline with `408` (`request_body_timeout`). Non-identity Content-Encoding is rejected with `415`; invalid Content-Length returns `400`. Unknown fields, including nested session-context fields, return `422`. A known `expires_at` may be echoed in session context for compatibility: it is validated but discarded before advisor processing, since only the server controls expiry. Reset accepts only session ID and credential. The message limit remains 2,000 characters.
+
+Actual Groq calls made by API chat workers share a rolling allowance of 20 calls per 60 seconds across primary/fallback models; retries consume the same allowance. Provider rate limits activate a shared cooldown, respect positive Retry-After values and default to five seconds if no usable delay is supplied. The triggering call stops automatic fallback immediately; subsequent calls fail quickly with `llm_rate_limit` and Retry-After. Paths that need no model can still complete. This is a call budget, not a token or daily-quota guarantee, and does not coordinate separate catalog jobs or other applications using the same Groq account.
+
+All admission, call and cooldown counters are in memory for a single process. They reset after restart and are not shared between workers or instances; keep the current `--workers 1` deployment. Multiple instances require shared admission/quota coordination. Capacity logs contain rejection codes and durations, not request bodies or session credentials.
 
 ## Response waits
 
@@ -149,11 +155,16 @@ CORS exposes `Retry-After` so the storefront can read the cooldown header. `ALLO
 | `RATE_LIMIT_ENABLED` | Enable the application rate limiter. | `true` |
 | `CHAT_RATE_LIMIT_PER_MINUTE` | Maximum `/chat` requests per client each minute. | `30` |
 | `RESET_RATE_LIMIT_PER_MINUTE` | Maximum `/reset` requests per client each minute. | `10` |
-| `RATE_LIMIT_TRUST_PROXY_HEADERS` | Use `X-Forwarded-For` to identify clients behind a trusted reverse proxy. | `false` |
+| `RATE_LIMIT_TRUST_PROXY_HEADERS` | Deprecated and ignored; the API uses the client normalized by the server. | `false` |
+| `API_MAX_BODY_BYTES` | Total chat/reset body limit before JSON parsing. | `16384` |
+| `API_BODY_TIMEOUT_SECONDS` | Total deadline for receiving a chat/reset body. | `5` |
+| `API_MAX_CONCURRENT_REQUESTS` | Combined chat/reset admissions, without a queue. | `2` |
+| `GROQ_CHAT_CALLS_PER_MINUTE` | Actual API chat model calls per rolling 60 seconds, including retries. | `20` |
+| `GROQ_CHAT_COOLDOWN_SECONDS` | Shared cooldown after a provider rate limit without a positive delay. | `5` |
 
 Keep credentials out of source control. The advisor and ingestion modules load a root `.env` file, which is suitable for local `GROQ_API_KEY`, `SESSIONS_DB_PATH` and `SHOPIFY_STORE_URL` configuration. `ALLOWED_ORIGINS` is read by `src/main.py` when the app module is imported, before the advisor loads `.env`; set it in the process environment before starting the server (or configure Uvicorn to load the file). The model names are read when `src/llm_resilience.py` is imported, so configure `GROQ_PRIMARY_MODEL` and `GROQ_FALLBACK_MODEL` in the process environment before startup as well.
 
-Set `RATE_LIMIT_TRUST_PROXY_HEADERS=true` only when the application is behind a trusted proxy that overwrites `X-Forwarded-For`, such as the configured production proxy. Otherwise a direct caller could provide a forged header and bypass an IP-based limit.
+The API does not interpret raw X-Forwarded-For headers. Configure trusted proxy peers in Uvicorn through `--forwarded-allow-ips` or its `FORWARDED_ALLOW_IPS` environment setting, then verify actual client identification on Render. Do not trust all peers unless network isolation and proxy normalization have been established. An untrusted proxy may cause multiple customers to share a rate-limit bucket; accepting arbitrary forwarded headers would permit spoofing. Render's actual proxy configuration still requires production acceptance. Capacity settings are read from the process environment; set them before starting the server.
 
 ### Commercial card fields
 
