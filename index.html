@@ -1498,6 +1498,23 @@
         .oa-header-store { white-space:normal; }
       }
 
+
+      /* R06: introductory notice and privacy details under the persistent header. */
+      .oa-widget-container [hidden] { display:none!important; }
+      .oa-chat-content { display:flex; flex-direction:column; flex:1; min-height:0; }
+      .oa-onboarding { flex:1; min-height:0; overflow-y:auto; padding:24px; display:flex; background:#fff; }
+      .oa-intro-copy { width:100%; max-width:340px; margin:auto; text-align:center; overflow-wrap:anywhere; }
+      .oa-intro-copy h3 { font-family:"Cormorant Garamond",Georgia,serif; font-size:26px; font-weight:600; line-height:1.2; color:#111; margin:0 0 18px; }
+      .oa-intro-copy p { font-size:13px; line-height:1.7; color:#555; margin:0 0 14px; }
+      .oa-widget-container .oa-privacy-link { border:0; background:transparent; padding:5px 0; font:inherit; font-size:11px; color:#111; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+      .oa-header-brand .oa-privacy-link { align-self:flex-start; }
+      .oa-widget-container .oa-intro-start { display:block; width:100%; min-height:44px; padding:12px 16px; margin:20px 0 0; border:1px solid #111; border-radius:var(--oa-radius-sm); background:#111; color:#fff; font:inherit; font-size:12px; font-weight:600; cursor:pointer; }
+      .oa-intro-start:hover { background:#333; }
+      .oa-privacy-copy { text-align:left; }
+      .oa-privacy-copy a { color:#111; text-decoration:underline; }
+      .oa-screen-enter { animation:oaScreenEnter .24s ease-out; }
+      @keyframes oaScreenEnter { from { opacity:0; } to { opacity:1; } }
+
       @media (prefers-reduced-motion: reduce) {
         *,
         ::before,
@@ -1567,8 +1584,9 @@
           <h2 class="oa-header-title" id="oaWidgetTitle" tabindex="-1">Maître Parfumeur</h2>
           <div class="oa-header-status">
             <span class="oa-status-dot"></span>
-            <span>Consulenza Olfattiva d'Élite</span>
+            <span>Consulenza olfattiva • Assistente AI</span>
           </div>
+        <button type="button" class="oa-privacy-link" id="oaPrivacyOpen" aria-controls="oaPrivacy" aria-expanded="false">Privacy del chatbot</button>
         </div>
         <div class="oa-header-actions">
           <button
@@ -1603,6 +1621,29 @@
           </button>
         </div>
       </header>
+
+
+      <section id="oaIntro" class="oa-onboarding" aria-labelledby="oaIntroTitle">
+        <div class="oa-intro-copy">
+          <h3 id="oaIntroTitle" tabindex="-1">Il tuo consulente olfattivo AI</h3>
+          <p>Un assistente di intelligenza artificiale ti aiuta a scoprire le fragranze adatte ai tuoi gusti.</p>
+          <p>I messaggi e il contesto necessario vengono elaborati tramite Groq. Le risposte possono contenere errori.</p>
+          <p>Non inserire dati personali o informazioni sanitarie.</p>
+          <button type="button" class="oa-privacy-link" id="oaIntroPrivacy" aria-controls="oaPrivacy">Privacy del chatbot</button>
+          <button type="button" class="oa-intro-start" id="oaIntroStart">Inizia la consulenza</button>
+        </div>
+      </section>
+      <section id="oaPrivacy" class="oa-onboarding" aria-labelledby="oaPrivacyTitle" hidden inert>
+        <div class="oa-intro-copy oa-privacy-copy">
+          <h3 id="oaPrivacyTitle" tabindex="-1">Privacy del chatbot</h3>
+          <p><strong>Come funziona.</strong> I messaggi, le preferenze e il contesto necessario della conversazione vengono inviati al servizio del chatbot e, quando serve una risposta AI, a Groq.</p>
+          <p><strong>Cronologia.</strong> Conversazione e bozza sono conservate nella scheda del browser. La sessione sul server scade dopo 24 ore di inattivit&agrave;, rinnovate dai messaggi completati; i dati scaduti vengono rimossi dalla pulizia periodica. La sessione pu&ograve; terminare prima in caso di riavvio del servizio.</p>
+          <p><strong>Dati personali.</strong> Per ricevere consigli sui profumi non occorre fornire nomi, contatti o informazioni sanitarie. Evita di inserirli nella chat.</p>
+          <p><strong>Fornitori.</strong> La conservazione presso Groq dipende dalle impostazioni del servizio. <a href="https://console.groq.com/docs/your-data" target="_blank" rel="noopener noreferrer">Consulta le informazioni di Groq (nuova scheda)</a>.</p>
+          <button type="button" class="oa-intro-start" id="oaPrivacyBack">Torna indietro</button>
+        </div>
+      </section>
+      <div id="oaChatContent" class="oa-chat-content" hidden inert aria-hidden="true">
 
       <div class="oa-stepper-bar" id="oaStepper">
         <div class="oa-stepper-progress" id="oaProgress" role="progressbar" aria-label="Avanzamento della consulenza" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"></div>
@@ -1657,6 +1698,7 @@
           </svg>
         </button>
       </form>
+    </div>
     </div>
 
     <script>
@@ -2371,11 +2413,11 @@
       let announcementTimer = null;
 
       function announce(text) {
-        if (!widget.classList.contains("is-active")) return;
+        if (!widget.classList.contains("is-active") || document.getElementById("oaChatContent").hidden) return;
         clearTimeout(announcementTimer);
         announcement.textContent = "";
         announcementTimer = setTimeout(() => {
-          if (widget.classList.contains("is-active")) announcement.textContent = text;
+          if (widget.classList.contains("is-active") && !document.getElementById("oaChatContent").hidden) announcement.textContent = text;
         }, 80);
       }
 
@@ -2416,13 +2458,64 @@
         } else restoreBackground();
       }
 
+
+      // R06: advancing past the notice is a UI preference, never legal consent.
+      const NOTICE_VERSION = "2026-10-11-v1";
+      const NOTICE_KEY = "etualy_advisor_notice_version";
+      const introScreen = document.getElementById("oaIntro");
+      const introTitle = document.getElementById("oaIntroTitle");
+      const chatContent = document.getElementById("oaChatContent");
+      const privacyScreen = document.getElementById("oaPrivacy");
+      const privacyTitle = document.getElementById("oaPrivacyTitle");
+      const privacyButton = document.getElementById("oaPrivacyOpen");
+      const introStart = document.getElementById("oaIntroStart");
+      let noticeViewed = false;
+      try { noticeViewed = sessionStorage.getItem(NOTICE_KEY) === NOTICE_VERSION; } catch (_) {}
+      let privacyReturnFocus = null;
+
+      function setWidgetScreen(view) {
+        for (const [element, name] of [[introScreen,"intro"], [privacyScreen,"privacy"], [chatContent,"chat"]]) {
+          const inactive = view !== name;
+          element.hidden = inactive;
+          element.inert = inactive;
+          element.setAttribute("aria-hidden", String(inactive));
+          element.classList.remove("oa-screen-enter");
+          if (!inactive) element.classList.add("oa-screen-enter");
+        }
+        restartBtn.disabled = view !== "chat";
+        privacyButton.setAttribute("aria-expanded", String(view === "privacy"));
+      }
+
+      function showPrivacy(event) {
+        privacyReturnFocus = event.currentTarget;
+        setWidgetScreen("privacy");
+        privacyTitle.focus({ preventScroll:true });
+      }
+      privacyButton.addEventListener("click", showPrivacy);
+      document.getElementById("oaIntroPrivacy").addEventListener("click", showPrivacy);
+      document.getElementById("oaPrivacyBack").addEventListener("click", () => {
+        setWidgetScreen(noticeViewed ? "chat" : "intro");
+        const target = privacyReturnFocus?.isConnected && !privacyReturnFocus.closest("[inert]")
+          ? privacyReturnFocus : (noticeViewed ? privacyButton : introTitle);
+        target.focus({ preventScroll:true });
+      });
+      introStart.addEventListener("click", () => {
+        noticeViewed = true;
+        try { sessionStorage.setItem(NOTICE_KEY, NOTICE_VERSION); } catch (_) {}
+        setWidgetScreen("chat");
+        widgetTitle.focus({ preventScroll:true });
+        scrollToBottom();
+      });
+      setWidgetScreen(noticeViewed ? "chat" : "intro");
+
       function openWidget() {
         dismissTeaser();
         widget.inert = false;
         widget.removeAttribute("aria-hidden");
         widget.classList.add("is-active");
         launcher.setAttribute("aria-expanded", "true");
-        widgetTitle.focus({ preventScroll:true });
+        setWidgetScreen(noticeViewed ? "chat" : "intro");
+        (noticeViewed ? widgetTitle : introTitle).focus({ preventScroll:true });
         syncWidgetMode();
         scrollToBottom();
       }
@@ -2698,7 +2791,7 @@
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        if (activeRequest || isCoolingDown()) return;
+        if (!noticeViewed || chatContent.hidden || activeRequest || isCoolingDown()) return;
         const text = input.value.trim();
         if (!text) return;
         input.value = "";
@@ -3334,7 +3427,7 @@
       }
 
       async function sendUserMessage(text) {
-        if (activeRequest || isCoolingDown()) return;
+        if (!noticeViewed || chatContent.hidden || activeRequest || isCoolingDown()) return;
         text = typeof text === "string" ? text.trim() : "";
         if (!text) return;
         if (text.length > 2000) {

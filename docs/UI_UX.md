@@ -4,6 +4,9 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 
 ## Discovery and conversation
 
+- **AI introduction:** the first opening in a browser tab displays a centered notice below the header, with Groq processing, AI limitations and a reminder to avoid personal/health information. “Inizia la consulenza” opens the chat with a short fade; no countdown, automatic advance or consent checkbox. The versioned notice preference survives navigation in the same tab and DevTools reinsertion. Updating its version presents it again. “Assistente AI” remains visible in the header.
+- **Privacy access:** introductory and header buttons open an internally scrollable information screen about message processing, browser history and server inactivity expiry. Returning preserves the conversation and restores focus; chat controls are hidden and inert while these screens are open. These technical explanations do not replace the company-approved privacy notice required before public launch.
+
 - **Proactive entry point:** a floating launcher opens the advisor; a short invitation appears after a delay and can be dismissed.
 - **Two ways to get started:** customers can follow the four-step guided consultation or begin with a free-form question about notes, fragrances or occasions.
 - **Quick replies and progress:** contextual choice chips make guided answers easy to select, while a progress bar indicates the current step.

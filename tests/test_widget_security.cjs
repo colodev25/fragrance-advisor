@@ -143,6 +143,8 @@ async function fixture(t, file, seed = {}, store = false) {
   await page.goto(store ? 'https://etualy.com/widget' : 'https://widget.test/widget', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => Boolean(window.__widgetTest));
   await page.locator('#oaLauncher').click();
+  // Ordinary regression scenarios begin after the customer advances past the AI notice.
+  if (await page.locator('#oaIntroStart').isVisible()) await page.locator('#oaIntroStart').click();
   t.after(() => assert.deepEqual(errors, [], 'No JavaScript errors or unexpected dialogs'));
   return { page, requests, responses, cartRequests, cartResponses, productResponses };
 }
