@@ -62,6 +62,8 @@ Neither test job needs Groq or Shopify secrets. Dependency/browser/model install
 
 ## Widget browser checks
 
+R05 adds regression checks for hidden/inert controls, keyboard opening and Escape, focus return, mobile focus containment, background inert restoration (including dynamically inserted elements and pre-existing state), desktop/mobile resizing, concise live announcements, neutral text contrast tokens, zoom configuration and doubled text at a 320 px viewport. All three local widget versions are exercised. Browser automation does not replace testing with an actual screen reader, browser zoom, mobile device and the installed Shopify theme.
+
 The JavaScript suite uses Node.js 24 and pinned Playwright with a Chromium-based browser. It runs the actual scripts from `index.html` and `snippets/etualy-advisor.liquid`, plus the ignored local `snippet.txt` when available. A fresh clone without that preview still runs the two tracked widget variants; only preview-specific coverage is skipped. Test-only hooks are injected in memory; the production files do not expose them. The HTML fixture is served as UTF-8, as required by the storefront document.
 
 ```sh

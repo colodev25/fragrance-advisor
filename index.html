@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <title>Etualy | Maître Parfumeur AI</title>
 
@@ -19,13 +19,13 @@
       :root {
         --oa-bg-page: #f7f7f7;
         --oa-bg-widget: #ffffff;
-        --oa-bg-chat: #fafaf9;
+        --oa-bg-chat: #fafafa;
         --oa-bg-card: #ffffff;
         --oa-text-primary: #111111;
         --oa-text-secondary: #555555;
-        --oa-text-muted: #888888;
-        --oa-accent-gold: #bfa27e;
-        --oa-accent-gold-light: #f6f3ee;
+        --oa-text-muted: #666666;
+        --oa-accent: #111111;
+        --oa-accent-soft: #f5f5f5;
         --oa-border: #e8e8e8;
         --oa-border-subtle: #f0f0f0;
         --oa-black: #111111;
@@ -316,7 +316,7 @@
       .oa-status-dot {
         width: 6px;
         height: 6px;
-        background-color: var(--oa-accent-gold);
+        background-color: var(--oa-accent);
         border-radius: 50%;
         flex-shrink: 0;
       }
@@ -373,7 +373,7 @@
       .oa-stepper-progress {
         height: 100%;
         width: 25%;
-        background: var(--oa-accent-gold);
+        background: var(--oa-accent);
         transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
@@ -463,7 +463,7 @@
       .oa-msg-error {
         background: var(--oa-white);
         border: 1px solid var(--oa-border);
-        border-left: 3px solid var(--oa-accent-gold);
+        border-left: 3px solid var(--oa-accent);
         padding: 16px 18px;
         border-radius: var(--oa-radius-bubble);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
@@ -481,13 +481,13 @@
         font-weight: 700;
         letter-spacing: 1.4px;
         text-transform: uppercase;
-        color: var(--oa-accent-gold);
+        color: var(--oa-accent);
       }
 
       .oa-error-header svg {
         width: 15px;
         height: 15px;
-        stroke: var(--oa-accent-gold);
+        stroke: var(--oa-accent);
         flex-shrink: 0;
       }
 
@@ -603,7 +603,7 @@
       }
 
       .oa-card-image-box.oa-skeleton {
-        background-color: var(--oa-accent-gold-light);
+        background-color: var(--oa-accent-soft);
       }
 
       .oa-card-image-box.oa-skeleton::after {
@@ -642,15 +642,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--oa-accent-gold);
-        background: var(--oa-accent-gold-light);
+        color: var(--oa-accent);
+        background: var(--oa-accent-soft);
         opacity: 1 !important;
       }
 
       .oa-card-placeholder svg {
         width: 26px;
         height: 26px;
-        stroke: var(--oa-accent-gold);
+        stroke: var(--oa-accent);
       }
 
       .oa-card-meta {
@@ -710,7 +710,7 @@
         font-size: 9.5px;
         letter-spacing: 0.6px;
         text-transform: uppercase;
-        color: var(--oa-accent-gold);
+        color: var(--oa-accent);
         font-weight: 600;
       }
 
@@ -806,7 +806,7 @@
       }
 
       .oa-btn-check-icon {
-        stroke: var(--oa-accent-gold) !important;
+        stroke: var(--oa-accent) !important;
         animation: oaCheckPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
@@ -822,26 +822,26 @@
       }
 
       .oa-card-cart-btn.is-adding {
-        background: #231f1a;
-        border-color: var(--oa-accent-gold);
+        background: #181818;
+        border-color: var(--oa-accent);
         color: var(--oa-white) !important;
         transform: scale(0.97);
         pointer-events: none;
       }
 
       .oa-card-cart-btn.is-added {
-        background: #fbfaf8;
-        border-color: var(--oa-accent-gold);
+        background: #fafafa;
+        border-color: var(--oa-accent);
         color: var(--oa-black) !important;
       }
 
       .oa-card-cart-btn.is-added .oa-btn-check-icon {
-        stroke: var(--oa-accent-gold) !important;
+        stroke: var(--oa-accent) !important;
       }
 
       .oa-card-cart-btn.is-added:hover {
-        background: #f4f0e8;
-        border-color: #aa8d69;
+        background: #f2f2f2;
+        border-color: #555555;
         transform: translateY(-1px);
       }
 
@@ -892,7 +892,7 @@
       }
 
       .oa-unpositioned-notes {
-        background: #f8f7f4;
+        background: #f7f7f7;
         border: 1px solid var(--oa-border-subtle);
         border-radius: var(--oa-radius-sm);
         padding: 8px;
@@ -929,7 +929,7 @@
         font-weight: 700;
         letter-spacing: 1.6px;
         text-transform: uppercase;
-        color: var(--oa-accent-gold);
+        color: var(--oa-accent);
         margin-bottom: 1px;
       }
 
@@ -1009,7 +1009,7 @@
         font-weight: 700;
         letter-spacing: 1.4px;
         text-transform: uppercase;
-        color: var(--oa-accent-gold);
+        color: var(--oa-accent);
       }
 
       .oa-notes-chips {
@@ -1019,7 +1019,7 @@
       }
 
       .oa-note-pill {
-        background: #f8f7f4;
+        background: #f7f7f7;
         border: 1px solid var(--oa-border);
         border-radius: var(--oa-radius-sm);
         padding: 3px 8px;
@@ -1180,7 +1180,7 @@
         background: linear-gradient(
           90deg,
           var(--oa-text-secondary) 0%,
-          var(--oa-accent-gold) 50%,
+          var(--oa-accent) 50%,
           var(--oa-text-secondary) 100%
         );
         background-size: 200% auto;
@@ -1480,6 +1480,24 @@
       /* =======================================================================
          ACCESSIBILITÀ: SUPPORTO PREFERS-REDUCED-MOTION
          ======================================================================= */
+
+      /* R05: focus, touch targets and text scaling, scoped to the widget. */
+      .oa-sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip-path:inset(50%)!important; white-space:nowrap!important; border:0!important; }
+      .oa-widget-container :focus-visible, .oa-teaser :focus-visible { outline:2px solid #111; outline-offset:3px; }
+      .oa-launcher-btn:focus-visible { outline:2px solid #111; outline-offset:4px; box-shadow:0 0 0 4px #fff; }
+      .oa-teaser-close { min-width:28px; min-height:28px; }
+      .oa-teaser-body { appearance:none; background:transparent; border:0; padding:0; text-align:left; font:inherit; color:inherit; }
+      .oa-header-brand { overflow-wrap:anywhere; }
+      .oa-input-field { min-width:0; }
+      .oa-chip { white-space:normal; overflow-wrap:anywhere; max-width:100%; }
+      .oa-header-title { scroll-margin-top:8px; }
+      .oa-widget-container { max-width:calc(100vw - 24px); }
+      @media (max-width:600px) {
+        .oa-widget-container { max-width:100vw; }
+        .oa-icon-btn, .oa-teaser-close { min-width:44px; min-height:44px; }
+        .oa-header-store { white-space:normal; }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         *,
         ::before,
@@ -1494,19 +1512,19 @@
   </head>
   <body>
     <!-- TEASER PROATTIVO SUL LAUNCHER (A SINISTRA DELLA BOLLA) -->
-    <div class="oa-teaser" id="oaTeaser">
-      <div class="oa-teaser-body" id="oaTeaserBody">
+    <div class="oa-teaser" id="oaTeaser" inert aria-hidden="true">
+      <button type="button" class="oa-teaser-body" id="oaTeaserBody">
         <span class="oa-teaser-sparkle">✨</span>
         <span class="oa-teaser-text"
           >Cerchi la tua fragranza ideale o un consiglio su misura?</span
         >
-      </div>
+      </button>
       <button
         class="oa-teaser-close"
         id="oaTeaserClose"
         aria-label="Chiudi invito"
       >
-        <svg
+        <svg aria-hidden="true" focusable="false"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -1523,11 +1541,11 @@
     <!-- LAUNCHER FLUTTUANTE CIRCOLARE (FAB 54x54) -->
     <button
       class="oa-launcher-btn"
-      id="oaLauncher"
+      id="oaLauncher" aria-controls="oaWidget" aria-expanded="false" aria-haspopup="dialog"
       aria-label="Apri Maître Parfumeur"
       title="Etualy • Maître Parfumeur"
     >
-      <svg
+      <svg aria-hidden="true" focusable="false"
         class="oa-launcher-icon"
         viewBox="0 0 24 24"
         fill="none"
@@ -1542,11 +1560,11 @@
     </button>
 
     <!-- WIDGET CONTAINER -->
-    <div class="oa-widget-container" id="oaWidget">
+    <div class="oa-widget-container" id="oaWidget" role="dialog" aria-labelledby="oaWidgetTitle" aria-modal="false" inert aria-hidden="true">
       <header class="oa-header">
         <div class="oa-header-brand">
           <span class="oa-header-store">Etualy • The Art of Essence</span>
-          <h2 class="oa-header-title">Maître Parfumeur</h2>
+          <h2 class="oa-header-title" id="oaWidgetTitle" tabindex="-1">Maître Parfumeur</h2>
           <div class="oa-header-status">
             <span class="oa-status-dot"></span>
             <span>Consulenza Olfattiva d'Élite</span>
@@ -1555,10 +1573,10 @@
         <div class="oa-header-actions">
           <button
             class="oa-icon-btn"
-            id="oaRestartBtn"
+            id="oaRestartBtn" aria-label="Ricomincia consulenza"
             title="Ricomincia consulenza"
           >
-            <svg
+            <svg aria-hidden="true" focusable="false"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -1570,8 +1588,8 @@
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
             </svg>
           </button>
-          <button class="oa-icon-btn" id="oaCloseBtn" title="Riduci a icona">
-            <svg
+          <button class="oa-icon-btn" id="oaCloseBtn" aria-label="Riduci a icona" title="Riduci a icona">
+            <svg aria-hidden="true" focusable="false"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -1587,10 +1605,10 @@
       </header>
 
       <div class="oa-stepper-bar" id="oaStepper">
-        <div class="oa-stepper-progress" id="oaProgress"></div>
+        <div class="oa-stepper-progress" id="oaProgress" role="progressbar" aria-label="Avanzamento della consulenza" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"></div>
       </div>
 
-      <div class="oa-messages-container" id="oaMessages">
+      <div class="oa-messages-container" id="oaMessages" role="region" aria-label="Cronologia della conversazione" tabindex="0">
         <div class="oa-msg oa-msg-bot">
           <p>Benvenuto nella boutique olfattiva di <strong>Etualy</strong>.</p>
           <p>
@@ -1617,16 +1635,17 @@
         </button>
       </div>
 
+      <div id="oaAnnouncements" class="oa-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
       <form class="oa-input-container" id="oaForm">
         <input
           type="text"
           class="oa-input-field"
-          id="oaInput"
+          id="oaInput" aria-label="Messaggio per il consulente"
           placeholder="Chiedi una nota, un profumo o un consiglio..."
           autocomplete="off"
         />
         <button type="submit" class="oa-send-btn" aria-label="Invia">
-          <svg
+          <svg aria-hidden="true" focusable="false"
             viewBox="0 0 24 24"
             fill="none"
             stroke-width="2"
@@ -1731,6 +1750,8 @@
         };
         const ns = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
         const attrs = {
           viewBox: "0 0 24 24",
           fill: "none",
@@ -2079,6 +2100,7 @@
         const close = dom("button", "oa-slide-close-btn");
         close.type = "button";
         close.title = "Chiudi note";
+        close.setAttribute("aria-label", "Chiudi note di " + name);
         close.appendChild(icon("close"));
         close.addEventListener("click", () => toggleCardSlide(close));
         slideHeader.append(slideMeta, close);
@@ -2266,6 +2288,12 @@
         chatMessages.push(record);
         const message = renderMessage(record);
         messagesContainer.appendChild(message);
+        if (record.kind !== "user" && record.kind !== "welcome") {
+          const names = (record.products || []).map((product) => product.name).filter(Boolean);
+          announce((record.kind === "error" ? "Errore. " : "") + plainText(record.text || record.reply || "") +
+            (names.length ? " Prodotti consigliati: " + names.join(", ") + "." : "") +
+            (record.retryable ? " Puoi usare il pulsante Riprova ora." : ""));
+        }
         return message;
       }
 
@@ -2334,30 +2362,107 @@
       // =======================================================================
       // APERTURA / CHIUSURA WIDGET & SCROLL LOCK
       // =======================================================================
+      // R05: keep hidden controls out of navigation; mobile owns the focus.
+      const widgetTitle = document.getElementById("oaWidgetTitle");
+      const announcement = document.getElementById("oaAnnouncements");
+      const backgroundInert = new Map();
+      let backgroundObserver = null;
+      let ownedScrollLock = false;
+      let announcementTimer = null;
+
+      function announce(text) {
+        if (!widget.classList.contains("is-active")) return;
+        clearTimeout(announcementTimer);
+        announcement.textContent = "";
+        announcementTimer = setTimeout(() => {
+          if (widget.classList.contains("is-active")) announcement.textContent = text;
+        }, 80);
+      }
+
+      function restoreBackground() {
+        backgroundObserver?.disconnect();
+        backgroundObserver = null;
+        backgroundInert.forEach((wasInert, element) => { element.inert = wasInert; });
+        backgroundInert.clear();
+        if (ownedScrollLock) document.body.classList.remove("oa-no-scroll");
+        ownedScrollLock = false;
+      }
+
+      function isolateBackground() {
+        // Also works if Shopify renders this snippet inside a section wrapper.
+        let branch = widget;
+        while (branch.parentElement && branch !== document.body) {
+          for (const sibling of branch.parentElement.children) {
+            if (sibling === branch || /^(SCRIPT|STYLE|LINK)$/.test(sibling.tagName)) continue;
+            if (!backgroundInert.has(sibling)) backgroundInert.set(sibling, sibling.inert);
+            sibling.inert = true;
+          }
+          branch = branch.parentElement;
+        }
+      }
+
+      function syncWidgetMode() {
+        const modal = widget.classList.contains("is-active") && window.innerWidth <= 600;
+        widget.setAttribute("aria-modal", String(modal));
+        if (modal) {
+          isolateBackground();
+          if (!backgroundObserver) {
+            backgroundObserver = new MutationObserver(isolateBackground);
+            backgroundObserver.observe(document.body, { childList:true, subtree:true });
+            ownedScrollLock = !document.body.classList.contains("oa-no-scroll");
+            document.body.classList.add("oa-no-scroll");
+          }
+          if (!widget.contains(document.activeElement)) widgetTitle.focus({ preventScroll:true });
+        } else restoreBackground();
+      }
+
       function openWidget() {
         dismissTeaser();
+        widget.inert = false;
+        widget.removeAttribute("aria-hidden");
         widget.classList.add("is-active");
-        if (window.innerWidth <= 600) {
-          document.body.classList.add("oa-no-scroll");
-        }
+        launcher.setAttribute("aria-expanded", "true");
+        widgetTitle.focus({ preventScroll:true });
+        syncWidgetMode();
         scrollToBottom();
       }
 
       function closeWidget() {
+        const wasOpen = widget.classList.contains("is-active");
+        restoreBackground();
         widget.classList.remove("is-active");
-        document.body.classList.remove("oa-no-scroll");
-        if (document.activeElement === input) {
-          input.blur();
-        }
+        launcher.setAttribute("aria-expanded", "false");
+        widget.setAttribute("aria-modal", "false");
+        if (wasOpen) launcher.focus({ preventScroll:true });
+        widget.inert = true;
+        widget.setAttribute("aria-hidden", "true");
+        widget.setAttribute("aria-modal", "false");
+        clearTimeout(announcementTimer);
+        announcement.textContent = "";
       }
 
-      window.addEventListener("resize", () => {
-        if (window.innerWidth > 600) {
-          document.body.classList.remove("oa-no-scroll");
-        } else if (widget.classList.contains("is-active")) {
-          document.body.classList.add("oa-no-scroll");
+      widget.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closeWidget();
+        } else if (event.key === "Tab" && widget.getAttribute("aria-modal") === "true") {
+          const controls = [...widget.querySelectorAll('button, a[href], input, select, textarea, [tabindex="0"]')]
+            .filter((element) => !element.disabled && !element.closest("[inert]") && element.getClientRects().length);
+          const first = controls[0], last = controls.at(-1);
+          if (!first) { event.preventDefault(); widgetTitle.focus(); }
+          else if (event.shiftKey && (document.activeElement === first || document.activeElement === widgetTitle)) {
+            event.preventDefault(); last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first.focus();
+          }
         }
       });
+      window.addEventListener("focusin", (event) => {
+        if (widget.getAttribute("aria-modal") === "true" && !widget.contains(event.target))
+          widgetTitle.focus({ preventScroll:true });
+      });
+      window.addEventListener("resize", syncWidgetMode);
 
       // =======================================================================
       // TOUCH GESTURES & CONTROLLO TASTIERA MOBILE
@@ -2384,7 +2489,7 @@
         setTimeout(() => {
           scrollToBottom();
           if (window.innerWidth <= 600) {
-            input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            input.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "nearest" });
           }
         }, 280);
       });
@@ -2508,7 +2613,7 @@
             renderOptions(state.options);
             updateStepper(currentStepValue);
             sessionStorage.setItem("etualy_teaser_closed", "true");
-            if (teaser) teaser.classList.remove("is-visible");
+            if (teaser) { teaser.classList.remove("is-visible"); teaser.inert = true; teaser.setAttribute("aria-hidden", "true"); }
           } else {
             resetLocalChat(hasLegacy);
           }
@@ -2530,7 +2635,7 @@
 
 
       function dismissTeaser() {
-        if (teaser) teaser.classList.remove("is-visible");
+        if (teaser) { teaser.classList.remove("is-visible"); teaser.inert = true; teaser.setAttribute("aria-hidden", "true"); }
         sessionStorage.setItem("etualy_teaser_closed", "true");
       }
 
@@ -2540,6 +2645,7 @@
           !widget.classList.contains("is-active") &&
           sessionStorage.getItem("etualy_teaser_closed") !== "true"
         ) {
+          teaser.inert = false; teaser.removeAttribute("aria-hidden");
           teaser.classList.add("is-visible");
         }
       }, 5000);
@@ -2554,6 +2660,7 @@
         teaserClose.addEventListener("click", (e) => {
           e.stopPropagation();
           dismissTeaser();
+          launcher.focus({ preventScroll:true });
         });
       }
 
@@ -2628,6 +2735,7 @@
       }
 
       function showTyping() {
+        announce("Il consulente sta preparando la risposta.");
         clearTypingTimers();
         const typingDiv = document.createElement("div");
         typingDiv.className = "oa-typing";
@@ -2690,6 +2798,8 @@
           return;
         }
         stepper.classList.add("is-visible");
+        progress.setAttribute("aria-valuenow", String(step));
+        progress.setAttribute("aria-valuetext", "Domanda " + step + " di 4");
         const percentage = (step / 4) * 100;
         progress.style.width = percentage + "%";
       }
@@ -3074,6 +3184,9 @@
 
       function setRequestBusy(busy) {
         const blocked = busy || isCoolingDown();
+        if (blocked && (form.contains(document.activeElement) || chipsContainer.contains(document.activeElement) || document.activeElement?.matches(".oa-retry-btn"))) {
+          messagesContainer.focus({ preventScroll:true });
+        }
         input.disabled = blocked;
         form.querySelector('button[type="submit"]').disabled = blocked;
         messagesContainer.setAttribute("aria-busy", String(busy));

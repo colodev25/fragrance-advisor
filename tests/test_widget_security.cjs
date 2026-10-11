@@ -205,6 +205,113 @@ test('Available widget variants contain the same request coordination', () => {
 });
 
 for (const file of files) {
+  test(`${file}: accessibility keyboard focus survives pending quick replies`, async (t) => {
+    const { page } = await fixture(t, file);
+    await controlledFetch(page);
+    await page.locator('.oa-chip').first().focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#oaMessages').evaluate(el => el === document.activeElement), true);
+    await resolvePending(page, 0);
+    await page.waitForFunction(() => !window.__widgetTest.active());
+    assert.equal(await page.locator('#oaMessages').evaluate(el => el === document.activeElement), true);
+    assert.equal(await page.locator('#oaProgress').getAttribute('aria-valuenow'), '2');
+    assert.equal(await page.locator('#oaProgress').getAttribute('aria-valuetext'), 'Domanda 2 di 4');
+  });
+
+  test(`${file}: accessibility mobile handles nested integration without blocking its ancestor`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.locator('#oaCloseBtn').click();
+    await page.evaluate(() => {
+      const wrapper = document.createElement('section'); wrapper.id = 'themeSection';
+      document.body.append(wrapper);
+      const sibling = document.createElement('button'); sibling.id = 'sectionButton'; wrapper.append(sibling);
+      wrapper.append(document.getElementById('oaWidget'));
+    });
+    await page.setViewportSize({ width:360, height:740 });
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('#themeSection').evaluate(el => el.inert), false);
+    assert.equal(await page.locator('#sectionButton').evaluate(el => el.inert), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#sectionButton').evaluate(el => el.inert), false);
+    assert.equal(await page.locator('body').evaluate(el => el.classList.contains('oa-no-scroll')), false);
+  });
+
+  test(`${file}: accessibility closed controls and keyboard focus lifecycle`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.locator('#oaCloseBtn').click();
+    assert.equal(await page.locator('#oaWidget').evaluate(el => el.inert), true);
+    assert.equal(await page.locator('#oaTeaser').evaluate(el => el.inert), true);
+    await page.locator('#oaLauncher').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#oaWidgetTitle').evaluate(el => el === document.activeElement), true);
+    assert.equal(await page.locator('#oaWidget').getAttribute('aria-modal'), 'false');
+    assert.equal(await page.locator('#oaLauncher').getAttribute('aria-expanded'), 'true');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#oaLauncher').evaluate(el => el === document.activeElement), true);
+    assert.equal(await page.locator('#oaWidget').evaluate(el => el.inert), true);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#oaWidget').evaluate(el => el.contains(document.activeElement)), false);
+  });
+
+  test(`${file}: accessibility mobile traps focus and restores host state on resize and close`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.locator('#oaCloseBtn').click();
+    await page.evaluate(() => {
+      const host = document.createElement('button'); host.id = 'hostButton'; host.textContent = 'Store'; document.body.prepend(host);
+      const inert = document.createElement('div'); inert.id = 'hostInert'; inert.inert = true; document.body.prepend(inert);
+      document.body.classList.add('oa-no-scroll');
+    });
+    await page.setViewportSize({ width:360, height:740 });
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('#oaWidget').getAttribute('aria-modal'), 'true');
+    assert.equal(await page.locator('#hostButton').evaluate(el => el.inert), true);
+    assert.equal(await page.locator('#oaInput').evaluate(el => el === document.activeElement), false);
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await page.locator('.oa-send-btn').evaluate(el => el === document.activeElement), true);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#oaRestartBtn').evaluate(el => el === document.activeElement), true);
+    await page.evaluate(() => { const el = document.createElement('button'); el.id = 'lateHost'; document.body.append(el); });
+    await page.waitForFunction(() => document.getElementById('lateHost').inert);
+    await page.setViewportSize({ width:1280, height:900 });
+    await page.waitForFunction(() => document.getElementById('oaWidget').getAttribute('aria-modal') === 'false');
+    assert.equal(await page.locator('#hostButton').evaluate(el => el.inert), false);
+    assert.equal(await page.locator('#hostInert').evaluate(el => el.inert), true);
+    assert.equal(await page.locator('body').evaluate(el => el.classList.contains('oa-no-scroll')), true);
+    await page.setViewportSize({ width:360, height:740 });
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#oaLauncher').evaluate(el => el === document.activeElement), true);
+    assert.equal(await page.locator('#lateHost').evaluate(el => el.inert), false);
+  });
+
+  test(`${file}: accessibility concise announcements, labels and neutral contrast`, async (t) => {
+    const { page } = await fixture(t, file, { [stateKey]: stored([{ kind:'welcome' }, { kind:'bot', reply:'Messaggio precedente', products:[] }]) });
+    assert.equal(await page.locator('#oaAnnouncements').textContent(), '');
+    assert.equal(await page.locator('#oaInput').getAttribute('aria-label'), 'Messaggio per il consulente');
+    assert.equal(await page.locator('#oaLauncher svg').getAttribute('aria-hidden'), 'true');
+    await page.evaluate(() => window.__widgetTest.appendChatRecord({ kind:'bot', reply:'Nuova risposta', products:[] }));
+    await page.waitForFunction(() => document.getElementById('oaAnnouncements').textContent === 'Nuova risposta');
+    assert.equal(await page.locator('#oaAnnouncements').getAttribute('aria-live'), 'polite');
+    assert.equal(await page.locator('#oaWidget').evaluate(el => getComputedStyle(el).getPropertyValue('--oa-text-muted').trim()), '#666666');
+    assert.equal(await page.locator('#oaWidget').evaluate(el => getComputedStyle(el).getPropertyValue('--oa-accent').trim()), '#111111');
+    assert.doesNotMatch(source(file), /user-scalable=no|maximum-scale=1/);
+  });
+
+  test(`${file}: accessibility narrow layout and enlarged text keep controls visible`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.setViewportSize({ width:320, height:740 });
+    await page.evaluate(() => {
+      document.querySelectorAll('#oaWidget *').forEach(el => {
+        const size = parseFloat(getComputedStyle(el).fontSize); el.style.fontSize = size * 2 + 'px';
+      });
+    });
+    const dimensions = await page.locator('#oaWidget').evaluate(el => ({ client:el.clientWidth, scroll:el.scrollWidth }));
+    assert.ok(dimensions.scroll <= dimensions.client + 1, JSON.stringify(dimensions));
+    const input = await page.locator('#oaInput').boundingBox();
+    const close = await page.locator('#oaCloseBtn').boundingBox();
+    assert.ok(input.y + input.height <= 741);
+    assert.ok(close.x >= 0 && close.x + close.width <= 321);
+  });
+
   async function variantFixture(t, file, extra = {}, variants = null) {
     const setup = await fixture(t, file, {}, true);
     await setup.page.evaluate(() => { window.Shopify = { theme: { schema_name: 'Impulse' }, currency: { active: 'EUR' } }; });

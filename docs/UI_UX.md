@@ -47,7 +47,17 @@ New structured note sections require responses from the deployed backend that co
 
 ## Visual language
 
-The interface uses a restrained black, white and warm-gold palette, with Cormorant Garamond for editorial fragrance titles and Plus Jakarta Sans for interface text. The floating launcher uses a charcoal gradient, white fragrance icon and soft white glow to harmonize with the storefront's WhatsApp button; hover and keyboard focus keep the same monochrome style. Compact product cards, accord chips and subtle motion keep attention on the recommendation and its olfactory profile.
+The interface uses the storefront's black, white and neutral-gray palette, with Cormorant Garamond for fragrance titles and Plus Jakarta Sans for interface text. Former gold accents are now black or neutral gray; muted text uses a darker gray for legibility. The floating launcher retains its charcoal gradient, white fragrance icon and soft white glow. Compact product cards, accord chips and subtle motion keep attention on the recommendation and its olfactory profile.
+
+## Accessibility
+
+- Closed chat and invitation controls are inert and hidden from assistive technology. The invitation is a native button when shown.
+- Opening focuses the chat title without automatically opening the mobile keyboard. Escape minimizes the chat and returns focus to the launcher; keyboard focus has a visible outline.
+- Desktop remains non-modal. At widths up to 600 px the full-screen chat is modal: focus stays inside, background elements become inert, and scrolling is locked. Closing or switching to desktop restores the previous background inert and scroll-lock states. Newly inserted background elements are covered while the chat is open.
+- The dialog, message input and conversation history have explicit names. A dedicated polite status region announces new responses, recommended product names and errors without rereading restored history. Existing purchase status announcements remain separate.
+- Small mobile header/invitation controls have a minimum 44 px touch area. The standalone page permits zoom; input scrolling respects reduced-motion preferences.
+
+Browser regression checks cover keyboard behavior, mobile isolation, state restoration, announcements and enlarged text at a 320 px viewport. Actual screen-reader behavior, browser zoom and interaction with the installed Shopify theme require manual validation before release; these checks are not a conformance certification.
 
 ### Purchase integration
 
