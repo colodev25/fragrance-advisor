@@ -271,6 +271,9 @@ for (const file of files) {
     await page.keyboard.press('Shift+Tab');
     assert.equal(await page.locator('.oa-send-btn').evaluate(el => el === document.activeElement), true);
     await page.keyboard.press('Tab');
+    // The persistent R06 privacy action is now the first header control.
+    assert.equal(await page.locator('#oaPrivacyOpen').evaluate(el => el === document.activeElement), true);
+    await page.keyboard.press('Tab');
     assert.equal(await page.locator('#oaRestartBtn').evaluate(el => el === document.activeElement), true);
     await page.evaluate(() => { const el = document.createElement('button'); el.id = 'lateHost'; document.body.append(el); });
     await page.waitForFunction(() => document.getElementById('lateHost').inert);
