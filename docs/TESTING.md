@@ -62,6 +62,8 @@ Neither test job needs Groq or Shopify secrets. Dependency/browser/model install
 
 ## Widget browser checks
 
+R07 adds offline scenarios for denied storage access/read/write, persistent quota exhaustion, a smaller-history quota retry without clearing storefront keys, overlong draft correction and navigation, deterministic 300 ms draft debouncing, local message/byte limits and restored detail panels on short mobile and landscape viewports. Additional checks protect a focused old product during pruning, recover recent records from older oversized history and preserve oversized drafts in memory without writing an oversized browser state. Storage failures are installed before widget initialization. The debounce scenario freezes browser time to avoid scheduler-dependent assertions. Open cards may shrink below their former outer minimum height so that both the card and its scrollable details fit the conversation viewport.
+
 R05 adds regression checks for hidden/inert controls, keyboard opening and Escape, focus return, mobile focus containment, background inert restoration (including dynamically inserted elements and pre-existing state), desktop/mobile resizing, concise live announcements, neutral text contrast tokens, zoom configuration and doubled text at a 320 px viewport. All three local widget versions are exercised. Browser automation does not replace testing with an actual screen reader, browser zoom, mobile device and the installed Shopify theme.
 
 The JavaScript suite uses Node.js 24 and pinned Playwright with a Chromium-based browser. It runs the actual scripts from `index.html` and `snippets/etualy-advisor.liquid`, plus the ignored local `snippet.txt` when available. A fresh clone without that preview still runs the two tracked widget variants; only preview-specific coverage is skipped. Test-only hooks are injected in memory; the production files do not expose them. The HTML fixture is served as UTF-8, as required by the storefront document.
@@ -99,6 +101,10 @@ A local timing sample during point 6 used the 643-product catalog and 30 repetit
 One earlier Windows run encountered a temporary `PermissionError` during a catalog-test file replacement. The isolated test and subsequent full runs passed. The final Python run used temporary files outside OneDrive; the cause of the original access error was not established. On a synchronized checkout, use `--basetemp` and a pytest cache directory outside the synced tree if temporary-file access is unreliable. Verification directories were removed after the successful runs.
 
 ## Adding coverage
+
+### Frontend stability — R07 (11 October 2026)
+
+The complete local browser run passed **288 checks**, followed by **9 additional edge-case checks** on the final widget implementation. The suite now defines 297 checks when the local DevTools snippet is present. All three widget variants were covered with headless Edge and intercepted external requests; no Groq quota or live Shopify cart was used. Tests cover blocked/full storage, quota compaction, draft validation and navigation, debounced saves, bounded history, focused-card preservation and restored details on short mobile and landscape viewports. The checks exposed an outer minimum height that prevented open cards from fitting on short screens; this was corrected in all three variants. No backend code changed, so the Python suite was not rerun. Actual devices and theme integration remain manual acceptance checks.
 
 Choose tests by the behavior being changed: parser and rule tests for extraction logic, API tests for request or response contracts, session-store tests for persistence, and scenario tests for complete advisor flows. Add live-service checks only when an external call is required; keep deterministic behavior covered with mocks.
 

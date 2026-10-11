@@ -64,7 +64,7 @@ after(async () => {
   if (browser) await browser.close();
 });
 
-async function fixture(t, file, seed = {}, store = false) {
+async function fixture(t, file, seed = {}, store = false, setup = {}) {
   if (store) seed = { [stateKey]: stored([{ kind: 'welcome' }]), ...seed };
   const revisions = new Map();
   const context = await browser.newContext({ serviceWorkers: 'block' });
@@ -78,7 +78,7 @@ async function fixture(t, file, seed = {}, store = false) {
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('dialog', (dialog) => { errors.push('Unexpected browser dialog'); dialog.dismiss(); });
-  await context.addInitScript((initial) => {
+  await context.addInitScript(({ initial, storageMode }) => {
     window.__xss = 0;
     window.__opened = [];
     window.open = (...args) => { window.__opened.push(args); return null; };
@@ -88,7 +88,20 @@ async function fixture(t, file, seed = {}, store = false) {
       sessionStorage.setItem('etualy_advisor_session_key', 'b'.repeat(64));
       Object.entries(initial).forEach(([key, value]) => sessionStorage.setItem(key, value));
     }
-  }, seed);
+    window.__stateWrites = 0;
+    if (storageMode === 'getter') Object.defineProperty(window, 'sessionStorage', {
+      get() { throw new DOMException('Storage blocked', 'SecurityError'); },
+    });
+    if (storageMode === 'read') Storage.prototype.getItem = () => { throw new DOMException('Storage blocked', 'SecurityError'); };
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) {
+      if (key === 'etualy_chat_state_v1') window.__stateWrites++;
+      if (storageMode === 'write') throw new DOMException('Storage blocked', 'SecurityError');
+      if (key === 'etualy_chat_state_v1' && (storageMode === 'quota' || (storageMode === 'quotaOnce' && window.__stateWrites === 1)))
+        throw new DOMException('Storage full', 'QuotaExceededError');
+      return write.call(this, key, value);
+    };
+  }, { initial: seed, storageMode: setup.storageMode });
   await context.route('**/*', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -207,6 +220,154 @@ test('Available widget variants contain the same request coordination', () => {
 });
 
 for (const file of files) {
+  test(`${file}: frontend stability keeps a focused older product while trimming history`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.evaluate(() => {
+      window.__widgetTest.appendChatRecord({ kind:'bot', reply:'Scheda in lettura', products:[{ name:'Da conservare' }] });
+      document.querySelector('.oa-card-info-btn').focus();
+      for (let i=0; i<120; i++) window.__widgetTest.appendChatRecord({ kind:'bot', reply:'Risposta ' + i, products:[] });
+      window.__widgetTest.saveChatState();
+    });
+    assert.equal(await page.locator('.oa-card-info-btn').evaluate(el => el === document.activeElement), true);
+    assert.equal(await page.locator('.oa-product-card').count(), 1);
+    assert.equal(await page.locator('#oaMessages > .oa-msg').count(), 100);
+    const saved = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)), stateKey);
+    assert.ok(saved.messages.some(record => record.reply === 'Scheda in lettura'));
+    assert.equal(saved.messages.at(-1).reply, 'Risposta 119');
+  });
+
+  test(`${file}: frontend stability recovers recent records from an older oversized state`, async (t) => {
+    const records = Array.from({ length:150 }, (_, i) => ({ kind:'bot', reply:'x'.repeat(10000) + i, products:[] }));
+    const { page } = await fixture(t, file, { [stateKey]:stored(records) });
+    const saved = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)), stateKey);
+    assert.equal(saved.session_id, 'sess_security');
+    assert.equal(saved.messages.length, 100);
+    assert.ok(saved.messages.at(-1).reply.endsWith('149'));
+    assert.equal(await page.locator('#oaMessages > .oa-msg').count(), 100);
+  });
+
+  test(`${file}: frontend stability retains an oversized draft in memory without writing an oversized state`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.evaluate(() => {
+      document.getElementById('oaInput').value = 'x'.repeat(1024*1024 + 10);
+      window.__widgetTest.saveChatState();
+    });
+    assert.equal(await page.locator('#oaInput').evaluate(el => el.value.length), 1024*1024 + 10);
+    assert.equal(await page.locator('#oaStorageNote').isVisible(), true);
+    assert.ok(await page.evaluate(key => new TextEncoder().encode(sessionStorage.getItem(key)).length <= 1024*1024, stateKey));
+    assert.equal(await page.locator('#oaInput').getAttribute('aria-invalid'), 'true');
+  });
+
+  for (const storageMode of ['getter', 'read', 'write', 'quota']) {
+    test(`${file}: frontend stability uses page memory for ${storageMode} storage failure`, async (t) => {
+      const { page, requests } = await fixture(t, file, {}, false, { storageMode });
+      assert.equal(await page.locator('#oaStorageNote').isVisible(), true);
+      await page.evaluate(() => { void window.__widgetTest.sendUserMessage('iris'); });
+      await page.waitForFunction(() => !window.__widgetTest.active());
+      await page.evaluate(() => { void window.__widgetTest.sendUserMessage('vaniglia'); });
+      await page.waitForFunction(() => !window.__widgetTest.active());
+      assert.equal(requests.length, 2);
+      assert.equal(requests[0].body.session_id, requests[1].body.session_id);
+      assert.equal(requests[0].body.session_key, requests[1].body.session_key);
+      assert.equal(requests[1].body.session_context.revision, 1);
+      await page.locator('#oaCloseBtn').click();
+      await page.locator('#oaLauncher').click();
+      assert.equal(await page.locator('#oaIntro').isVisible(), false);
+    });
+  }
+
+  test(`${file}: frontend stability retries quota with smaller history without clearing host storage`, async (t) => {
+    const records = Array.from({ length:40 }, (_, i) => ({ kind:'bot', reply:'Risposta ' + i, products:[] }));
+    const { page } = await fixture(t, file, { [stateKey]:stored(records), hostSetting:'keep' }, false, { storageMode:'quotaOnce' });
+    assert.equal(await page.locator('#oaStorageNote').isVisible(), false);
+    const saved = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key)), stateKey);
+    assert.equal(saved.messages.length, 20);
+    assert.equal(saved.messages.at(-1).reply, 'Risposta 39');
+    assert.equal(await page.locator('#oaMessages > .oa-msg').count(), 20);
+    assert.equal(await page.evaluate(() => sessionStorage.getItem('hostSetting')), 'keep');
+  });
+
+  test(`${file}: frontend stability preserves overlong draft until corrected and across navigation`, async (t) => {
+    const { page, requests } = await fixture(t, file);
+    const draft = 'x'.repeat(2500);
+    await page.locator('#oaInput').fill(draft);
+    await page.locator('.oa-send-btn').click();
+    assert.equal(await page.locator('#oaInput').inputValue(), draft);
+    assert.equal(requests.length, 0);
+    assert.equal(await page.locator('#oaInput').getAttribute('aria-invalid'), 'true');
+    await page.reload();
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('#oaInput').inputValue(), draft);
+    await page.locator('#oaInput').fill('iris');
+    await page.locator('.oa-send-btn').click();
+    await page.waitForFunction(() => !window.__widgetTest.active());
+    assert.equal(requests.length, 1);
+    assert.equal(await page.locator('#oaInput').inputValue(), '');
+    assert.equal(await page.locator('#oaDraftCounter').isVisible(), false);
+  });
+
+  test(`${file}: frontend stability debounces drafts and flushes pending text before navigation`, async (t) => {
+    const { page, requests } = await fixture(t, file);
+    await page.clock.install();
+    await page.clock.pauseAt(new Date(Date.now() + 1000));
+    await page.evaluate(() => { window.__stateWrites = 0; });
+    await page.locator('#oaInput').fill('bozza uno');
+    await page.locator('#oaInput').fill('bozza finale');
+    assert.equal(await page.evaluate(() => window.__stateWrites), 0);
+    await page.clock.runFor(299);
+    assert.equal(await page.evaluate(() => window.__stateWrites), 0);
+    await page.clock.runFor(1);
+    assert.equal(await page.evaluate(() => window.__stateWrites), 1);
+    await page.locator('#oaInput').fill('bozza prima del cambio pagina');
+    await page.reload();
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('#oaInput').inputValue(), 'bozza prima del cambio pagina');
+    assert.equal(requests.length, 0);
+  });
+
+  test(`${file}: frontend stability bounds history and serialized state while retaining latest messages`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.evaluate(() => {
+      for (let i=0; i<130; i++) window.__widgetTest.appendChatRecord({ kind:'bot', reply:'Risposta ' + i, products:[] });
+      window.__widgetTest.saveChatState();
+    });
+    assert.equal(await page.locator('#oaMessages > .oa-msg').count(), 100);
+    assert.equal(await page.evaluate(() => window.__widgetTest.records().length), 100);
+    await page.evaluate(() => {
+      for (let i=0; i<70; i++) window.__widgetTest.appendChatRecord({ kind:'bot', reply:'x'.repeat(20000) + i, products:[] });
+      window.__widgetTest.saveChatState();
+    });
+    const saved = await page.evaluate(key => {
+      const value = sessionStorage.getItem(key);
+      return { bytes:new TextEncoder().encode(value).length, records:JSON.parse(value).messages.length, latest:JSON.parse(value).messages.at(-1).reply };
+    }, stateKey);
+    assert.ok(saved.bytes <= 1024*1024);
+    assert.ok(saved.latest.endsWith('69'));
+    assert.equal(await page.locator('#oaMessages > .oa-msg').count(), saved.records);
+  });
+
+  test(`${file}: frontend stability restored detail panels adapt on short mobile viewport and resize`, async (t) => {
+    const notes = Array.from({ length:32 }, (_, i) => 'Nota lunga ' + i + 'x'.repeat(80));
+    const { page } = await fixture(t, file, { [stateKey]: stored([{ kind:'bot', reply:'Profumo', products:[{
+      name:'Esempio', is_open:true, olfactory_pyramid:{ top:notes, heart:notes, base:notes },
+    }] }]) });
+    await page.setViewportSize({ width:360, height:520 });
+    const assertFits = async () => {
+      await page.waitForFunction(() => {
+        const card=document.querySelector('.oa-product-card'), box=document.getElementById('oaMessages');
+        const c=card.getBoundingClientRect(), b=box.getBoundingClientRect();
+        return c.height <= box.clientHeight && c.top >= b.top - 1 && c.bottom <= b.bottom + 1;
+      }, null, { timeout:5000 });
+    };
+    await assertFits();
+    await page.reload();
+    await page.locator('#oaLauncher').click();
+    await assertFits();
+    await page.setViewportSize({ width:740, height:360 });
+    await assertFits();
+    assert.equal(await page.locator('.oa-slide-close-btn').isVisible(), true);
+  });
+
   test(`${file}: accessibility keyboard focus survives pending quick replies`, async (t) => {
     const { page } = await fixture(t, file);
     await controlledFetch(page);

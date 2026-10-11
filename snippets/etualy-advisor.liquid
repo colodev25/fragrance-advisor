@@ -1520,6 +1520,10 @@
       .oa-screen-enter { animation:oaScreenEnter .24s ease-out; }
       @keyframes oaScreenEnter { from { opacity:0; } to { opacity:1; } }
 
+
+      .oa-product-card.oa-has-slideover.is-open { min-height:0; }
+      .oa-storage-note, .oa-draft-counter { flex-shrink:0; font-size:11px!important; line-height:1.5!important; padding:6px 14px!important; margin:0!important; color:#555; background:#f7f7f7; overflow-wrap:anywhere; }
+
       @media (prefers-reduced-motion: reduce) {
     .oa-widget-container *,
     .oa-launcher-btn,
@@ -1612,6 +1616,7 @@
       </section>
       <div id="oaChatContent" class="oa-chat-content" hidden inert aria-hidden="true">
 
+      <p id="oaStorageNote" class="oa-storage-note" role="status" hidden>La conversazione potrebbe non essere conservata cambiando pagina.</p>
       <div class="oa-stepper-bar" id="oaStepper">
     <div class="oa-stepper-progress" id="oaProgress" role="progressbar" aria-label="Avanzamento della consulenza" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"></div>
   </div>
@@ -1629,8 +1634,9 @@
   </div>
 
   <div id="oaAnnouncements" class="oa-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+      <p id="oaDraftCounter" class="oa-draft-counter" role="status" aria-live="polite" hidden></p>
       <form class="oa-input-container" id="oaForm">
-    <input type="text" class="oa-input-field" id="oaInput" aria-label="Messaggio per il consulente" placeholder="Chiedi una nota, un profumo o un consiglio..." autocomplete="off">
+    <input type="text" class="oa-input-field" id="oaInput" aria-describedby="oaDraftCounter" aria-label="Messaggio per il consulente" placeholder="Chiedi una nota, un profumo o un consiglio..." autocomplete="off">
     <button type="submit" class="oa-send-btn" aria-label="Invia">
       <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -1647,6 +1653,55 @@
 <script>
   (function () {
     const API_BASE_URL = "https://fragrance-advisor-api.onrender.com".replace(/\/+$/, "");
+
+
+      // R07: own keys only; a failed browser store never disables this page's chat.
+      const localState = (() => {
+        const memory = new Map();
+        let native = null;
+        let memoryOnly = false;
+        const keys = ["etualy_chat_state_v1", "etualy_advisor_session_id", "etualy_advisor_session_key",
+          "etualy_advisor_notice_version", "etualy_teaser_closed", "etualy_chat_messages",
+          "etualy_chat_chips", "etualy_chat_step", "etualy_last_user_message"];
+        function fallback() {
+          memoryOnly = true;
+          const note = document.getElementById("oaStorageNote");
+          if (note) note.hidden = false;
+        }
+        try {
+          native = window.sessionStorage;
+          keys.forEach(key => { const value = native.getItem(key); if (value !== null) memory.set(key, value); });
+        } catch (_) { fallback(); }
+        return {
+          fallback,
+          getItem(key) {
+            if (!memoryOnly) try {
+              const value = native.getItem(key);
+              if (value === null) memory.delete(key); else memory.set(key, value);
+              return value;
+            } catch (_) { fallback(); }
+            return memory.get(key) ?? null;
+          },
+          setItem(key, value, retryValue) {
+            value = String(value); memory.set(key, value);
+            if (memoryOnly) return false;
+            try { native.setItem(key, value); return true; }
+            catch (error) {
+              if (error.name === "QuotaExceededError" && retryValue) {
+                try {
+                  value = retryValue(); memory.set(key, value);
+                  native.setItem(key, value); return true;
+                } catch (_) {}
+              }
+              fallback(); return false;
+            }
+          },
+          removeItem(key) {
+            memory.delete(key);
+            if (!memoryOnly) try { native.removeItem(key); } catch (_) { fallback(); }
+          },
+        };
+      })();
 
       // BEGIN WIDGET SAFE RENDERING
       // Remote data and stored data are rendered only through DOM properties.
@@ -2268,6 +2323,7 @@
 
       function appendChatRecord(record) {
         chatMessages.push(record);
+        limitLocalHistory();
         const message = renderMessage(record);
         messagesContainer.appendChild(message);
         if (record.kind !== "user" && record.kind !== "welcome") {
@@ -2286,7 +2342,7 @@
       }
 
       function clearLegacyChat() {
-        LEGACY_CHAT_KEYS.forEach((key) => sessionStorage.removeItem(key));
+        LEGACY_CHAT_KEYS.forEach((key) => localState.removeItem(key));
       }
 
       function resetLocalChat(rotateSession = false) {
@@ -2296,8 +2352,8 @@
         if (rotateSession) {
           sessionId = newSessionId();
           sessionKey = newSessionKey();
-          sessionStorage.setItem("etualy_advisor_session_key", sessionKey);
-          sessionStorage.setItem("etualy_advisor_session_id", sessionId);
+          localState.setItem("etualy_advisor_session_key", sessionKey);
+          localState.setItem("etualy_advisor_session_id", sessionId);
         }
         chatMessages = [{ kind: "welcome" }];
         currentStepValue = null;
@@ -2310,14 +2366,14 @@
       // END WIDGET SAFE RENDERING
 
       function getOrCreateSessionIdentity() {
-        let sid = sessionStorage.getItem("etualy_advisor_session_id");
-        let key = sessionStorage.getItem("etualy_advisor_session_key");
+        let sid = localState.getItem("etualy_advisor_session_id");
+        let key = localState.getItem("etualy_advisor_session_key");
         if (!sid || sid === "default" || !/^[A-Za-z0-9_-]{1,128}$/.test(sid) ||
             !key || !/^[a-f0-9]{64}$/.test(key)) {
           sid = newSessionId();
           key = newSessionKey();
-          sessionStorage.setItem("etualy_advisor_session_id", sid);
-          sessionStorage.setItem("etualy_advisor_session_key", key);
+          localState.setItem("etualy_advisor_session_id", sid);
+          localState.setItem("etualy_advisor_session_key", key);
         }
         return { sid, key };
       }
@@ -2407,7 +2463,7 @@
       const privacyButton = document.getElementById("oaPrivacyOpen");
       const introStart = document.getElementById("oaIntroStart");
       let noticeViewed = false;
-      try { noticeViewed = sessionStorage.getItem(NOTICE_KEY) === NOTICE_VERSION; } catch (_) {}
+      try { noticeViewed = localState.getItem(NOTICE_KEY) === NOTICE_VERSION; } catch (_) {}
       let privacyReturnFocus = null;
 
       function setWidgetScreen(view) {
@@ -2432,14 +2488,16 @@
       document.getElementById("oaIntroPrivacy").addEventListener("click", showPrivacy);
       document.getElementById("oaPrivacyBack").addEventListener("click", () => {
         setWidgetScreen(noticeViewed ? "chat" : "intro");
+        scheduleDetailLayout(true);
         const target = privacyReturnFocus?.isConnected && !privacyReturnFocus.closest("[inert]")
           ? privacyReturnFocus : (noticeViewed ? privacyButton : introTitle);
         target.focus({ preventScroll:true });
       });
       introStart.addEventListener("click", () => {
         noticeViewed = true;
-        try { sessionStorage.setItem(NOTICE_KEY, NOTICE_VERSION); } catch (_) {}
+        try { localState.setItem(NOTICE_KEY, NOTICE_VERSION); } catch (_) {}
         setWidgetScreen("chat");
+        scheduleDetailLayout(true);
         widgetTitle.focus({ preventScroll:true });
         scrollToBottom();
       });
@@ -2455,6 +2513,7 @@
         (noticeViewed ? widgetTitle : introTitle).focus({ preventScroll:true });
         syncWidgetMode();
         scrollToBottom();
+        scheduleDetailLayout(true);
       }
 
       function closeWidget() {
@@ -2541,34 +2600,73 @@
       let cooldownUntil = 0;
       let cooldownTimer = null;
 
-      function saveChatState(stepOverride) {
-        try {
-          if (stepOverride !== undefined) {
-            currentStepValue = Number.isInteger(stepOverride) && stepOverride >= 1 && stepOverride <= 4
-              ? stepOverride : null;
-          }
-          sessionStorage.setItem(CHAT_STATE_KEY, JSON.stringify({
-            version: 3, session_id: sessionId, session_key: sessionKey, messages: chatMessages,
-            options: currentOptions, step: currentStepValue, last_message: lastUserMessage,
-              pending_request: pendingRequest,
-              retry_until: cooldownUntil,
-              session_context: sessionContext,
-              draft: input.value,
-          }));
-          clearLegacyChat();
-        } catch (error) {
-          console.warn("[Etualy Advisor] Avviso salvataggio cronologia locale:", error);
+      const MAX_LOCAL_MESSAGES = 100;
+      const MAX_LOCAL_BYTES = 1024 * 1024;
+      const stateEncoder = new TextEncoder();
+      let draftSaveTimer = null;
+
+      function dropOldestRecord() {
+        // Keep the latest exchange and any card with a focused/pending action.
+        for (let index = 0; index < chatMessages.length - 2; index++) {
+          const record = chatMessages[index];
+          const element = [...messagesContainer.children].find(node => messageRecords.get(node) === record);
+          if (element && (element.contains(document.activeElement) || element.querySelector(".is-adding"))) continue;
+          const anchor = [...messagesContainer.children].find(node => node !== element && node.getBoundingClientRect().bottom > messagesContainer.getBoundingClientRect().top);
+          const anchorTop = anchor?.getBoundingClientRect().top;
+          chatMessages.splice(index, 1);
+          element?.remove();
+          if (anchor?.isConnected) messagesContainer.scrollTop += anchor.getBoundingClientRect().top - anchorTop;
+          return true;
         }
+        return false;
+      }
+      function limitLocalHistory() {
+        while (chatMessages.length > MAX_LOCAL_MESSAGES && dropOldestRecord()) {}
+      }
+      function encodeChatState() {
+        return JSON.stringify({ version:3, session_id:sessionId, session_key:sessionKey,
+          messages:chatMessages, options:currentOptions, step:currentStepValue,
+          last_message:lastUserMessage, pending_request:pendingRequest, retry_until:cooldownUntil,
+          session_context:sessionContext, draft:input.value });
+      }
+      function saveChatState(stepOverride) {
+        clearTimeout(draftSaveTimer); draftSaveTimer = null;
+        updateDraftCounter();
+        if (stepOverride !== undefined) currentStepValue = Number.isInteger(stepOverride) && stepOverride >= 1 && stepOverride <= 4 ? stepOverride : null;
+        limitLocalHistory();
+        let encoded = encodeChatState();
+        while (stateEncoder.encode(encoded).byteLength > MAX_LOCAL_BYTES && dropOldestRecord()) encoded = encodeChatState();
+        // An unusually large draft is kept intact in memory, never silently cut.
+        if (stateEncoder.encode(encoded).byteLength > MAX_LOCAL_BYTES) localState.fallback();
+        clearLegacyChat();
+        localState.setItem(CHAT_STATE_KEY, encoded, () => {
+          const target = Math.max(2, Math.floor(chatMessages.length / 2));
+          while (chatMessages.length > target && dropOldestRecord()) {}
+          return encodeChatState();
+        });
+      }
+      function scheduleDraftSave() {
+        updateDraftCounter();
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = setTimeout(() => saveChatState(), 300);
+      }
+      function updateDraftCounter() {
+        const count = input.value.length;
+        const counter = document.getElementById("oaDraftCounter");
+        counter.hidden = count < 1800;
+        counter.textContent = count > 2000 ? count + "/2000 — Accorcia il messaggio per inviarlo." : count + "/2000";
+        input.setAttribute("aria-invalid", String(count > 2000));
       }
 
       function restoreChatState() {
         try {
-          const serialized = sessionStorage.getItem(CHAT_STATE_KEY);
-          const hasLegacy = LEGACY_CHAT_KEYS.some((key) => sessionStorage.getItem(key) !== null);
+          const serialized = localState.getItem(CHAT_STATE_KEY);
+          const hasLegacy = LEGACY_CHAT_KEYS.some((key) => localState.getItem(key) !== null);
           if (serialized) {
+            if (stateEncoder.encode(serialized).byteLength > MAX_LOCAL_BYTES * 8) throw new Error("Cronologia locale troppo grande.");
             const state = JSON.parse(serialized);
             cooldownUntil = normalizeRetryDeadline(state?.retry_until);
-            const recoveredDraft = plainText(state?.pending_request?.message || state?.draft, 2000);
+            const recoveredDraft = (typeof (state?.pending_request?.message || state?.draft) === "string" ? (state?.pending_request?.message || state?.draft) : "");
             if ([1, 2].includes(state?.version)) {
               restartUnavailableSession("Il consulente è stato aggiornato. Iniziamo una nuova consulenza.", recoveredDraft);
               return;
@@ -2581,7 +2679,7 @@
                 !Array.isArray(state.messages) || !Array.isArray(state.options)) {
               throw new Error("Stato locale non compatibile.");
             }
-            const records = state.messages.map(normalizeMessage);
+            const records = state.messages.slice(-MAX_LOCAL_MESSAGES).map(normalizeMessage);
             if (!records.length || records.some((record) => record === null)) {
               throw new Error("Cronologia locale non valida.");
             }
@@ -2597,7 +2695,7 @@
             chatMessages = records;
             currentStepValue = Number.isInteger(state.step) && state.step >= 1 && state.step <= 4 ? state.step : null;
             lastUserMessage = plainText(state.last_message);
-            input.value = plainText(state.draft, 2000);
+            input.value = (typeof state.draft === "string" ? state.draft : "");
             const interrupted = normalizeChatRequest(state.pending_request);
             if (interrupted?.session_id === sessionId && interrupted.session_key === sessionKey) {
               chatMessages.push(normalizeMessage({
@@ -2614,7 +2712,7 @@
             chatMessages.forEach((record) => messagesContainer.appendChild(renderMessage(record)));
             renderOptions(state.options);
             updateStepper(currentStepValue);
-            sessionStorage.setItem("etualy_teaser_closed", "true");
+            localState.setItem("etualy_teaser_closed", "true");
             if (teaser) { teaser.classList.remove("is-visible"); teaser.inert = true; teaser.setAttribute("aria-hidden", "true"); }
           } else {
             resetLocalChat(hasLegacy);
@@ -2625,7 +2723,7 @@
         } catch (error) {
           console.warn("[Etualy Advisor] Avviso ripristino cronologia locale:", error);
           try {
-            sessionStorage.removeItem(CHAT_STATE_KEY);
+            localState.removeItem(CHAT_STATE_KEY);
             clearLegacyChat();
             resetLocalChat(true);
             saveChatState();
@@ -2638,14 +2736,14 @@
 
       function dismissTeaser() {
       if (teaser) { teaser.classList.remove("is-visible"); teaser.inert = true; teaser.setAttribute("aria-hidden", "true"); }
-      sessionStorage.setItem("etualy_teaser_closed", "true");
+      localState.setItem("etualy_teaser_closed", "true");
     }
 
     setTimeout(() => {
       if (
         teaser &&
         !widget.classList.contains("is-active") &&
-        sessionStorage.getItem("etualy_teaser_closed") !== "true"
+        localState.getItem("etualy_teaser_closed") !== "true"
       ) {
         teaser.inert = false; teaser.removeAttribute("aria-hidden");
           teaser.classList.add("is-visible");
@@ -2695,15 +2793,14 @@
       }
     });
 
-      input.addEventListener("input", () => saveChatState());
+      input.addEventListener("input", scheduleDraftSave);
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
         if (!noticeViewed || chatContent.hidden || activeRequest || isCoolingDown()) return;
       const text = input.value.trim();
       if (!text) return;
-      input.value = "";
-      dismissKeyboard();
+
       sendUserMessage(text);
     });
 
@@ -2800,37 +2897,62 @@
       progress.style.width = percentage + "%";
     }
 
-          function toggleCardSlide(btn) {
+          let layoutFrame = null;
+      let readingCard = null;
+      function fitDetailCard(card) {
+        if (!card || messagesContainer.clientHeight <= 0 || chatContent.hidden || !widget.classList.contains("is-active")) return;
+        const style = getComputedStyle(messagesContainer);
+        const height = Math.max(1, messagesContainer.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 2) + "px";
+        if (card.style.getPropertyValue("--oa-detail-height") !== height) card.style.setProperty("--oa-detail-height", height);
+      }
+      function keepCardVisible(card, smooth = false) {
+        if (!card?.isConnected || chatContent.hidden || !widget.classList.contains("is-active")) return;
+        const containerTop = messagesContainer.getBoundingClientRect().top + messagesContainer.clientTop;
+        const paddingTop = parseFloat(getComputedStyle(messagesContainer).paddingTop);
+        const top = messagesContainer.scrollTop + card.getBoundingClientRect().top - containerTop - paddingTop;
+        messagesContainer.scrollTo({ top, behavior: smooth && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "instant" });
+      }
+      function scheduleDetailLayout(align = false) {
+        if (layoutFrame !== null) cancelAnimationFrame(layoutFrame);
+        layoutFrame = requestAnimationFrame(() => {
+          layoutFrame = null;
+          const cards = [...messagesContainer.querySelectorAll(".oa-product-card.is-open")];
+          const focused = document.activeElement?.closest?.(".oa-product-card.is-open");
+          const candidate = focused || (readingCard?.isConnected && readingCard.classList.contains("is-open") ? readingCard : null);
+          const visible = candidate && candidate.getBoundingClientRect().bottom > messagesContainer.getBoundingClientRect().top && candidate.getBoundingClientRect().top < messagesContainer.getBoundingClientRect().bottom;
+          cards.forEach(fitDetailCard);
+          if (align) {
+            readingCard = candidate || cards.at(-1) || null;
+            keepCardVisible(readingCard);
+          } else if (visible) keepCardVisible(candidate);
+        });
+      }
+      const detailObserver = typeof ResizeObserver === "function" ? new ResizeObserver(() => scheduleDetailLayout()) : null;
+      detailObserver?.observe(messagesContainer);
+      window.addEventListener("resize", () => scheduleDetailLayout());
+      function disposeFrontendState() {
+        saveChatState();
+        detailObserver?.disconnect();
+        if (layoutFrame !== null) cancelAnimationFrame(layoutFrame);
+        layoutFrame = null;
+      }
+
+      function toggleCardSlide(btn) {
         const card = btn.closest(".oa-product-card");
-        if (card) {
-          // Cancel an earlier smooth scroll before changing the card height.
-          messagesContainer.scrollTo({ top: messagesContainer.scrollTop, behavior: "instant" });
-          const willOpen = !card.classList.contains("is-open");
-          if (willOpen) {
-            const style = getComputedStyle(messagesContainer);
-            const availableHeight = messagesContainer.clientHeight
-              - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 2;
-            card.style.setProperty("--oa-detail-height", Math.max(1, availableHeight) + "px");
-          }
-          card.classList.toggle("is-open");
-          const open = card.classList.contains("is-open");
-          const product = cardRecords.get(card);
-          if (product) product.is_open = open;
-          card.querySelector(".oa-card-front").inert = open;
-          card.querySelector(".oa-card-slideover").inert = !open;
-          card.querySelector(".oa-card-info-btn").setAttribute("aria-expanded", String(open));
-          card.querySelector(open ? ".oa-slide-close-btn" : ".oa-card-info-btn").focus({ preventScroll: true });
-          saveChatState();
-          if (open) {
-            requestAnimationFrame(() => {
-              if (!card.isConnected || !card.classList.contains("is-open")) return;
-              const containerTop = messagesContainer.getBoundingClientRect().top + messagesContainer.clientTop;
-              const paddingTop = parseFloat(getComputedStyle(messagesContainer).paddingTop);
-              const top = messagesContainer.scrollTop + card.getBoundingClientRect().top - containerTop - paddingTop;
-              messagesContainer.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
-            });
-          }
-        }
+        if (!card) return;
+        messagesContainer.scrollTo({ top:messagesContainer.scrollTop, behavior:"instant" });
+        const open = !card.classList.contains("is-open");
+        fitDetailCard(card);
+        card.classList.toggle("is-open", open);
+        readingCard = open ? card : null;
+        const product = cardRecords.get(card);
+        if (product) product.is_open = open;
+        card.querySelector(".oa-card-front").inert = open;
+        card.querySelector(".oa-card-slideover").inert = !open;
+        card.querySelector(".oa-card-info-btn").setAttribute("aria-expanded", String(open));
+        card.querySelector(open ? ".oa-slide-close-btn" : ".oa-card-info-btn").focus({ preventScroll:true });
+        saveChatState();
+        if (open) requestAnimationFrame(() => { if (card.classList.contains("is-open")) keepCardVisible(card, true); });
       }
 
       function shopifyPurchase(product) {
@@ -3233,7 +3355,7 @@
 
       function restartUnavailableSession(message, draft = "") {
         resetLocalChat(true);
-        input.value = plainText(draft, 2000);
+        input.value = typeof draft === "string" ? draft : "";
         appendChatRecord({ kind: "error", text: message, retryable: false });
         saveChatState();
         scrollToBottom();
@@ -3336,12 +3458,14 @@
         if (text.length > 2000) {
           appendChatRecord({ kind: "error", text: "Scrivi un messaggio entro 2.000 caratteri.", retryable: false });
           saveChatState();
+          input.focus({ preventScroll:true });
           return;
         }
         if (sessionContext && sessionContext.expires_at <= Date.now()) {
           restartUnavailableSession("La sessione è scaduta. Iniziamo una nuova consulenza: il tuo messaggio è pronto da reinviare.", text);
           return;
         }
+        if (text === input.value.trim()) { input.value = ""; updateDraftCounter(); dismissKeyboard(); }
         retireRetries();
         const request = normalizeChatRequest({
           message: text, session_id: sessionId, session_key: sessionKey, request_id: newRequestId(),
@@ -3366,6 +3490,9 @@
       }
       // END WIDGET REQUEST FLOW
 
-    restoreChatState();
+          window.addEventListener("pagehide", () => saveChatState());
+      window.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveChatState(); });
+
+      restoreChatState();
   })();
 </script>
