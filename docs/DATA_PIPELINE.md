@@ -42,6 +42,12 @@ Successful supported results, including valid empty results, are stored in each 
 
 The tag filter preserves Italian salt references such as `sale marino`, `accordo di sale` and the ambiguous standalone `Sale`. It rejects explicit promotional contexts such as `on sale`, `flash sale`, `summer sale`, `sale collection`, discounts, percentages and sizes. A retained tag still needs the existing evidence validation before becoming an extracted note. This correction changes signatures only where the filtered source tags differ; subsequent synchronization updates those contexts and the bounded nightly queue handles any needed extraction. No wholesale cache-version reset is required.
 
+### Note evidence validation
+
+Enrichment accepts note citations only when present in the supplied description/tags and supported by an affirmative original clause. Short quotations cannot hide surrounding negation such as “senza vaniglia”; hypothetical, comparative and instructional clauses are conservatively discarded. These lexical checks are bounded by the existing source limits and cannot prove all linguistic meanings. They may omit ambiguous notes rather than invent them. The family policy is unchanged: both explicit and inferred allowed families remain available.
+
+Existing matching caches are revalidated locally on the next Shopify synchronization, and product data is rebuilt from deterministic fields plus the accepted cached claims. The signature version is unchanged, avoiding a blanket invalidation of the enrichment backlog or new provider calls for price/stock updates. Existing deployed index generations retain their snapshot until the normal catalog update, reindex and deployment complete. No live catalog rebuild is triggered by this code change alone.
+
 ## Persistent queue and nightly budget
 
 Each synchronized product stores `enrichment_input`: source description, relevant tags and deterministic fields before LLM extraction. `data/catalog_enrichment_state.json` tracks queue status, retry dates and token reservations. Deleted products leave the queue; unavailable products are skipped while their cache remains available. Legacy products without `enrichment_input` wait for the first synchronization.

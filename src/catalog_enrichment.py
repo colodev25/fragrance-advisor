@@ -45,6 +45,50 @@ def supported_evidence(evidence, description, tags):
     return None
 
 
+def affirmative_note_evidence(name, evidence, description, tags, source):
+    """Check original clauses, so quoting only 'vaniglia' cannot hide 'senza'.
+
+    This is a conservative lexical check, not a complete semantic proof. Family
+    inference deliberately retains its existing policy.
+    """
+    quote = normalized(evidence)
+    sources = [description] if source == "description" else tags
+    pattern = r"(?<!\w)" + re.escape(normalized(name)) + r"(?!\w)"
+    uncertain = r"potrebbe\w*|forse|ipotetic\w*|eventual\w*|ricorda\w*|simile|ispirat\w*|may|might|possibly|reminiscent|unlike"
+    before = re.compile(
+        r"\b(?:senza|nessun\w*|privo|priva|privi|prive|assenza|esclude\w*|esclus\w*|"
+        r"without|no|not|free\s+(?:of|from)|a\s+differenza|" + uncertain + r"|"
+        r"non\s+(?:contiene|contengono|presenta|presentano|include|includono|ha|"
+        r"(?:sono|[èe])\s+(?:present\w*|inclus\w*|previst\w*)|trovi\w*|ritrovi\w*))\b(?:\W+\w+){0,6}\W*$", re.I,
+    )
+    after = re.compile(
+        r"^\W*(?:(?:[èe]|sono|is|are)\s+)?(?:assent\w*|esclus\w*|"
+        r"non\s+(?:(?:[èe]|sono)\s+)?(?:present\w*|contenut\w*)|"
+        r"not\s+(?:present|included)|" + uncertain + r")\b|^\s*-free\b", re.I,
+    )
+    found = False
+    for text in sources:
+        original = normalized(text)
+        offset = 0
+        while (start := original.find(quote, offset)) >= 0:
+            end = start + len(quote)
+            offset = start + 1
+            for clause in re.finditer(r"[^.;!?\n]+", original):
+                if clause.end() <= start or clause.start() >= end:
+                    continue
+                parts = re.split(r"\b(?:ma|invece|but|however)\b|,\s*(?=(?:con|with|contiene|contains)\b)", clause.group())
+                for part in parts:
+                    for match in re.finditer(pattern, part):
+                        found = True
+                        prefix = part[:match.start()][-120:]
+                        # Negation of a descriptive quality does not deny a note.
+                        prefix = re.sub(r"\bsenza\s+(?:tempo|ostentazione|compromessi)\b", "", prefix)
+                        if (before.search(prefix) or after.search(part[match.end():][:120])
+                                or re.search(r"\b(?:ignora|ignore|istruzioni|instructions|rispondi|system\s+prompt)\b", part)):
+                            return False
+    return found
+
+
 def parse_enrichment(text, description, tags, families):
     """Validate the envelope; discard individual claims without source support."""
     data = json.loads(text)
@@ -61,6 +105,8 @@ def parse_enrichment(text, description, tags, families):
             continue
         source = supported_evidence(evidence, description, tags)
         if not source or not re.search(r"(?<!\w)" + re.escape(normalized(name)) + r"(?!\w)", normalized(evidence)):
+            continue
+        if not affirmative_note_evidence(name, evidence, description, tags, source):
             continue
         # Without a position cue, keep the note but do not invent its pyramid stage.
         if position is not None:
@@ -178,6 +224,8 @@ def enrich_catalog_fields(client, name, brand, description, tags, pyramid, famil
         "Assegna top/heart/base solo quando la citazione collega esplicitamente quella nota a "
         "testa/apertura, cuore o fondo. Per elenchi generici usa position null. "
         "Non trattare aggettivi commerciali o occasioni come note. "
+        "Non estrarre note negate, assenti, ipotetiche o citate solo per confronto; "
+        "non ritagliare una citazione per nascondere una negazione. "
         "Per la famiglia scegli una allowed_families: kind explicit se dichiarata, inferred solo "
         "se deducibile dagli accordi olfattivi descritti, mai dal solo brand o nome. "
         "Se non ci sono dati sufficienti restituisci notes [] e family null. "

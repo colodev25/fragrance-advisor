@@ -53,6 +53,12 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 
 New structured note sections require responses from the deployed backend that contain `olfactory_pyramid` and `unpositioned_notes`. The DevTools preview calls that remote API. Older saved cards keep their accord summary; after deploying both parts, begin a fresh conversation to obtain the new card data.
 
+## Reliable descriptions and links
+
+The advisor may use the available olfactory family whether explicit or inferred; no derivation label is added to customer cards. Without documented performance data, duration, intensity and trail may be discussed qualitatively as cautious impressions consistent with the available profile, without invented hours or guaranteed results. Olfactory notes do not certify ingredients or allergen absence.
+
+Model-generated Markdown links appear as non-clickable text. Product/purchase actions accept only HTTPS URLs on `etualy.com` and `www.etualy.com`; product images also allow `cdn.shopify.com`. Exact host matching rejects lookalike domains, credentials and custom ports. These rules apply to restored cards too. The current catalog uses Etualy links and Shopify CDN images; a future hosting change requires updating the explicit allowlist in all widget variants. The fixed Groq documentation link in the privacy screen remains available.
+
 ## Visual language
 
 The interface uses the storefront's black, white and neutral-gray palette, with Cormorant Garamond for fragrance titles and Plus Jakarta Sans for interface text. Former gold accents are now black or neutral gray; muted text uses a darker gray for legibility. The floating launcher retains its charcoal gradient, white fragrance icon and soft white glow. Compact product cards, accord chips and subtle motion keep attention on the recommendation and its olfactory profile.

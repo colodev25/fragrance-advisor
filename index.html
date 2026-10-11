@@ -1806,6 +1806,16 @@
         }
       }
 
+      function trustedProductUrl(value, image = false) {
+        const candidate = safeHttpUrl(value);
+        if (!candidate) return "";
+        const url = new URL(candidate);
+        const hosts = image
+          ? ["cdn.shopify.com", "etualy.com", "www.etualy.com"]
+          : ["etualy.com", "www.etualy.com"];
+        return url.protocol === "https:" && !url.port && hosts.includes(url.hostname)
+          ? url.href : "";
+      }
       function dom(tag, className = "", text) {
         const node = document.createElement(tag);
         if (className) node.className = className;
@@ -1881,7 +1891,7 @@
       }
 
       function externalLink(url, text, className = "") {
-        const safeUrl = safeHttpUrl(url);
+        const safeUrl = trustedProductUrl(url);
         const link = dom(safeUrl ? "a" : "span", className, text);
         if (safeUrl) {
           link.href = safeUrl;
@@ -1954,7 +1964,7 @@
         product.requested_size = /^\d+(?:\.\d+)? ml$/.test(source.requested_size || "") ? source.requested_size : "";
         product.traits = displayProductTraits(product.traits);
         ["add_to_cart_url", "product_page_url", "image_url"].forEach((key) => {
-          product[key] = safeHttpUrl(source[key]);
+          product[key] = trustedProductUrl(source[key], key === "image_url");
         });
         product.price =
           typeof source.price === "number" &&
@@ -1996,12 +2006,7 @@
           if (match[1] !== undefined) {
             parent.appendChild(dom("strong", "", match[1]));
           } else {
-            const link = externalLink(match[3], match[2]);
-            if (link.tagName === "A") {
-              link.style.color = "var(--oa-black)";
-              link.style.fontWeight = "600";
-              link.style.textDecoration = "underline";
-            }
+            const link = dom("span", "", match[2]);
             parent.appendChild(link);
           }
           offset = match.index + match[0].length;

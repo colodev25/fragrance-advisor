@@ -36,6 +36,10 @@ Cart operations run directly between the widget and Shopify, independently of ch
 
 `src/recommendation_preferences.py` centralizes evidence and admission for both modes. Required constraints are checked against the complete runtime catalog; semantic retrieval ranks the surviving products. Confirmed preference matches take priority, with explicit notices for partial alternatives. The profile persists with session state, and stock, budget or note exclusions cannot be bypassed by the model's candidate selection.
 
+### Response reliability
+
+All advisor model calls receive a common system policy separating customer/catalog/history content from instructions, restricting unsupported factual claims and keeping actions in product cards. Duration/intensity estimates remain qualitative when no explicit performance data is available; inferred olfactory families remain usable. This adds prompt context, not a second verification call, and is a risk reduction rather than a semantic guarantee. Catalog enrichment independently rejects note evidence from negative, hypothetical, comparative or instructional clauses, checking the original text even when the proposed quotation hides surrounding words.
+
 ### Search and indexing
 
 `src/reindex.py` builds a unique `fragrances_<generation>` collection using ChromaDB's local ONNX embedding model (`all-MiniLM-L6-v2`) and cosine distance. It validates the source catalog, checks indexed IDs/count and a search probe, writes a catalog snapshot, then atomically publishes `chroma_db/active.json`. `src/search.py` verifies this manifest and loads its collection; `src/advisor.py` uses that same catalog snapshot. Source catalog updates remain pending until indexing succeeds and the backend restarts. See [index operations](INDEX_OPERATIONS.md).

@@ -146,7 +146,7 @@ async function fixture(t, file, seed = {}, store = false, setup = {}) {
         headers: { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'Retry-After',
           ...response.headers }, body: JSON.stringify(response.body) });
     }
-    if (url.origin === 'https://images.test') {
+    if (url.origin === 'https://cdn.shopify.com' && url.pathname !== '/missing.png') {
       return route.fulfill({ contentType: 'image/png', body: Buffer.from(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF1sAAAAASUVORK5CYII=', 'base64') });
     }
@@ -220,6 +220,29 @@ test('Available widget variants contain the same request coordination', () => {
 });
 
 for (const file of files) {
+  test(`${file}: reliability rejects unrelated product URLs and keeps model links as text`, async (t) => {
+    const { page } = await fixture(t, file);
+    const results = await page.evaluate(() => {
+      const normalize = (url) => window.__widgetTest.normalizeProduct({ product_page_url:url, image_url:url });
+      return {
+        allowed:normalize('https://etualy.com/products/iris'),
+        cdn:normalize('https://cdn.shopify.com/image.png'),
+        rejected:['https://etualy.com.evil.test/products/iris','https://evil.test/iris',
+          'http://etualy.com/products/iris','https://etualy.com:444/products/iris',
+          'https://user@etualy.com/products/iris'].map(normalize),
+      };
+    });
+    assert.equal(results.allowed.product_page_url, 'https://etualy.com/products/iris');
+    assert.equal(results.cdn.image_url, 'https://cdn.shopify.com/image.png');
+    assert.equal(results.cdn.product_page_url, '');
+    assert.ok(results.rejected.every(p => !p.product_page_url && !p.image_url));
+    await page.evaluate(() => window.__widgetTest.appendChatRecord({kind:'bot', products:[],
+      reply:'[Negozio](https://etualy.com/products/iris) [Esterno](https://evil.test/)'}));
+    assert.equal(await page.locator('#oaMessages .oa-msg').last().locator('a').count(), 0);
+    await page.reload();
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('#oaMessages .oa-msg').last().locator('a').count(), 0);
+  });
   test(`${file}: frontend stability keeps a focused older product while trimming history`, async (t) => {
     const { page } = await fixture(t, file);
     await page.evaluate(() => {
@@ -466,15 +489,24 @@ for (const file of files) {
     const { page } = await fixture(t, file);
     await page.setViewportSize({ width:320, height:740 });
     await page.evaluate(() => {
-      document.querySelectorAll('#oaWidget *').forEach(el => {
-        const size = parseFloat(getComputedStyle(el).fontSize); el.style.fontSize = size * 2 + 'px';
-      });
+      // Snapshot first: changing parents while reading descendants compounds
+      // inherited sizes beyond 200% and does not simulate doubled text.
+      const sizes = [...document.querySelectorAll('#oaWidget *')]
+        .map(el => [el, parseFloat(getComputedStyle(el).fontSize)]);
+      sizes.forEach(([el, size]) => { el.style.fontSize = size * 2 + 'px'; });
+    });
+    // Geometry must be measured after the real opening/resizing transitions.
+    await page.locator('#oaWidget').evaluate(async el => {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await Promise.all(el.getAnimations({ subtree:true })
+        .filter(animation => Number.isFinite(animation.effect.getComputedTiming().iterations))
+        .map(animation => animation.finished.catch(() => {})));
     });
     const dimensions = await page.locator('#oaWidget').evaluate(el => ({ client:el.clientWidth, scroll:el.scrollWidth }));
     assert.ok(dimensions.scroll <= dimensions.client + 1, JSON.stringify(dimensions));
     const input = await page.locator('#oaInput').boundingBox();
     const close = await page.locator('#oaCloseBtn').boundingBox();
-    assert.ok(input.y + input.height <= 741);
+    assert.ok(input.y + input.height <= 741, JSON.stringify(input));
     assert.ok(close.x >= 0 && close.x + close.width <= 321);
   });
 
@@ -781,9 +813,8 @@ for (const file of files) {
     assert.equal(await message.locator('strong').textContent(), 'Iris');
     assert.equal(await message.locator('p').count(), 2);
     assert.equal(await message.locator('br').count(), 1);
-    assert.equal(await message.locator('a').count(), 1);
-    assert.equal(await message.locator('a').getAttribute('rel'), 'noopener noreferrer');
-    assert.equal(await message.locator('a').getAttribute('href'), 'https://example.test/');
+    assert.equal(await message.locator('a').count(), 0);
+    assert.ok((await message.textContent()).includes('sito'));
     await assertSafe(page);
   });
 
@@ -793,7 +824,7 @@ for (const file of files) {
       const product = window.__widgetTest.normalizeProduct({ name: payload, brand: payload,
         family: payload, story: payload, traits: payload, key_notes: [payload], card_type: 'slideover',
         product_page_url: 'javascript:evil', add_to_cart_url: 'data:text/html,evil',
-        image_url: 'https://images.test/x\"onerror=evil', price: 90 });
+        image_url: 'https://cdn.shopify.com/x\"onerror=evil', price: 90 });
       window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Scheda', products: [product] });
     }, attack);
     const card = page.locator('#oaMessages .oa-product-card');
@@ -814,15 +845,15 @@ for (const file of files) {
     const { page } = await fixture(t, file);
     await page.evaluate((payload) => {
       const product = window.__widgetTest.normalizeProduct({ name: payload, brand: 'Etualy', price: 90,
-        product_page_url: 'https://shop.test/products/iris', add_to_cart_url: 'https://shop.test/cart/1:1',
-        image_url: 'https://images.test/iris.png', key_notes: ['Iris'] });
+        product_page_url: 'https://etualy.com/products/iris', add_to_cart_url: 'https://etualy.com/cart/1:1',
+        image_url: 'https://cdn.shopify.com/iris.png', key_notes: ['Iris'] });
       window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Scheda', products: [product] });
     }, 'Iris "speciale" <edizione>');
     await page.waitForFunction(() => document.querySelector('#oaMessages img')?.classList.contains('is-loaded'));
     assert.equal(await page.locator('#oaMessages img').getAttribute('alt'), 'Iris "speciale" <edizione>');
-    assert.equal(await page.locator('#oaMessages .oa-card-front .oa-card-title-link').getAttribute('href'), 'https://shop.test/products/iris');
+    assert.equal(await page.locator('#oaMessages .oa-card-front .oa-card-title-link').getAttribute('href'), 'https://etualy.com/products/iris');
     assert.equal(await page.locator('#oaMessages .oa-card-cart-btn').textContent(), 'Vedi sul sito');
-    assert.equal(await page.locator('#oaMessages .oa-card-cart-btn').getAttribute('href'), 'https://shop.test/products/iris');
+    assert.equal(await page.locator('#oaMessages .oa-card-cart-btn').getAttribute('href'), 'https://etualy.com/products/iris');
     await assertSafe(page);
   });
 
@@ -830,7 +861,7 @@ for (const file of files) {
     const { page } = await fixture(t, file);
     await page.evaluate(() => {
       window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '', products: [
-        window.__widgetTest.normalizeProduct({ name: 'Iris', image_url: 'https://blocked.test/missing.png' }),
+        window.__widgetTest.normalizeProduct({ name: 'Iris', image_url: 'https://cdn.shopify.com/missing.png' }),
       ] });
     });
     await page.waitForFunction(() => Boolean(document.querySelector('#oaMessages .oa-card-placeholder')));
@@ -1030,7 +1061,7 @@ for (const file of files) {
       window.__widgetTest.appendChatRecord({ kind: 'user', text: payload });
       window.__widgetTest.appendChatRecord({ kind: 'bot', reply: '**Iris**', products: [
         window.__widgetTest.normalizeProduct({ name: 'Iris', card_type: 'slideover',
-          product_page_url: 'https://shop.test/iris', add_to_cart_url: 'https://shop.test/cart/1:1' }),
+          product_page_url: 'https://etualy.com/iris', add_to_cart_url: 'https://etualy.com/cart/1:1' }),
       ] });
       window.__widgetTest.renderOptions(['Per Lei', payload]);
       window.__widgetTest.saveChatState(2);
