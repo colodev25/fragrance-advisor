@@ -272,20 +272,166 @@
     "olfactory_pyramid": {
       "top": [],
       "heart": [],
-      "base": []
+      "base": [
+        "Ambroxan",
+        "Muschio"
+      ]
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Limone",
+      "Zenzero",
+      "Menta",
+      "Eucalipto",
+      "Vodka",
+      "Sale Marino",
+      "Cristalli di Musk"
+    ],
     "family": "Speziata",
     "family_inference": null,
     "data_provenance": {
-      "pyramid": {},
+      "pyramid": {
+        "base": {
+          "source": "llm",
+          "kind": "extracted"
+        }
+      },
       "family": {
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Limone",
+          "position": null,
+          "evidence": "il limone illumina la composizione",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Zenzero",
+          "position": null,
+          "evidence": "lo zenzero fresco aggiunge una nota speziata",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Menta",
+          "position": null,
+          "evidence": "menta ed eucalipto portano una freschezza intensa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Eucalipto",
+          "position": null,
+          "evidence": "menta ed eucalipto portano una freschezza intensa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vodka",
+          "position": null,
+          "evidence": "un originale accordo di vodka introduce una sfumatura",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambroxan",
+          "position": "base",
+          "evidence": "ambroxan e muschio creano una base morbida",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio",
+          "position": "base",
+          "evidence": "ambroxan e muschio creano una base morbida",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Sale Marino",
+          "position": null,
+          "evidence": "Sale Marino",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Cristalli di Musk",
+          "position": null,
+          "evidence": "Cristalli di Musk",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "20cbe04d36429c8abbefadf1bcf68a2ffe642155d5c1db276c75cd6f9af50ad2",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Limone",
+            "position": null,
+            "evidence": "il limone illumina la composizione"
+          },
+          {
+            "name": "Zenzero",
+            "position": null,
+            "evidence": "lo zenzero fresco aggiunge una nota speziata"
+          },
+          {
+            "name": "Menta",
+            "position": null,
+            "evidence": "menta ed eucalipto portano una freschezza intensa"
+          },
+          {
+            "name": "Eucalipto",
+            "position": null,
+            "evidence": "menta ed eucalipto portano una freschezza intensa"
+          },
+          {
+            "name": "Vodka",
+            "position": null,
+            "evidence": "un originale accordo di vodka introduce una sfumatura"
+          },
+          {
+            "name": "Ambroxan",
+            "position": "base",
+            "evidence": "ambroxan e muschio creano una base morbida"
+          },
+          {
+            "name": "Muschio",
+            "position": "base",
+            "evidence": "ambroxan e muschio creano una base morbida"
+          },
+          {
+            "name": "Sale Marino",
+            "position": null,
+            "evidence": "Sale Marino"
+          },
+          {
+            "name": "Cristalli di Musk",
+            "position": null,
+            "evidence": "Cristalli di Musk"
+          }
+        ],
+        "family": {
+          "name": "Speziata",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Speziata"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "SURF THE GINGER WAVE",
       "brand": "Simone Andreoli",
@@ -322,7 +468,7 @@
       "add_to_cart": "https://etualy.com/cart/59587485565262:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/simone-andreoli-SURF-THE-GINGER-WAVE-eau-de-parfum.png?v=1778065748"
     },
-    "semantic_text": "Profumo SURF THE GINGER WAVE di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Speziata. Tag: 50 ml, Acquatica, da 101€ a 200€, Eau de Parfum, Per lei, Per lui, Simone Andreoli, Speziata. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi freschi, energizzanti e contemporanei, per personalità dinamiche, sportive e spontanee. Ideale per chi cerca una fragranza unisex versatile, capace di trasmettere energia e leggerezza con stile. Surf the Ginger Wave è il compagno ideale per il giorno, per il tempo libero"
+    "semantic_text": "Profumo SURF THE GINGER WAVE di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Speziata. Tag: 50 ml, Acquatica, da 101€ a 200€, Eau de Parfum, Per lei, Per lui, Simone Andreoli, Speziata. Note di fondo: Ambroxan, Muschio. Note citate senza posizione dichiarata: Limone, Zenzero, Menta, Eucalipto, Vodka, Sale Marino, Cristalli di Musk. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi freschi, energizzanti e contemporanei, per personalità dinamiche, sportive e spontanee. Ideale per chi cerca una fragranza unisex versatile, capace di trasmettere energia e leggerezza con stile. Surf the Ginger Wave è il compagno ideale per il giorno, per il tempo libero"
   },
   {
     "id": "sh_15813857018190",
@@ -348,7 +494,17 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Panna Chantilly",
+      "Vaniglia",
+      "Fiori d’arancio",
+      "Ylang-ylang",
+      "Tiaré",
+      "Frangipani",
+      "Noce macadamia",
+      "Ambra",
+      "Muschio bianco"
+    ],
     "family": "Legnosa, Acquatica",
     "family_inference": null,
     "data_provenance": {
@@ -357,9 +513,139 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Panna Chantilly",
+          "position": null,
+          "evidence": "panna Chantilly",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vaniglia",
+          "position": null,
+          "evidence": "vaniglia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Fiori d’arancio",
+          "position": null,
+          "evidence": "fiori d’arancio",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ylang-ylang",
+          "position": null,
+          "evidence": "ylang-ylang",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Tiaré",
+          "position": null,
+          "evidence": "tiaré",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Frangipani",
+          "position": null,
+          "evidence": "frangipani",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Noce macadamia",
+          "position": null,
+          "evidence": "noce macadamia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambra",
+          "position": null,
+          "evidence": "ambra",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio bianco",
+          "position": null,
+          "evidence": "muschio bianco",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "d2b53f8d06424464c1d1a4b441862e9138ed025a323cf198ce134df8cfeee740",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Panna Chantilly",
+            "position": null,
+            "evidence": "panna Chantilly"
+          },
+          {
+            "name": "Vaniglia",
+            "position": null,
+            "evidence": "vaniglia"
+          },
+          {
+            "name": "Fiori d’arancio",
+            "position": null,
+            "evidence": "fiori d’arancio"
+          },
+          {
+            "name": "Ylang-ylang",
+            "position": null,
+            "evidence": "ylang-ylang"
+          },
+          {
+            "name": "Tiaré",
+            "position": null,
+            "evidence": "tiaré"
+          },
+          {
+            "name": "Frangipani",
+            "position": null,
+            "evidence": "frangipani"
+          },
+          {
+            "name": "Noce macadamia",
+            "position": null,
+            "evidence": "noce macadamia"
+          },
+          {
+            "name": "Ambra",
+            "position": null,
+            "evidence": "ambra"
+          },
+          {
+            "name": "Muschio bianco",
+            "position": null,
+            "evidence": "muschio bianco"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Legnosa"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "PALM OASES",
       "brand": "Simone Andreoli",
@@ -396,7 +682,7 @@
       "add_to_cart": "https://etualy.com/cart/59587396567374:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/simone-andreoli-palm-oases-eau-de-parfum.png?v=1778064393"
     },
-    "semantic_text": "Profumo PALM OASES di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Legnosa, Acquatica. Tag: 50 ml, Acquatica, da 101€ a 200€, Eau de Parfum, Legnosa, Per lei, Per lui, Simone Andreoli. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi avvolgenti, cremosi e sofisticati, per personalità sognatrici ma attente ai dettagli. Ideale per chi cerca una fragranza unisex di nicchia, capace di trasmettere relax, eleganza e un lusso mai ostentato. Palm Oases è perfetto quando vuoi concederti una pausa: ideale sia "
+    "semantic_text": "Profumo PALM OASES di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Legnosa, Acquatica. Tag: 50 ml, Acquatica, da 101€ a 200€, Eau de Parfum, Legnosa, Per lei, Per lui, Simone Andreoli. Note citate senza posizione dichiarata: Panna Chantilly, Vaniglia, Fiori d’arancio, Ylang-ylang, Tiaré, Frangipani, Noce macadamia, Ambra, Muschio bianco. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi avvolgenti, cremosi e sofisticati, per personalità sognatrici ma attente ai dettagli. Ideale per chi cerca una fragranza unisex di nicchia, capace di trasmettere relax, eleganza e un lusso mai ostentato. Palm Oases è perfetto quando vuoi concederti una pausa: ideale sia "
   },
   {
     "id": "sh_15813822939470",
@@ -552,7 +838,20 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Uva Rossa",
+      "Pera",
+      "Fico",
+      "Iris",
+      "Gelsomino",
+      "Mughetto",
+      "Rosa",
+      "Oud",
+      "Vaniglia",
+      "Legno di Cedro",
+      "Muschio",
+      "Ambra"
+    ],
     "family": "Fruttata, Floreale, Orientale, Ambrata",
     "family_inference": null,
     "data_provenance": {
@@ -561,9 +860,178 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Uva Rossa",
+          "position": null,
+          "evidence": "uva rossa succosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Pera",
+          "position": null,
+          "evidence": "pera fresca",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Fico",
+          "position": null,
+          "evidence": "fico vellutato",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Iris",
+          "position": null,
+          "evidence": "iris",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Gelsomino",
+          "position": null,
+          "evidence": "gelsomino",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Mughetto",
+          "position": null,
+          "evidence": "mughetto",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Rosa",
+          "position": null,
+          "evidence": "rosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Oud",
+          "position": null,
+          "evidence": "oud",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Vaniglia",
+          "position": null,
+          "evidence": "vaniglia",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Legno di Cedro",
+          "position": null,
+          "evidence": "legno di cedro",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio",
+          "position": null,
+          "evidence": "muschio",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambra",
+          "position": null,
+          "evidence": "ambra scura",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "bc145ba73d6d582372c6c4741aafa6d28228c8312d9ce116c8941a4b9cd15caa",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Uva Rossa",
+            "position": null,
+            "evidence": "uva rossa succosa"
+          },
+          {
+            "name": "Pera",
+            "position": null,
+            "evidence": "pera fresca"
+          },
+          {
+            "name": "Fico",
+            "position": null,
+            "evidence": "fico vellutato"
+          },
+          {
+            "name": "Iris",
+            "position": null,
+            "evidence": "iris"
+          },
+          {
+            "name": "Gelsomino",
+            "position": null,
+            "evidence": "gelsomino"
+          },
+          {
+            "name": "Mughetto",
+            "position": null,
+            "evidence": "mughetto"
+          },
+          {
+            "name": "Rosa",
+            "position": null,
+            "evidence": "rosa"
+          },
+          {
+            "name": "Oud",
+            "position": null,
+            "evidence": "oud"
+          },
+          {
+            "name": "Vaniglia",
+            "position": null,
+            "evidence": "vaniglia"
+          },
+          {
+            "name": "Legno di Cedro",
+            "position": null,
+            "evidence": "legno di cedro"
+          },
+          {
+            "name": "Muschio",
+            "position": null,
+            "evidence": "muschio"
+          },
+          {
+            "name": "Ambra",
+            "position": null,
+            "evidence": "ambra scura"
+          }
+        ],
+        "family": {
+          "name": "Ambrata",
+          "kind": "inferred",
+          "evidence": "famiglia olfattiva Fruttata, Floreale, Orientale, Ambrata"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "CRIMINAL LIPSTICK",
       "brand": "Simone Andreoli",
@@ -602,7 +1070,7 @@
       "add_to_cart": "https://etualy.com/cart/59586643591502:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/simone-andreoli-criminal-lipstick-eau-de-parfum.png?v=1778056420"
     },
-    "semantic_text": "Profumo CRIMINAL LIPSTICK di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Fruttata, Floreale, Orientale, Ambrata. Tag: 50 ml, Ambrata, da 101€ a 200€, Eau de Parfum, Floreale, Fruttata, Orientale, Per lei, Per lui, Simone Andreoli. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi intensi, sensuali e con carattere, per personalità forti, sicure e indipendenti. Ideale per chi cerca una fragranza che esprima femminilità audace e contemporanea, senza compromessi. Criminal Lipstick dà il meglio di sé la sera, nelle occasioni in cui vuoi essere ricorda"
+    "semantic_text": "Profumo CRIMINAL LIPSTICK di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Fruttata, Floreale, Orientale, Ambrata. Tag: 50 ml, Ambrata, da 101€ a 200€, Eau de Parfum, Floreale, Fruttata, Orientale, Per lei, Per lui, Simone Andreoli. Note citate senza posizione dichiarata: Uva Rossa, Pera, Fico, Iris, Gelsomino, Mughetto, Rosa, Oud, Vaniglia, Legno di Cedro, Muschio, Ambra. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi intensi, sensuali e con carattere, per personalità forti, sicure e indipendenti. Ideale per chi cerca una fragranza che esprima femminilità audace e contemporanea, senza compromessi. Criminal Lipstick dà il meglio di sé la sera, nelle occasioni in cui vuoi essere ricorda"
   },
   {
     "id": "sh_15813674664270",
@@ -629,7 +1097,15 @@
       "heart": [],
       "base": []
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Arancia Dolce",
+      "Albicocca Matura",
+      "Gelsomino Sambac",
+      "Rosa",
+      "Osmanthus",
+      "Muschio Bianco",
+      "Ambra"
+    ],
     "family": "Fruttata, Floreale, Muschiata",
     "family_inference": null,
     "data_provenance": {
@@ -638,9 +1114,109 @@
         "source": "html",
         "kind": "explicit"
       },
-      "llm_notes": []
+      "llm_notes": [
+        {
+          "name": "Arancia Dolce",
+          "position": null,
+          "evidence": "arancia dolce",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Albicocca Matura",
+          "position": null,
+          "evidence": "albicocca matura",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Gelsomino Sambac",
+          "position": null,
+          "evidence": "gelsomino sambac",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Rosa",
+          "position": null,
+          "evidence": "petali di rosa",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Osmanthus",
+          "position": null,
+          "evidence": "osmanthus",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Muschio Bianco",
+          "position": null,
+          "evidence": "muschio bianco",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        },
+        {
+          "name": "Ambra",
+          "position": null,
+          "evidence": "ambra morbida",
+          "source": "description",
+          "method": "llm",
+          "kind": "extracted"
+        }
+      ]
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "23319cf92e5d2f2c4ef5e77a948d5050e0a5e8c966b1c5f96061bc9453b976e4",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Arancia Dolce",
+            "position": null,
+            "evidence": "arancia dolce"
+          },
+          {
+            "name": "Albicocca Matura",
+            "position": null,
+            "evidence": "albicocca matura"
+          },
+          {
+            "name": "Gelsomino Sambac",
+            "position": null,
+            "evidence": "gelsomino sambac"
+          },
+          {
+            "name": "Rosa",
+            "position": null,
+            "evidence": "petali di rosa"
+          },
+          {
+            "name": "Osmanthus",
+            "position": null,
+            "evidence": "osmanthus"
+          },
+          {
+            "name": "Muschio Bianco",
+            "position": null,
+            "evidence": "muschio bianco"
+          },
+          {
+            "name": "Ambra",
+            "position": null,
+            "evidence": "ambra morbida"
+          }
+        ],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "APRICOT INNOCENCE",
       "brand": "Simone Andreoli",
@@ -678,7 +1254,7 @@
       "add_to_cart": "https://etualy.com/cart/59586321547598:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/simone-andreoli-apricot-innocence-eau-de-parfum.png?v=1778055781"
     },
-    "semantic_text": "Profumo APRICOT INNOCENCE di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Fruttata, Floreale, Muschiata. Tag: 50 ml, da 101€ a 200€, Eau de Parfum, Floreale, Fruttata, Muschiata, Per lei, Per lui, Simone Andreoli. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi luminosi, morbidi e positivi, per personalità solari, spontanee e romantiche. Ideale per chi cerca una fragranza unisex delicata ma riconoscibile, capace di trasmettere leggerezza ed eleganza. Apricot Innocence è perfetto per il giorno, per momenti rilassati, weekend all"
+    "semantic_text": "Profumo APRICOT INNOCENCE di Simone Andreoli. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Fruttata, Floreale, Muschiata. Tag: 50 ml, da 101€ a 200€, Eau de Parfum, Floreale, Fruttata, Muschiata, Per lei, Per lui, Simone Andreoli. Note citate senza posizione dichiarata: Arancia Dolce, Albicocca Matura, Gelsomino Sambac, Rosa, Osmanthus, Muschio Bianco, Ambra. Carattere, contesto d'uso e occasioni: Perfetto per chi ama profumi luminosi, morbidi e positivi, per personalità solari, spontanee e romantiche. Ideale per chi cerca una fragranza unisex delicata ma riconoscibile, capace di trasmettere leggerezza ed eleganza. Apricot Innocence è perfetto per il giorno, per momenti rilassati, weekend all"
   },
   {
     "id": "sh_15776350568782",
@@ -52938,7 +53514,45 @@
       },
       "llm_notes": []
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "2c3eb5fdb9d4d3ea757f751bb29b33b644d19197c16b58331cd01632a2017ad4",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Ambrox",
+            "position": null,
+            "evidence": "Ambrox"
+          },
+          {
+            "name": "Paradisone",
+            "position": null,
+            "evidence": "Paradisone"
+          },
+          {
+            "name": "Infuso di gelsomino sambac",
+            "position": null,
+            "evidence": "Infuso di gelsomino sambac"
+          },
+          {
+            "name": "Assoluto di vaniglia bourbon",
+            "position": null,
+            "evidence": "Assoluto di vaniglia bourbon"
+          },
+          {
+            "name": "Exaltone®",
+            "position": null,
+            "evidence": "Exaltone®"
+          },
+          {
+            "name": "Sandalo australiano",
+            "position": null,
+            "evidence": "Sandalo australiano"
+          }
+        ],
+        "family": null
+      }
+    },
     "enrichment_input": {
       "name": "Très Chère Edp 100 ml",
       "brand": "Mizensir",
@@ -70395,7 +71009,49 @@
       },
       "llm_notes": []
     },
-    "enrichment_cache": null,
+    "enrichment_cache": {
+      "signature": "d2c3f15ec91b24309cf7cf538d44a411d0b3ee20cdb951bafce14880ba3aca51",
+      "version": 3,
+      "response": {
+        "notes": [
+          {
+            "name": "Essenza di mandarino",
+            "position": null,
+            "evidence": "Essenza di mandarino"
+          },
+          {
+            "name": "Essenza di neroli",
+            "position": null,
+            "evidence": "Essenza di neroli"
+          },
+          {
+            "name": "Essenza di cardamomo verde",
+            "position": null,
+            "evidence": "Essenza di cardamomo verde"
+          },
+          {
+            "name": "Assoluto di foglia di violetta",
+            "position": null,
+            "evidence": "Assoluto di foglia di violetta"
+          },
+          {
+            "name": "Essenza di sandalo dello Sri Lanka",
+            "position": null,
+            "evidence": "Essenza di sandalo dello Sri Lanka"
+          },
+          {
+            "name": "Vulcanolide®",
+            "position": null,
+            "evidence": "Vulcanolide®"
+          }
+        ],
+        "family": {
+          "name": "Legnosa",
+          "kind": "explicit",
+          "evidence": "famiglia olfattiva Legnosa"
+        }
+      }
+    },
     "enrichment_input": {
       "name": "Bois de Mysore Edp 100 ml",
       "brand": "Mizensir",
