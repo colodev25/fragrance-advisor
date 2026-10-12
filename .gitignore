@@ -17,3 +17,4 @@ data/*.db-wal
 data/*.db-shm
 snippet.txt
 to-do.txt
+DECISIONI_AZIENDA.md
