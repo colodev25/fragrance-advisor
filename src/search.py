@@ -59,12 +59,19 @@ class FragranceSearchEngine:
             )
 
         # A new ingestion is pending until reindex activates its own snapshot.
+        self.source_matches_active = None
         try:
             source = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
-            if catalog_fingerprint(source) != self.manifest["catalog_hash"]:
+            self.source_matches_active = catalog_fingerprint(source) == self.manifest["catalog_hash"]
+            if not self.source_matches_active:
                 logging.getLogger(__name__).warning("Catalogo sorgente aggiornato: uso la generazione attiva fino alla reindicizzazione.")
         except (OSError, ValueError, TypeError, KeyError):
             logging.getLogger(__name__).warning("Catalogo sorgente non leggibile: uso la copia verificata della generazione attiva.")
+        try:
+            from src.catalog_operations import quality
+        except ModuleNotFoundError:
+            from catalog_operations import quality
+        self.catalog_quality = quality(self.catalog_products)
 
     def search(
         self,

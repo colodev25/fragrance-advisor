@@ -33,6 +33,9 @@ def pytest_collection_modifyitems(config, items):
 def offline_network(request, monkeypatch):
     if request.config.getoption("--live-services"):
         return
+    # Simulated imports must not append fake reports to a real Actions summary.
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
 
     def check_host(host):
         if isinstance(host, bytes):

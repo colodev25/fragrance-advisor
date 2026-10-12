@@ -2,7 +2,8 @@ name: Arricchimento notturno catalogo
 
 on:
   schedule:
-    - cron: "35 18 * * *"
+    - cron: "35 3 * * *"
+      timezone: "Europe/Rome"
   workflow_dispatch:
 
 permissions:
@@ -57,3 +58,16 @@ jobs:
           else
             echo "Nessuna modifica da pubblicare."
           fi
+
+      - name: Prepare enrichment report
+        if: always() && steps.enrich.outcome != 'skipped'
+        run: python tools/catalog/operations.py enrichment
+
+      - name: Preserve enrichment report
+        if: always() && steps.enrich.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-enrichment-report
+          path: data/catalog_enrichment_report.json
+          retention-days: 14
+          if-no-files-found: error

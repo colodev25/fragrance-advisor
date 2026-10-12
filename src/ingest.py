@@ -621,6 +621,7 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
         "shopify_product_id": prod["id"],
         "name": title,
         "brand": brand,
+        "shopify_product_type": str(prod.get("product_type") or ""),
         "sku": sku,
         "variant_id": str(variant_id) if variant_id else "",
         "variant_title": first_var.get("title", ""),
@@ -646,6 +647,21 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
     return product
 
 def run_ingest(store_url: Optional[str] = None) -> int:
+    try:
+        return _run_ingest(store_url)
+    except Exception as error:
+        from datetime import datetime, timezone
+        try:
+            atomic_write_json(OUTPUT_FILE.parent / "catalog_sync_report.json", {
+                "version": 1, "status": "failed", "attempted_at": datetime.now(timezone.utc).isoformat(),
+                "error_type": type(error).__name__,
+            })
+        except OSError:
+            pass
+        raise
+
+
+def _run_ingest(store_url: Optional[str] = None) -> int:
     """
     Funzione programmatica per eseguire la data ingestion.
     Scarica i dati, genera data/catalog.json e restituisce il numero di profumi in-stock.
@@ -716,6 +732,14 @@ def run_ingest(store_url: Optional[str] = None) -> int:
     except ModuleNotFoundError:
         from catalog_jobs import refresh_queue
     refresh_queue(OUTPUT_FILE.parent, catalog, out_of_stock)
+    try:
+        from src.catalog_operations import sync_report, write_report
+    except ModuleNotFoundError:
+        from catalog_operations import sync_report, write_report
+    report = sync_report(catalog, out_of_stock, len(dropped_products), list(previous_products.values()), OUTPUT_FILE.parent)
+    write_report(OUTPUT_FILE.parent / "catalog_sync_report.json", report)
+    for warning in report["warnings"]:
+        print(f"[CATALOG REVIEW] {warning}")
 
     print("\n=== RIEPILOGO GENERAZIONE CATALOGO ===")
     print(f"Profumi disponibili salvati in {OUTPUT_FILE}: {len(catalog)}")

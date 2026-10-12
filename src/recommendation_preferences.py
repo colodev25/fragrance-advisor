@@ -1,5 +1,9 @@
 """Deterministic catalog evidence, conversational preferences and admission rules."""
 import copy
+try:
+    from src.catalog_operations import catalog_kind, requested_scope
+except ModuleNotFoundError:
+    from catalog_operations import catalog_kind, requested_scope
 import math
 import re
 import unicodedata
@@ -209,6 +213,7 @@ class PreferenceMatcher:
 
     def update(self, query, previous=None, active=None):
         prefs = copy.deepcopy(previous or {})
+        prefs["catalog_scope"] = requested_scope(query, prefs.get("catalog_scope", "perfume"))
         text = normalized(query)
         positive, negative = self.note_mentions(text)
         clear_exclusions = bool(re.search(r"\b(?:nessuna esclusione|nessuna nota esclusa|rimuovi le esclusioni)\b", text))
@@ -360,6 +365,9 @@ class PreferenceMatcher:
         return differences
 
     def admitted(self, product, prefs, api_max=None):
+        kind = catalog_kind(product)
+        if kind == "gift" or kind != prefs.get("catalog_scope", "perfume"):
+            return False
         if prefs.get("unrecognized_exclusions") or prefs.get("unrecognized_required_notes"):
             return False
         price = product.get("price")

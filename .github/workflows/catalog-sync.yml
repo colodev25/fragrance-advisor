@@ -2,8 +2,9 @@ name: Sincronizzazione Catalogo Shopify
 
 on:
   schedule:
-    # Esegue ogni 2 giorni alle 18:00 UTC
-    - cron: "0 18 */2 * *"
+    # Local dates alternate from 2026-10-13; see the calendar step.
+    - cron: "0 3 * * *"
+      timezone: "Europe/Rome"
   # Pulsante per esecuzione manuale istantanea su GitHub Actions
   workflow_dispatch:
 
@@ -35,19 +36,27 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements/catalog.txt
 
+      - name: Check alternating Rome date
+        id: calendar
+        run: python tools/catalog/operations.py schedule
+
       - name: Installazione dipendenze minime per ingest
+        if: steps.calendar.outputs.run == 'true'
         run: |
           python -m pip install pip==25.3
           python -m pip install -r requirements/catalog.txt
           python -m pip check
 
       - name: Esecuzione Ingestion da Shopify
+        id: ingest
+        if: steps.calendar.outputs.run == 'true'
         env:
           SHOPIFY_STORE_URL: ${{ secrets.SHOPIFY_STORE_URL }}
         run: |
           python src/ingest.py
 
       - name: Commit su GitHub se ci sono variazioni
+        if: steps.calendar.outputs.run == 'true'
         run: |
           if [ -n "$(git status --porcelain data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json)" ]; then
             git config --global user.name "github-actions[bot]"
@@ -58,3 +67,12 @@ jobs:
           else
             echo "[*] Nessuna variazione nel catalogo. Nessun commit necessario."
           fi
+
+      - name: Preserve synchronization report
+        if: always() && steps.calendar.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-sync-report
+          path: data/catalog_sync_report.json
+          retention-days: 14
+          if-no-files-found: error

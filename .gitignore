@@ -9,6 +9,8 @@ __pycache__/
 .DS_Store
 chroma_db/
 data/scartati.json
+data/catalog_sync_report.json
+data/catalog_enrichment_report.json
 data/sessions.db
 data/*.db
 data/*.db-wal
