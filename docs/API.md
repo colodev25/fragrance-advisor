@@ -8,6 +8,7 @@ The FastAPI application in `src/main.py` exposes the chat service to the browser
 | --- | --- |
 | `GET /` | Lightweight service status. Returns `ok` or `degraded`. |
 | `GET /health` | Readiness check. Returns `200` only when the advisor and search index are ready; otherwise returns `503`. |
+| `GET /catalog/status` | Read-only active generation/hash, index timestamp and cached catalog quality. Returns `503` before initialization. Import verification time remains in the GitHub sync artifact; this endpoint does not claim index age is import freshness. |
 | `POST /chat` or `POST /chat/` | Send a message and receive the advisor response. |
 | `POST /reset` or `POST /reset/` | Clear a conversation session. |
 

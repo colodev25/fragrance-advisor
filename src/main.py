@@ -245,6 +245,7 @@ def catalog_status():
         raise ApiError(503, "catalog_not_ready", "Il catalogo non è ancora pronto.")
     manifest = engine.manifest
     return {"generation": manifest["generation"], "indexed_at": manifest["created_at"],
+            "catalog_hash": manifest.get("catalog_hash"),
             "product_count": manifest["product_count"], "quality": engine.catalog_quality,
             "source_matches_active_at_startup": engine.source_matches_active,
             "sync_verification": "See the latest successful GitHub catalog-sync report; indexed_at is not an import timestamp."}

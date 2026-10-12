@@ -109,12 +109,27 @@ The reindexer validates `data/catalog.json`, builds a new collection and activat
 
 ## Automated synchronization
 
-| Workflow | Schedule (UTC) | Secret |
+| Workflow | Schedule (Europe/Rome) | Secret |
 | --- | --- | --- |
-| `catalog-sync.yml` | `0 3 */2 * *`: 03:00 on alternating days of the month | `SHOPIFY_STORE_URL` |
-| `catalog-enrich.yml` | `35 3 * * *`: daily at 03:35 | `GROQ_API_KEY` |
+| `catalog-sync.yml` | Daily calendar check at 03:00; imports every other local date, anchored to 13 October 2026 | `SHOPIFY_STORE_URL` |
+| `catalog-enrich.yml` | Daily at 03:35 | `GROQ_API_KEY` |
+| `catalog-monitor.yml` | Daily freshness check at 04:10 | Built-in read-only GitHub token |
 
-Both support manual dispatch and share a concurrency group to prevent overlapping writes. They check out and publish catalog/queue changes to `feature/new-site`. In Italy, these schedules correspond to 04:00/04:35 in winter and 05:00/05:35 in summer. Scheduled workflows must also exist on the repository's default branch; checking out another branch inside a job does not activate its schedule.
+All support manual dispatch. Sync/enrichment share a concurrency group to prevent overlapping writes and publish catalog/queue changes to `feature/new-site`. The calendar gate alternates actual Rome dates without resetting at month boundaries; manual sync bypasses it. Native `timezone: Europe/Rome` follows summer/winter offsets. The final 03:00/03:35/04:10 times avoid the missing/repeated 02:00 DST hour. Scheduled workflows must also exist on the repository's default branch; checking out another branch inside a job does not activate its schedule. GitHub scheduling can be delayed, so these are target start times, not exact execution guarantees. See [GitHub schedules](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
+
+### Operator reports and freshness
+
+Every completed import writes an ignored `data/catalog_sync_report.json` with verification time, catalog fingerprint, quality counters, price/stock/new/removed changes and queue totals. Failed imports write a failure report with error type, without claiming a successful verification. Reports are uploaded as GitHub artifacts for 14 days; summaries appear in the run overview. An unchanged import still produces a fresh report but no metadata-only commit/deploy. Large total or available-product decreases over 30% generate review warnings, without blocking legitimate stock changes.
+
+Enrichment similarly publishes `catalog_enrichment_report.json` with queue, quality and reserved-token totals. The read-only monitor looks for the latest successful sync artifact and fails when its verified import is older than 72 hours or no usable report exists. It does not contact Shopify, Groq or Render. Run one successful manual synchronization to initialize the report history after releasing this change. GitHub notification preferences govern alerts for failed jobs.
+
+`GET /catalog/status` exposes the active generation, catalog hash, index timestamp, cached quality and whether source/active data matched at startup. It has no model calls or per-request catalog scanning. Index creation time is not the last Shopify verification: compare the endpoint's hash with the import artifact to check whether data reached the deployed generation. `/health` retains its readiness purpose and does not fail merely because an operator freshness warning exists.
+
+### Commercial recommendation policy
+
+All valid products remain in the master catalog. Ordinary recommendations exclude zero-price/explicit omaggio records and kits. Kits/discovery/sample sets are admitted when specifically requested; guided fragrance selection returns to ordinary perfumes. Exact word matching avoids classifying “KITE IN CRYSTAL REEF” as a kit. Shopify product type is preserved on the next synchronization, with title/tag fallback for older data. Kit selection still respects stock, budget and fragrance constraints supported by its data.
+
+Named product information and ordinary Shopify purchase verification remain available; zero catalog price does not establish entitlement to a gift. Promotional conditions and the company's classification of particular sets must be approved before public release. The model is instructed not to invent set contents or gift eligibility. Missing olfactory details remain warnings and inferred families remain accepted.
 
 `scartati.json` remains a local report excluded from Git. Neither workflow publishes ChromaDB: Render builds the index during deployment. A commit containing only queue progress may also trigger deployment, depending on Render's build filters; excluding `data/catalog_enrichment_state.json` from deployment triggers can avoid unnecessary rebuilds. Shopify pagination errors or invalid/empty searchable catalogs fail the import; files are replaced atomically, with the primary catalog written after the other reports and before the queue. These writes are not a single transaction: rerunning synchronization or the nightly job reconciles the queue from the datasets.
 

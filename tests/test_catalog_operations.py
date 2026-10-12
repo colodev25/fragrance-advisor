@@ -152,7 +152,7 @@ def test_summary_is_operator_visible_and_reports_are_not_tracked(tmp_path, monke
 
 
 def test_workflows_use_rome_reports_and_preserve_shared_write_lock():
-    for filename, cron in [("catalog-sync.yml", "0 2 * * *"), ("catalog-enrich.yml", "35 2 * * *")]:
+    for filename, cron in [("catalog-sync.yml", "0 3 * * *"), ("catalog-enrich.yml", "35 3 * * *")]:
         text = (ROOT / ".github/workflows" / filename).read_text()
         workflow = yaml.load(text, Loader=yaml.BaseLoader)
         assert workflow["on"]["schedule"][0] == {"cron": cron, "timezone": "Europe/Rome"}
@@ -162,6 +162,8 @@ def test_workflows_use_rome_reports_and_preserve_shared_write_lock():
             assert "operations.py schedule" in text
             assert 'git add data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json' in text
             assert "git add data/catalog_sync_report.json" not in text
+    monitor = yaml.load((ROOT / ".github/workflows/catalog-monitor.yml").read_text(), Loader=yaml.BaseLoader)
+    assert monitor["on"]["schedule"][0] == {"cron": "10 4 * * *", "timezone": "Europe/Rome"}
 
 
 def test_status_is_operational_and_does_not_replace_health(monkeypatch):

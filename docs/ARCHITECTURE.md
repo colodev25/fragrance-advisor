@@ -48,6 +48,8 @@ Before search uses a collection, `src/chroma_security.py` validates raw persiste
 
 ### Catalog ingestion
 
+`src/catalog_operations.py` provides commercial eligibility classification and aggregate quality/change reports; `tools/catalog/operations.py` handles alternating Rome dates and read-only GitHub artifact freshness checks. Reports stay outside Git to avoid deployment for timestamp-only changes. Runtime recommendation admission separates perfumes, requested kits and gifts; all records remain in the catalog. Operational details and final schedule are documented in [data pipeline](DATA_PIPELINE.md#automated-synchronization).
+
 `src/ingest.py` reads Shopify's public `/products.json`, normalizes commercial data and extracts fragrance fields deterministically, without LLM requests. Valid cached enrichment is preserved across price and availability changes. `src/catalog_jobs.py` maintains a persistent queue and processes incomplete available products separately, with token reservations, request pacing and deferred retries. `src/catalog_enrichment.py` validates source evidence and distinguishes explicit fragrance information from inferred classifications. See [catalog pipeline](DATA_PIPELINE.md).
 
 ### API capacity
