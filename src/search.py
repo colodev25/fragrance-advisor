@@ -19,8 +19,10 @@ from chromadb.utils import embedding_functions
 
 try:
     from src.catalog_integrity import load_generation, catalog_fingerprint, CATALOG_PATH
+    from src.chroma_security import validate_local_embedding
 except ModuleNotFoundError:
     from catalog_integrity import load_generation, catalog_fingerprint, CATALOG_PATH
+    from chroma_security import validate_local_embedding
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DIR = BASE_DIR / "chroma_db"
@@ -46,6 +48,7 @@ class FragranceSearchEngine:
                 name=self.manifest["collection"],
                 embedding_function=self.embed_fn
             )
+            validate_local_embedding(self.collection)
             expected_ids = {product["id"] for product in self.catalog_products}
             if self.collection.count() != len(expected_ids) or set(self.collection.get(include=[])["ids"]) != expected_ids:
                 raise RuntimeError("La collection non corrisponde alla generazione attiva.")

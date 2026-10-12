@@ -42,6 +42,8 @@ All advisor model calls receive a common system policy separating customer/catal
 
 ### Search and indexing
 
+Before search uses a collection, `src/chroma_security.py` validates raw persisted embedding configuration and nested schema. Only the fixed local default/ONNX MiniLM settings are allowed; incompatible/custom functions fail initialization. This mitigation is paired with dependency scans and time-limited advisory exceptions; see [dependency security](DEPENDENCY_SECURITY.md).
+
 `src/reindex.py` builds a unique `fragrances_<generation>` collection using ChromaDB's local ONNX embedding model (`all-MiniLM-L6-v2`) and cosine distance. It validates the source catalog, checks indexed IDs/count and a search probe, writes a catalog snapshot, then atomically publishes `chroma_db/active.json`. `src/search.py` verifies this manifest and loads its collection; `src/advisor.py` uses that same catalog snapshot. Source catalog updates remain pending until indexing succeeds and the backend restarts. See [index operations](INDEX_OPERATIONS.md).
 
 ### Catalog ingestion

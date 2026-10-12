@@ -50,6 +50,7 @@ The API listens at `http://127.0.0.1:8000`. Run `python src/reindex.py` before s
 - [API](docs/API.md) — HTTP endpoints and configuration
 - [Testing](docs/TESTING.md) — test coverage and execution
 - [Maintenance](docs/MAINTENANCE.md) — dependency versions and update procedure
+- [Dependency security](docs/DEPENDENCY_SECURITY.md) — vulnerability checks and documented mitigations
 
 ## Technology
 

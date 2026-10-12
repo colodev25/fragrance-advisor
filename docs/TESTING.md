@@ -54,6 +54,8 @@ This option disables the offline network and credential policy and can consume q
 
 ## Continuous integration
 
+Dependency vulnerability checks run separately in `.github/workflows/security.yml`, with isolated pinned audit tools, raw artifacts and expiring Chroma exceptions. See [dependency security](DEPENDENCY_SECURITY.md) for scope, commands and limits. `tests/test_dependency_security.py` exercises new/changed findings, available fixes, expiry, missing reports and raw embedding/schema restrictions without external services.
+
 .github/workflows/tests.yml runs two independent jobs on pushes and pull requests to `feature/new-site` or `main`, plus manual dispatch:
 
 - **Python:** installs `requirements/dev.txt`, checks dependency compatibility, prepares the local index and discovers all Python tests under `tests/`, excluding `e2e`. This includes rate-limit and future test modules without maintaining a filename list. The session database and test files are under the runner's temporary directory.
@@ -102,6 +104,12 @@ A local timing sample during point 6 used the 643-product catalog and 30 repetit
 One earlier Windows run encountered a temporary `PermissionError` during a catalog-test file replacement. The isolated test and subsequent full runs passed. The final Python run used temporary files outside OneDrive; the cause of the original access error was not established. On a synchronized checkout, use `--basetemp` and a pytest cache directory outside the synced tree if temporary-file access is unreliable. Verification directories were removed after the successful runs.
 
 ## Adding coverage
+
+### Dependency security — R10 / audit R12 (12 October 2026)
+
+The final complete offline suite passed **458 Python tests**, with **6 live-service tests deselected**, in a fresh Python 3.11.15 environment installed from the updated development lock. Package compatibility passed. A separate temporary generation containing **643 products** was built, loaded through the raw embedding/schema guard and queried successfully; the project's active generation was not rebuilt. The first strict guard rejected Chroma's ordinary generated schema; it was refined to validate nested embedding settings and the unused sparse placeholder before the passing full run.
+
+Audits from the isolated pinned security lock passed policy evaluation: runtime/development retained four distinct Chroma advisories with documented expiring mitigations (the feed emitted five rows because one was duplicated), catalog/security locks had no reported findings, and the widget npm audit reported zero vulnerabilities. The package remains affected; passing policy evaluation is not a clean unmitigated vulnerability scan. Runtime/catalog pins and widget sources were unchanged, so browser tests were not rerun. GitHub execution and Render readiness still require observation after pushing. Temporary verification environments/index/reports were removed after success.
 
 ### Response reliability — R09 / audit R11 (11 October 2026)
 

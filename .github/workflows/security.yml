@@ -1,0 +1,62 @@
+name: Dependency Security
+
+on:
+  push:
+    branches: [feature/new-site, main]
+    paths: ['requirements.txt', 'requirements/**', 'tools/security/**', 'tools/widget-tests/package*.json', 'src/chroma_security.py', 'src/search.py', '.github/workflows/security.yml']
+  pull_request:
+    branches: [feature/new-site, main]
+  schedule:
+    - cron: '20 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - name: Install isolated pinned audit tools
+        run: |
+          python -m pip install pip==25.3
+          python -m pip install -r requirements/security.txt
+          python -m pip check
+      - name: Audit locks and enforce expiring exceptions
+        run: python tools/security/audit.py --output "${{ runner.temp }}/dependency-audit"
+      - name: Preserve raw findings and decision report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dependency-audit
+          path: ${{ runner.temp }}/dependency-audit
+          retention-days: 14
+          if-no-files-found: error
+  node-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Audit widget tooling lock without running package scripts
+        working-directory: tools/widget-tests
+        run: npm audit --package-lock-only --ignore-scripts --json > "${{ runner.temp }}/node-audit.json"
+      - name: Preserve audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-dependency-audit
+          path: ${{ runner.temp }}/node-audit.json
+          retention-days: 14
+          if-no-files-found: error

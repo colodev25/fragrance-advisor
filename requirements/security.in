@@ -1,0 +1,3 @@
+# Isolated security tooling; never installed by Render or catalog jobs.
+-c ../requirements.txt
+pip-audit==2.10.1

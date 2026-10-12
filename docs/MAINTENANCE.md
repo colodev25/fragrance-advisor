@@ -13,6 +13,7 @@ Use Python 3.11 (`.python-version`) and Node 24.19.0 (`.node-version`). Render r
 | `requirements/runtime.in` → `requirements.txt` | Direct runtime dependencies and generated exact versions, including indirect dependencies. Used by Render. |
 | `requirements/dev.in` → `requirements/dev.txt` | Runtime plus pytest and the lock-generation tool. Used by Python CI and local checks. |
 | `requirements/catalog.in` → `requirements/catalog.txt` | Minimal catalog-job dependencies, constrained to runtime versions. Used by synchronization and enrichment workflows. |
+| `requirements/security.in` → `requirements/security.txt` | Isolated audit tools, constrained to shared runtime pins. Used only by the security workflow. |
 | `tools/widget-tests/package.json` + `tools/widget-tests/package-lock.json` | Browser-test scripts and exact Playwright dependency tree, with npm integrity records. |
 
 Install the appropriate generated `.txt` file; `.in` files are inputs for maintainers. Python locks are generated with platform markers for Windows/Linux and Python 3.11 compatibility. They fix package versions, not artifact hashes or operating-system libraries. Use a fresh environment when reproducing an installation; installing into an existing environment can leave unrelated packages behind.
@@ -21,12 +22,13 @@ Install the appropriate generated `.txt` file; `.in` files are inputs for mainta
 
 1. Create an isolated Python 3.11 environment and install `requirements/dev.txt`.
 2. Change the relevant direct version in `requirements/runtime.in` or `requirements/dev.in`.
-3. Regenerate all three files in order with uv 0.9.9:
+3. Regenerate the locks in order with uv 0.11.15:
 
 ```sh
 uv pip compile requirements/runtime.in --universal --python-version 3.11 --no-annotate -o requirements.txt
 uv pip compile requirements/dev.in -c requirements.txt --universal --python-version 3.11 --no-annotate -o requirements/dev.txt
 uv pip compile requirements/catalog.in --universal --python-version 3.11 --no-annotate -o requirements/catalog.txt
+uv pip compile requirements/security.in --universal --python-version 3.11 --no-annotate -o requirements/security.txt
 ```
 
 Use `--upgrade-package PACKAGE` to deliberately update an indirect dependency; ordinary compilation prefers existing locked versions. Install the regenerated development lock in a fresh environment, check compatibility and run the [offline suites](TESTING.md). Review both source and generated changes before committing. Avoid unreviewed bulk upgrades.
@@ -45,6 +47,8 @@ npm --prefix tools/widget-tests run test:widget
 The browser suite resolves Playwright from this tools directory; an explicit `WIDGET_PLAYWRIGHT_MODULE` still supports an external installation. Review widget geometry, navigation and security failures rather than hiding them with automatic retries. The three widget source files remain maintained individually for now.
 
 ## Before publishing
+
+Run the separate [dependency security checks](DEPENDENCY_SECURITY.md), review the raw findings and respect exception expiry. Publishing a workflow on `feature/new-site` enables its matching push checks; scheduled execution additionally requires the workflow on the repository's default branch. Render deploys independently of GitHub job success unless explicitly configured otherwise.
 
 - Run the Python and browser checks described in [TESTING.md](TESTING.md).
 - Commit the generated dependency locks together with their inputs and workflow changes.
