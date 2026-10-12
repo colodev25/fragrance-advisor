@@ -531,11 +531,27 @@ for (const file of files) {
     assert.match(await unavailable.textContent(), /Esaurito/);
     await page.locator('.oa-variant-button').filter({ hasText: '100 ml' }).click();
     assert.match(await page.locator('.oa-card-price').textContent(), /140/);
-    assert.equal(await page.locator('.oa-variant-button[aria-pressed="true"]').textContent(), '100 ml · 140,00 €');
+    assert.equal(await page.locator('.oa-cart-status').isVisible(), false);
+    assert.equal(await page.locator('.oa-variant-button[aria-pressed="true"]').textContent(), '100 ml');
+    assert.equal(await page.locator('.oa-card-variant').isVisible(), false);
+    assert.equal(await page.locator('.oa-card-footer .oa-card-price').count(), 0);
+    for (const viewport of [{ width: 1024, height: 900 }, { width: 360, height: 740 }]) {
+      await page.setViewportSize(viewport);
+      const layout = await page.locator('.oa-product-card').evaluate((card) => {
+        const header = card.querySelector('.oa-card-header').getBoundingClientRect();
+        const price = card.querySelector('.oa-card-price-group').getBoundingClientRect();
+        const footer = card.querySelector('.oa-card-footer').getBoundingClientRect();
+        const cart = card.querySelector('.oa-card-cart-btn').getBoundingClientRect();
+        return price.top >= header.bottom - 1 && price.bottom <= footer.top + 1 && Math.abs(cart.width - footer.width) <= 2;
+      });
+      assert.equal(layout, true);
+    }
     cartResponses.push({ status: 200, body: { items: [{ id: 2, variant_id: 2, quantity: 1 }] } });
     await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added'));
     assert.equal(cartRequests[0].body.items[0].id, '2');
+    assert.equal(await page.locator('.oa-cart-status').isVisible(), false);
+    assert.equal(await button.evaluate((el) => el.classList.contains('is-error')), false);
     assert.equal(await page.locator('.oa-product-card').evaluate((el) => el.scrollWidth <= el.clientWidth), true);
     await page.reload();
     await page.locator('#oaLauncher').click();
@@ -552,7 +568,7 @@ for (const file of files) {
     assert.match(await page.locator('.oa-card-price').textContent(), /140/);
     cartResponses.push({ status: 200, body: { items: [{ id: 2, quantity: 1 }] } });
     await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added'));
     assert.equal(cartRequests[0].body.items[0].id, '2');
   });
 
@@ -565,13 +581,15 @@ for (const file of files) {
     assert.match(await page.locator('.oa-cart-status').textContent(), /Scegli un formato disponibile/);
     await page.locator('.oa-variant-button').filter({ hasText: /^50 ml/ }).click();
     await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added'));
     assert.equal(cartRequests[0].body.items[0].id, '1');
   });
 
   test(`${file}: hostile variant titles remain plain text`, async (t) => {
     const { page } = await variantFixture(t, file, {}, [{ id: 1, price: 9000, title: attack, available: true }]);
-    assert.equal(await page.locator('.oa-variant-button').textContent(), attack + ' · 90,00 €');
+    assert.equal(await page.locator('.oa-variant-button').textContent(), attack);
+    assert.equal(await page.locator('.oa-variant-options').isVisible(), false);
+    assert.equal(await page.locator('.oa-card-variant').isVisible(), true);
     await assertSafe(page);
   });
 
@@ -605,7 +623,7 @@ for (const file of files) {
     await page.evaluate(() => { window.Shopify = { routes: { root: '/it/' } }; });
     const button = await cartCard(page);
     await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added'));
     assert.deepEqual(cartRequests, [{ path: '/it/cart/add.js', method: 'POST', body: { items: [{ id: '1', quantity: 1 }] } }]);
     assert.equal(await button.textContent(), 'Vai al carrello');
     assert.equal(await button.getAttribute('href'), 'https://etualy.com/it/cart');
@@ -648,7 +666,7 @@ for (const file of files) {
       const button = await cartCard(page);
       assert.equal(await page.evaluate(() => window.__cartBuilds), 0);
       await button.click();
-      await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.length > 0);
+      await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added') || document.querySelector('.oa-cart-status').textContent.length > 0);
       assert.equal(cartRequests.length, 1);
       assert.equal(await page.evaluate(() => window.__cartBuilds), failure ? 0 : 1);
       assert.equal(await page.evaluate(() => window.__drawerOpens), 0);
@@ -675,7 +693,17 @@ for (const file of files) {
       assert.equal(cartRequests.length, 1);
       assert.equal(await page.locator('.oa-cart-status').textContent().then((text) => text.includes('Aggiunto!')), false);
       assert.equal(await button.getAttribute('aria-busy'), null);
-      assert.equal(await button.textContent(), title === 'out of stock' ? 'Aggiungi al Carrello' : 'Vai al carrello');
+      assert.equal(await button.textContent(), title === 'out of stock' ? 'Aggiunta fallita · Riprova' : 'Esito incerto · Verifica carrello');
+      assert.equal(await button.evaluate((el) => el.classList.contains('is-error')), true);
+      assert.equal(await button.locator('.oa-btn-error-icon').isVisible(), true);
+      await page.waitForFunction(() => {
+        const style = getComputedStyle(document.querySelector('.oa-card-cart-btn'));
+        return style.color === 'rgb(180, 35, 24)' && style.borderTopColor === 'rgb(180, 35, 24)';
+      });
+      assert.equal(await button.evaluate((el) => getComputedStyle(el).color), 'rgb(180, 35, 24)');
+      assert.equal(await button.evaluate((el) => getComputedStyle(el).borderTopColor), 'rgb(180, 35, 24)');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      assert.equal(await button.evaluate((el) => getComputedStyle(el).animationName), 'none');
     });
   }
 
@@ -685,13 +713,13 @@ for (const file of files) {
     productResponses.push({ status: 200, body: { variants: [{ id: 1, price: 9500, title: '100 ml / Edizione speciale', available: true }] } });
     const button = await cartCard(page, { variant_title: '' });
     await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Prezzo e variante'));
+    await page.waitForFunction(() => document.querySelector('.oa-cart-btn-text').textContent === 'Conferma aggiunta');
     assert.equal(cartRequests.length, 0);
     assert.equal(await page.locator('.oa-card-variant').textContent(), '100 ml / Edizione speciale');
     assert.match(await page.locator('.oa-card-price').textContent(), /95/);
     productResponses.push({ status: 200, body: { variants: [{ id: 1, price: 9500, title: '100 ml / Edizione speciale', available: true }] } });
     await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added'));
     assert.equal(cartRequests.length, 1);
     assert.equal(await page.locator('.oa-product-card').evaluate((el) => el.scrollWidth <= el.clientWidth), true);
   });
@@ -715,8 +743,10 @@ for (const file of files) {
     await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Non è possibile verificare il prodotto'));
     assert.equal(cartRequests.length, 0);
     await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added'));
     assert.equal(cartRequests.length, 1);
+    assert.equal(await button.evaluate((el) => el.classList.contains('is-error')), false);
+    assert.equal(await page.locator('.oa-cart-status').isVisible(), false);
   });
 
   test(`${file}: unavailable stock does not mutate cart`, async (t) => {
@@ -746,7 +776,7 @@ for (const file of files) {
     await page.waitForFunction(() => window.__cartAttempts === 1);
     await page.clock.fastForward(15001);
     await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith("Non è possibile verificare l'esito"));
-    assert.equal(await button.textContent(), 'Vai al carrello');
+    assert.equal(await button.textContent(), 'Esito incerto · Verifica carrello');
     assert.equal(await page.evaluate(() => window.__cartAttempts), 1);
   });
 
@@ -764,7 +794,7 @@ for (const file of files) {
     assert.match(await page.locator('.oa-cart-status').last().textContent(), /già in corso/);
     assert.equal(await first.textContent(), 'Aggiunta…');
     release();
-    await page.waitForFunction(() => document.querySelector('.oa-cart-status').textContent.startsWith('Aggiunto!'));
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').classList.contains('is-added'));
     assert.equal(cartRequests.length, 1);
   });
 

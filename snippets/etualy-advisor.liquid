@@ -857,6 +857,23 @@
   /* ===========================================================================
      SLIDEOVER NOTE OLFATTIVE
      =========================================================================== */
+  .oa-card-cart-btn.is-error,
+  .oa-card-cart-btn.is-error:hover {
+    background: #fff;
+    color: #b42318 !important;
+    border-color: #b42318;
+    animation: oaCartShake 0.3s ease;
+  }
+  .oa-card-cart-btn.is-error svg { stroke: currentColor !important; }
+  @keyframes oaCartShake {
+    0%, 100% { transform: translateX(0); }
+    25%, 75% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .oa-card-cart-btn.is-error,
+    .oa-card-cart-btn.is-error:hover { animation: none; }
+  }
   .oa-card-slideover {
     position: absolute;
     inset: 0;
@@ -2079,19 +2096,22 @@
         variantOptions.hidden = true;
         front.appendChild(variantOptions);
         const priceGroup = dom("div");
-        priceGroup.style.cssText = "min-width:0;flex:1";
+        priceGroup.className = "oa-card-price-group";
+        priceGroup.setAttribute("aria-live", "polite");
+        priceGroup.style.cssText = "min-width:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap";
         priceGroup.appendChild(dom("div", "oa-card-price", price));
         const variantLabel = dom("div", "oa-card-variant", prod.variant_title);
-        variantLabel.style.cssText = "font-size:12px;overflow-wrap:anywhere;margin-top:4px";
+        variantLabel.style.cssText = "font-size:12px;overflow-wrap:anywhere";
         variantLabel.hidden = !prod.variant_title;
         priceGroup.appendChild(variantLabel);
-        footer.appendChild(priceGroup);
+        front.insertBefore(priceGroup, header.nextSibling);
         const purchase = shopifyPurchase(prod);
         const cart = dom(
           prod.add_to_cart_url ? "a" : "button",
           "oa-card-cart-btn",
         );
-        cart.style.flexShrink = "0";
+        cart.style.cssText = "flex-shrink:0;width:100%;justify-content:center";
+        cart.setAttribute("aria-live", "polite");
         if (prod.add_to_cart_url) {
           cart.href = purchase ? purchase.cart : (prod.product_page_url || prod.add_to_cart_url);
           cart.target = "_blank";
@@ -2106,12 +2126,15 @@
         }
         const cartIcon = icon("cart", "oa-btn-cart-icon");
         const checkIcon = icon("check", "oa-btn-check-icon");
+        const errorIcon = icon("close", "oa-btn-error-icon");
+        errorIcon.style.display = "none";
         cartIcon.style.display = prod.cart_added ? "none" : "";
         checkIcon.style.display = prod.cart_added ? "inline-block" : "none";
         if (prod.cart_added) cart.classList.add("is-added");
         cart.append(
           cartIcon,
           checkIcon,
+          errorIcon,
           dom(
             "span",
             "oa-cart-btn-text",
@@ -3008,7 +3031,7 @@
         card.querySelector(".oa-card-price").textContent = variantMoney(variant.price);
         const label = card.querySelector(".oa-card-variant");
         label.textContent = variant.title;
-        label.hidden = !variant.title;
+        label.hidden = !variant.title || (cardVariantLists.get(card) || []).length > 1;
         const cart = card.querySelector(".oa-card-cart-btn");
         cart.removeAttribute("aria-disabled");
         cart.style.opacity = "";
@@ -3041,8 +3064,13 @@
         cardVariantLists.set(card, variants);
         const container = card.querySelector(".oa-variant-options");
         container.replaceChildren();
-        container.hidden = variants.length < 2 && !variants.some((variant) => variant.title);
+        container.hidden = variants.length < 2;
         container.style.display = container.hidden ? "none" : "flex";
+        if (!container.hidden) {
+          const formatHeading = dom("div", "oa-format-heading", "Formato");
+          formatHeading.style.cssText = "width:100%;font-size:12px;color:var(--oa-text-secondary)";
+          container.appendChild(formatHeading);
+        }
         const requested = honorRequest && normalizeProduct(product).requested_size;
         let chosen = variants.find((variant) => variant.id === normalizeProduct(product).variant_id);
         if (requested) {
@@ -3053,7 +3081,7 @@
         }
         variants.forEach((variant) => {
           const button = dom("button", "oa-variant-button",
-            (variant.title || "Formato unico") + " · " + variantMoney(variant.price) + (variant.available ? "" : " · Esaurito"));
+            (variant.title || "Formato unico") + (variant.available ? "" : " · Esaurito"));
           button.type = "button";
           button.dataset.variantId = variant.id;
           button.disabled = !variant.available;
@@ -3068,8 +3096,9 @@
             if (product.variant_id === variant.id && card.querySelector(".oa-card-cart-btn").classList.contains("is-added")) return;
             selectProductVariant(card, variant, true);
             const status = card.querySelector(".oa-cart-status");
-            status.hidden = false;
-            status.textContent = "Formato selezionato: " + (variant.title || "Formato unico") + ". Controlla il prezzo e conferma l'aggiunta.";
+            status.hidden = true;
+            status.textContent = "";
+            clearCartError(card.querySelector(".oa-card-cart-btn"));
             const overflow = card.querySelector(".oa-card-cart-btn").getBoundingClientRect().bottom
               - messagesContainer.getBoundingClientRect().bottom + 8;
             if (overflow > 0) messagesContainer.scrollTop += overflow;
@@ -3081,7 +3110,7 @@
         if (chosen?.available) {
           selectProductVariant(card, chosen);
           if (honorRequest) {
-            status.textContent = product.purchase_intent ? "Controlla il formato selezionato e il prezzo, poi conferma l'aggiunta di una confezione." : "";
+            status.textContent = "";
             status.hidden = !status.textContent;
           }
         } else {
@@ -3151,6 +3180,18 @@
           // A theme integration failure must never retry an already confirmed add.
         }
       }
+      function clearCartError(btn) {
+        btn.classList.remove("is-error");
+        btn.querySelector(".oa-btn-error-icon").style.display = "none";
+        btn.querySelector(".oa-btn-cart-icon").style.display = "";
+      }
+      function showCartError(btn, uncertain = false) {
+        btn.classList.add("is-error");
+        btn.querySelector(".oa-btn-cart-icon").style.display = "none";
+        btn.querySelector(".oa-btn-check-icon").style.display = "none";
+        btn.querySelector(".oa-btn-error-icon").style.display = "inline-block";
+        btn.querySelector(".oa-cart-btn-text").textContent = uncertain ? "Esito incerto · Verifica carrello" : "Aggiunta fallita · Riprova";
+      }
       async function handleAddToCart(event, btn) {
         const card = btn?.closest(".oa-product-card");
         const product = cardRecords.get(card);
@@ -3174,6 +3215,7 @@
           return;
         }
         cartMutationPending = true;
+        clearCartError(btn);
         btn.classList.add("is-adding");
         btn.setAttribute("aria-disabled", "true");
         btn.setAttribute("aria-busy", "true");
@@ -3185,6 +3227,7 @@
         const timeout = setTimeout(() => controller.abort(), 15000);
         let submitted = false;
         let confirmedFailure = false;
+        let requiresConfirmation = false;
         const goToCart = () => {
           btn.classList.add("is-added");
           label.textContent = "Vai al carrello";
@@ -3198,7 +3241,9 @@
           renderProductVariants(card, details, Boolean(product.requested_size));
           if (card.dataset.needsVariant === "true") return;
           if (String(product.variant_id) !== purchase.id) {
-            status.textContent = "Formato richiesto selezionato. Controlla il prezzo aggiornato e conferma l'aggiunta.";
+            requiresConfirmation = true;
+            status.textContent = "";
+            status.hidden = true;
             return;
           }
           const variant = Array.isArray(details.variants) && details.variants.find((item) => String(item.id) === purchase.id);
@@ -3224,9 +3269,11 @@
           }).format(currentPrice);
           const variantLabel = card.querySelector(".oa-card-variant");
           variantLabel.textContent = displayTitle;
-          variantLabel.hidden = !displayTitle;
+          variantLabel.hidden = !displayTitle || (cardVariantLists.get(card) || []).length > 1;
           if (changed) {
-            status.textContent = "Prezzo e variante aggiornati. Controlla i dettagli e premi nuovamente per confermare l'aggiunta.";
+            requiresConfirmation = true;
+            status.textContent = "";
+            status.hidden = true;
             saveChatState();
             return;
           }
@@ -3248,6 +3295,7 @@
               card.querySelectorAll(".oa-variant-button").forEach((button) => { button.disabled = true; });
               goToCart();
             }
+            showCartError(btn, !confirmedFailure);
             return;
           }
           const added = result.items?.find((item) => String(item.variant_id || item.id) === purchase.id);
@@ -3256,14 +3304,17 @@
           goToCart();
           btn.querySelector(".oa-btn-cart-icon").style.display = "none";
           btn.querySelector(".oa-btn-check-icon").style.display = "inline-block";
-          status.textContent = "Aggiunto! Puoi continuare la conversazione oppure aprire il carrello.";
+          status.textContent = "";
+          status.hidden = true;
         } catch (_) {
           if (submitted && !confirmedFailure) {
             card.dataset.cartUncertain = "true";
             card.querySelectorAll(".oa-variant-button").forEach((button) => { button.disabled = true; });
             goToCart();
+            showCartError(btn, true);
             status.textContent = "Non è possibile verificare l'esito. Controlla il carrello prima di aggiungere nuovamente il prodotto.";
           } else {
+            showCartError(btn);
             status.textContent = "Non è possibile verificare il prodotto. Riprova tra poco o consulta la sua pagina sul sito.";
           }
         } finally {
@@ -3274,7 +3325,7 @@
           if (card.dataset.needsVariant === "true") btn.setAttribute("aria-disabled", "true");
           else btn.removeAttribute("aria-disabled");
           btn.removeAttribute("aria-busy");
-          if (!btn.classList.contains("is-added")) label.textContent = cartLabel(product);
+          if (!btn.classList.contains("is-added") && !btn.classList.contains("is-error")) label.textContent = requiresConfirmation ? "Conferma aggiunta" : cartLabel(product);
         }
       }
 
