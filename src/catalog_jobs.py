@@ -11,13 +11,13 @@ try:
     from src.catalog_integrity import BASE_DIR, atomic_write_json, validate_catalog
     from src.catalog_enrichment import (EnrichmentBatch, enrich_catalog_fields,
         enrichment_signature, reusable_enrichment, cache_enrichment)
-    from src.ingest import KNOWN_FAMILIES, _get_groq_client, clean_single_note, is_valid_note_item, build_semantic_text
+    from src.ingest import KNOWN_FAMILIES, _get_groq_client, clean_single_note, is_valid_note_item, build_semantic_text, refresh_declared_notes
     from src.llm_resilience import InvalidCompletion
 except ModuleNotFoundError:
     from catalog_integrity import BASE_DIR, atomic_write_json, validate_catalog
     from catalog_enrichment import (EnrichmentBatch, enrich_catalog_fields,
         enrichment_signature, reusable_enrichment, cache_enrichment)
-    from ingest import KNOWN_FAMILIES, _get_groq_client, clean_single_note, is_valid_note_item, build_semantic_text
+    from ingest import KNOWN_FAMILIES, _get_groq_client, clean_single_note, is_valid_note_item, build_semantic_text, refresh_declared_notes
     from llm_resilience import InvalidCompletion
 
 STATE_NAME = "catalog_enrichment_state.json"
@@ -100,24 +100,26 @@ def refresh_queue(directory, catalog, out_of_stock):
 
 def apply_result(product, result, signature):
     """Rebuild from deterministic fields, preserving current prices and availability."""
-    context = product["enrichment_input"]
-    updated = copy.deepcopy(product)
+    updated = refresh_declared_notes(product)
+    context = updated["enrichment_input"]
     updated["olfactory_pyramid"] = copy.deepcopy(context["pyramid"])
     updated["family"] = context["family"]
     updated["family_inference"] = None
-    updated["unpositioned_notes"] = []
+    updated["unpositioned_notes"] = list(context.get("unpositioned_notes", []))
     provenance = copy.deepcopy(context["provenance"])
     provenance["llm_notes"] = []
     missing = {section for section, notes in updated["olfactory_pyramid"].items() if not notes}
-    seen = {note.casefold() for notes in updated["olfactory_pyramid"].values() for note in notes}
+    seen = {note.casefold() for notes in updated["olfactory_pyramid"].values() for note in notes} | {note.casefold() for note in updated["unpositioned_notes"]}
     for note in result["notes"]:
         name = clean_single_note(note["name"])
-        if not is_valid_note_item(name) or name.casefold() in seen:
-            continue
         section = note["position"]
+        locally_declared = name.casefold() in {value.casefold() for value in updated["unpositioned_notes"]}
+        if not is_valid_note_item(name) or (name.casefold() in seen and not (locally_declared and section in missing)):
+            continue
         if section is None:
             updated["unpositioned_notes"].append(name)
         elif section in missing:
+            updated["unpositioned_notes"] = [value for value in updated["unpositioned_notes"] if value.casefold() != name.casefold()]
             updated["olfactory_pyramid"][section].append(name)
             provenance["pyramid"][section] = {"source": "llm", "kind": "extracted"}
         else:
@@ -209,6 +211,15 @@ def run_nightly(directory=None, client=None, max_products=30, token_limit=40000,
     catalog = read_products(directory / "catalog.json")
     unavailable = read_products(directory / "out_of_stock.json")
     validate_catalog(catalog)
+    # Backfill every record before provider budgets, queue states or cache hits.
+    # Existing signatures/reservations are retained: no global LLM invalidation.
+    for filename, products in (("catalog.json", catalog), ("out_of_stock.json", unavailable)):
+        refreshed = [refresh_declared_notes(product) for product in products]
+        if refreshed != products:
+            if filename == "catalog.json":
+                validate_catalog(refreshed)
+            atomic_write_json(directory / filename, refreshed)
+            products[:] = refreshed
     state = refresh_queue(directory, catalog, unavailable)
     batch = NightlyBudget(state, directory, token_limit=token_limit, duration=duration)
     now = utc_now().isoformat()

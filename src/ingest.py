@@ -31,10 +31,10 @@ from openai import OpenAI
 
 try:
     from src.catalog_enrichment import (enrich_catalog_fields, EnrichmentBatch,
-        enrichment_signature, reusable_enrichment, cache_enrichment, enrichment_tags)
+        enrichment_signature, reusable_enrichment, cache_enrichment, enrichment_tags, affirmative_note_evidence)
 except ModuleNotFoundError:
     from catalog_enrichment import (enrich_catalog_fields, EnrichmentBatch,
-        enrichment_signature, reusable_enrichment, cache_enrichment, enrichment_tags)
+        enrichment_signature, reusable_enrichment, cache_enrichment, enrichment_tags, affirmative_note_evidence)
 
 try:
     from src.catalog_integrity import validate_catalog, atomic_write_json
@@ -212,6 +212,142 @@ def clean_note_items(raw_text: str) -> list[str]:
             cleaned_list.append(c)
 
     return list(dict.fromkeys(cleaned_list))
+
+
+def extract_declared_notes(description: str, pyramid: dict) -> list[dict]:
+    """Extract explicit narrative lists, never infer ingredients or pyramid stages.
+
+    Unsupported prose remains available to the grounded LLM fallback. Each local
+    claim retains its source clause and passes the same polarity check as the LLM.
+    """
+    adjectives = (r"olfattiv\w*|aromatich\w*|fresch\w*|cald\w*|legnos\w*|"
+                  r"floreal\w*|fruttat\w*|speziat\w*|agrumat\w*|dolc\w*|verdi|"
+                  r"ambrat\w*|muschiat\w*|principali|salienti")
+    anchor = re.compile(
+        r"\b(?:not[ae]|notes?|accord[oi]|sentori|quelle)\s*(?:(?:" + adjectives +
+        r"|fresh|warm|woody|floral|olfactory|e|ed)(?:\s+|(?=[:：]))){0,5}(?:di\s+|of\s+|[:：]\s*)", re.I)
+    stop = re.compile(
+        r"\b(?:abbracci\w*|avvolg\w*|incontr\w*|accompagn\w*|don\w*|"
+        r"conferisc\w*|regal\w*|crea\w*|rend\w*|fond\w*|combin\w*|"
+        r"mescol\w*|unisc\w*|svel\w*|rivel\w*|lasci\w*|emerg\w*|"
+        r"apre|aprono|evolve\w*|svilupp\w*|risultan\w*|risulta|"
+        r"che|mentre|per|con|su|nel|nella|nelle|nei|dal|dalla|"
+        r"formato|famiglia|tipologia|contiene|contengono|si|lo|le|come|"
+        r"assent\w*|esclus\w*|non|emetton\w*|illumin\w*)\b", re.I)
+    non_notes = re.compile(
+        r"\b(?:eleganza|sensualit[aà]|freschezza|dolcezza|calore|benessere|"
+        r"carattere|intensit[aà]|persistenza|raffinatezza|lusso|personalit[aà]|"
+        r"mistero|energia|testa|cuore|fondo|apertura|chiusura|"
+        r"floreali|fruttate|legnose|aromatiche|speziate|agrumate|muschiati)\b", re.I)
+    seen = {note.casefold() for values in pyramid.values() for note in values}
+    result = []
+    # A bounded material vocabulary prevents short marketing fragments from
+    # becoming ingredients. Unrecognized materials retain the LLM fallback.
+    materials = (
+        "bergamotto mirto noce geranio salvia vetiver ambra olibano muschio musk musks "
+        "rosa rose iris gelsomino jasmine sandalo sandalwood cedro cedarwood oud agarwood "
+        "patchouli pactchouli vaniglia vanilla tonka pepe pepper incenso incense mirra "
+        "lavanda lavender limone lemon arancia orange pompelmo mandarino mandorla "
+        "cocco cacao caffè caffe coffee miele caramello cardamomo coriandolo cannella "
+        "zenzero ginger zafferano neroli tuberosa violetta viola mimosa magnolia "
+        "eliotropio ylang anice menta basilico timo rosmarino cipresso ginepro "
+        "elemi benzoino labdano ambretta opoponax galbano castoreum cuoio leather "
+        "tabacco tobacco camoscio pelle betulla guaiaco resina resine legno legni "
+        "fiori fiore frutta frutti bacche foglie fico pesca mela pera litchi lychee "
+        "lampone ribes ananas mango albicocca susina prugna rabarbaro narciso "
+        "osmanthus osmanto garofano caprifoglio giaggiolo orris davana petitgrain "
+        "angelica ginestra immortale elicrisio camomilla macadamia sesamo nocciola "
+        "rum rhum cognac whisky whiskey latte zucchero sale ozono copale cisto "
+        "corbezzolo oleandro kumquat ambrox ambroxan hedione massoia akigalawood "
+        "akigalwood pepperwood cashmeran isoESuper tè thè tea cumino lentisco "
+        "papiro iris ylangylang assoluto assoluta essenza estratto olio semi chiodi fava palo "
+        "balsamo nettare crema accordo accordi acqua alghe benzoino benzoin"
+    ).split()
+    material = re.compile(r"^(?:" + "|".join(re.escape(word) for word in sorted(set(materials), key=len, reverse=True)) + r")(?!\w)", re.I)
+    qualifier = re.compile(
+        r"^(?:bianc\w*|ner[oaie]|ros[ao]|ross[oaie]|verd[ei]|grigi\w*|dolc[ei]|"
+        r"amar[oaie]|secc\w*|affumicat\w*|bruciat\w*|salat\w*|acquatic\w*|"
+        r"marin\w*|selvatic\w*|tropical\w*|esotic\w*|cristallin\w*|legnos\w*|"
+        r"ambrat\w*|prezios\w*|bulgar\w*|turc\w*|cines\w*|italian\w*|indian\w*|"
+        r"egizian\w*|sicilian\w*|calabres\w*|sclarea|moscata|sambac|damascena|"
+        r"chantilly|orpur|santo|filato|guaiaco|quercia|cedro|sandalo|tonka|"
+        r"garofano|carota|canna|fico|mirto|cocco|vaniglia|latte|cotone|"
+        r"somalia|haiti|calabria|texas|virginia|vapore|albicocca|abete|balsamico|"
+        r"pino|fiori|arancio|arancia|limone|rosa|iris|riso|muschio|sale|rum|"
+        r"mandorla|resina|legno|oud|giaggiolo|timo|pomodoro|ginepro|ginestra|"
+        r"tabacco|marino|mate|sudamericano|ambra|limetta)$", re.I)
+    # Preserve HTML block boundaries before stripping markup.
+    text = re.sub(r"</(?:p|div|li|h[1-6])\s*>|<br\s*/?>", ". ", description, flags=re.I)
+    text = clean_text(text)
+    for clause in re.findall(r"[^.!?;]+", text):
+        matches = list(anchor.finditer(clause))
+        for index, match in enumerate(matches):
+            if match.group().lower().startswith("quelle") and not re.search(r"\bnot[ae]\b", clause[:match.start()], re.I):
+                continue
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(clause)
+            raw = stop.split(clause[match.end():end], maxsplit=1)[0]
+            raw = re.sub(r"\biso\s+e\s+super\b", "IsoESuper", raw, flags=re.I)
+            raw = re.sub(r"\bylang[\s-]+ylang\b", "Ylangylang", raw, flags=re.I)
+            for name in clean_note_items(raw):
+                head = material.match(name)
+                if not head:
+                    continue
+                words = name[head.end():].strip().split()
+                kept = []
+                ambiguous_tail = False
+                for word_index, word in enumerate(words):
+                    if qualifier.fullmatch(word):
+                        kept.append(word)
+                    elif word.casefold() in {"di", "del", "della", "d'", "al"} and word_index + 1 < len(words) and qualifier.fullmatch(words[word_index + 1]):
+                        kept.append(word)
+                    else:
+                        ambiguous_tail = True
+                        break
+                if ambiguous_tail:
+                    continue
+                name = " ".join([head.group(), *kept]).strip()
+                # A head such as 'olio' or 'accordo' needs a material qualifier.
+                if name.casefold() in {"noce", "fava", "palo", "olio", "essenza", "estratto", "assoluto", "assoluta", "semi", "chiodi", "crema", "nettare", "accordo", "accordi", "ylang", "fiori", "fiore", "foglie"}:
+                    continue
+                name = name.replace("IsoESuper", "Iso E Super")
+                if name == "Ylangylang":
+                    original_ylang = re.search(r"\bylang[\s-]+ylang\b", clause, re.I)
+                    name = clean_single_note(original_ylang.group()) if original_ylang else "Ylang-ylang"
+                if (any(existing == name.casefold() or existing.startswith(name.casefold() + " ") for existing in seen) or non_notes.search(name)
+                        or not re.fullmatch(r"[^\W\d_]+(?:[ '’\-][^\W\d_]+){0,3}", name)
+                        or not affirmative_note_evidence(name, clause.strip(), text, [], "description")):
+                    continue
+                seen.add(name.casefold())
+                result.append({"name": name, "position": None, "source": "description",
+                               "evidence": clause.strip(), "method": "local", "kind": "explicit"})
+    return result
+
+
+def refresh_declared_notes(product: dict) -> dict:
+    """Upgrade stored records locally while preserving validated LLM notes."""
+    updated = copy.deepcopy(product)
+    context = updated.get("enrichment_input")
+    if not isinstance(context, dict):
+        return updated
+    declared = extract_declared_notes(context["description"], context["pyramid"])
+    if not declared and not updated.get("data_provenance", {}).get("local_notes"):
+        return updated
+    context["unpositioned_notes"] = [note["name"] for note in declared]
+    context.setdefault("provenance", {})["local_notes"] = declared
+    positioned = {note.casefold() for values in updated.get("olfactory_pyramid", {}).values() for note in values}
+    merged = []
+    previous_local = {note["name"].casefold() for note in updated.get("data_provenance", {}).get("local_notes", [])}
+    llm_names = {note["name"].casefold() for note in updated.get("data_provenance", {}).get("llm_notes", [])}
+    preserved = [name for name in updated.get("unpositioned_notes", [])
+                 if name.casefold() not in previous_local or name.casefold() in llm_names]
+    for name in context["unpositioned_notes"] + preserved:
+        if name.casefold() not in positioned:
+            merged.append(name)
+            positioned.add(name.casefold())
+    updated["unpositioned_notes"] = merged
+    updated.setdefault("data_provenance", {})["local_notes"] = declared
+    updated["semantic_text"] = build_semantic_text(updated)
+    return updated
 
 
 def extract_best_section_match(text: str, pattern: str) -> list[str]:
@@ -543,7 +679,9 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
             if not pyramid[section] and regex_pyramid[section]:
                 pyramid[section] = regex_pyramid[section]
                 provenance["pyramid"][section] = {"source": "html_regex", "kind": "explicit"}
-    unpositioned_notes = []
+    declared_notes = extract_declared_notes(prod.get("body_html", ""), pyramid)
+    unpositioned_notes = [note["name"] for note in declared_notes]
+    provenance["local_notes"] = declared_notes
     family_inference = None
     enrichment_cache = None
     missing_sections = {section for section in pyramid if not pyramid[section]}
@@ -552,6 +690,7 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
         "name": title, "brand": brand, "description": raw_clean_all[:6000], "tags": enrichment_tags(tags_list),
         "pyramid": copy.deepcopy(pyramid), "family": family,
         "provenance": copy.deepcopy(provenance), "signature": signature,
+        "unpositioned_notes": list(unpositioned_notes),
     }
     if missing_sections or not family:
         recovery = reusable_enrichment(previous_product, signature, raw_clean_all, tags_list, KNOWN_FAMILIES)
@@ -567,15 +706,17 @@ def transform_product(prod: dict, store_url: Optional[str] = None, previous_prod
                 enrichment_cache = cache_enrichment(signature, recovery)
         else:
             recovery = {"notes": [], "family": None}
-        existing_notes = {note.casefold() for notes in pyramid.values() for note in notes}
+        existing_notes = {note.casefold() for notes in pyramid.values() for note in notes} | {note.casefold() for note in unpositioned_notes}
         for note in recovery["notes"]:
             name = clean_single_note(note["name"])
-            if not is_valid_note_item(name) or name.casefold() in existing_notes:
-                continue
             section = note["position"]
+            locally_declared = name.casefold() in {value.casefold() for value in unpositioned_notes}
+            if not is_valid_note_item(name) or (name.casefold() in existing_notes and not (locally_declared and section in missing_sections)):
+                continue
             if section is None:
                 unpositioned_notes.append(name)
             elif section in missing_sections:
+                unpositioned_notes = [value for value in unpositioned_notes if value.casefold() != name.casefold()]
                 pyramid[section].append(name)
                 provenance["pyramid"][section] = {"source": "llm", "kind": "extracted"}
             else:
