@@ -1747,6 +1747,30 @@
         "",
       );
 
+      // Risveglia Render dopo il caricamento della pagina, senza bloccare la navigazione.
+      const BACKEND_WAKE_KEY = "etualy_backend_wake_at";
+      const BACKEND_WAKE_INTERVAL_MS = 10 * 60 * 1000;
+      let lastBackendWakeAt = 0;
+      function wakeBackendOnVisit() {
+        const now = Date.now();
+        if (lastBackendWakeAt > 0 && now >= lastBackendWakeAt && now - lastBackendWakeAt < BACKEND_WAKE_INTERVAL_MS) return;
+        try {
+          const last = Number(window.sessionStorage.getItem(BACKEND_WAKE_KEY));
+          if (last > 0 && now >= last && now - last < BACKEND_WAKE_INTERVAL_MS) {
+            lastBackendWakeAt = last;
+            return;
+          }
+          window.sessionStorage.setItem(BACKEND_WAKE_KEY, String(now));
+        } catch (_) { /* Storage non disponibile: la chat rimane utilizzabile. */ }
+        lastBackendWakeAt = now;
+        void fetch(`${API_BASE_URL}/health`, {
+          method: "GET", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer",
+        }).catch(() => { /* Il prossimo messaggio mantiene il normale recupero errori. */ });
+      }
+      function scheduleBackendWake() { setTimeout(wakeBackendOnVisit, 0); }
+      window.addEventListener("pageshow", scheduleBackendWake);
+      if (document.readyState === "complete") scheduleBackendWake();
+
 
       // R07: own keys only; a failed browser store never disables this page's chat.
       const localState = (() => {
@@ -2672,6 +2696,7 @@
       setWidgetScreen(noticeViewed ? "chat" : "intro");
 
       function openWidget() {
+        wakeBackendOnVisit();
         dismissTeaser();
         widget.inert = false;
         widget.removeAttribute("aria-hidden");

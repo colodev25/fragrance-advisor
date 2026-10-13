@@ -123,6 +123,10 @@ async function fixture(t, file, seed = {}, store = false, setup = {}) {
       return route.fulfill({ status: response.status, contentType: 'application/json', body: JSON.stringify(response.body) });
     }
     if (url.origin === 'https://fragrance-advisor-api.onrender.com') {
+      if (url.pathname === '/health' && request.method() === 'GET') {
+        return route.fulfill({ status: 200, contentType: 'application/json',
+          headers: { 'access-control-allow-origin': '*' }, body: '{"status":"ok"}' });
+      }
       if (request.method() === 'OPTIONS') {
         return route.fulfill({ status: 204, headers: {
           'access-control-allow-origin': '*', 'access-control-allow-methods': 'POST',
