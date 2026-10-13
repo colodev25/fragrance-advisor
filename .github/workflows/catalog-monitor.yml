@@ -1,7 +1,7 @@
 name: Catalog freshness
 on:
   schedule:
-    - cron: "10 4 * * *"
+    - cron: "17 4 * * *"
       timezone: Europe/Rome
   workflow_dispatch:
 permissions:

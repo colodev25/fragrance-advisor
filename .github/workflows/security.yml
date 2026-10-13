@@ -3,11 +3,20 @@ name: Dependency Security
 on:
   push:
     branches: [feature/new-site, main]
-    paths: ['requirements.txt', 'requirements/**', 'tools/security/**', 'tools/widget-tests/package*.json', 'src/chroma_security.py', 'src/search.py', '.github/workflows/security.yml']
+    paths:
+      [
+        "requirements.txt",
+        "requirements/**",
+        "tools/security/**",
+        "tools/widget-tests/package*.json",
+        "src/chroma_security.py",
+        "src/search.py",
+        ".github/workflows/security.yml",
+      ]
   pull_request:
     branches: [feature/new-site, main]
   schedule:
-    - cron: '20 6 * * 1'
+    - cron: "22 5 * * 1"
   workflow_dispatch:
 
 permissions:
