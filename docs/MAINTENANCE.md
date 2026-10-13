@@ -56,6 +56,20 @@ Run the separate [dependency security checks](DEPENDENCY_SECURITY.md), review th
 - Updating the installed Shopify snippet remains a separate publishing step when widget sources change.
 - Schedule dependency reviews periodically, and sooner when an upstream fix affects the project. Fixed versions still need deliberate maintenance.
 
+## Render deploy after CI
+
+The workflows are prepared for automatic publication after successful CI; changing repository files does not change the Render dashboard setting.
+
+1. Commit/push `tests.yml`, both catalog workflows, tests and documentation to the service's linked branch. Ensure `tests.yml` is available on the default branch for dispatch; the scheduled catalog workflows also need their default-branch definitions updated.
+2. Observe **Test Python offline**, **Test browser offline** and **Quality gate** passing on the pushed commit. Catalog workflows use the existing GitHub token with explicit `actions: write`, without a new secret or personal token.
+3. In the Render service, select **Settings → Auto-Deploy → After CI Checks Pass** and save. Verify the Git provider connection and the linked branch (`feature/new-site` for the current automation). Keep the existing build/start commands and health endpoint.
+4. On the next code/catalog update, compare the GitHub commit SHA with the Render deployment commit and observe CI finishing before the new build begins. A failed check should leave the previous deployed version active; a commit with zero checks should not deploy. A deliberate failure drill should be performed on a separate preview service/branch, not by shipping a known failure to production.
+5. Observe the next successful data-changing sync/enrichment job dispatching the test suite. If a dispatch fails, resolve the workflow/token policy issue and rerun the suite manually on the current service branch. Queue-only bot commits carry `[skip render]` and should not rebuild.
+
+Render considers `success`, `neutral` and `skipped` checks passed, hence the explicit Quality gate requiring two actual successes. Manual deployments and deployment hooks can bypass the automatic gate; agree on their use for operational recovery. Scheduled freshness failures are alerts about the running service and do not roll back an already deployed version. The gate delays publication, not customer requests; CI and the served backend run separately. Documentation-only pushes ignored by the suite produce no new test results and need no backend rebuild.
+
+See [Render CI integration](https://render.com/docs/deploys#integrating-with-ci) and [GitHub token-trigger behavior](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow). Render/GitHub integration must be observed after activation; local workflow tests do not prove the remote gate is enabled.
+
 ## References
 
 The workflow follows the documented approaches for [repeatable pip installations](https://pip.pypa.io/en/stable/topics/repeatable-installs/), [uv compilation](https://docs.astral.sh/uv/pip/compile/), [Playwright CI](https://playwright.dev/docs/ci) and [Render Python version selection](https://render.com/docs/python-version).

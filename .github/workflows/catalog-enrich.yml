@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: catalog-maintenance-feature-new-site
@@ -46,17 +47,32 @@ jobs:
         run: python -m src.catalog_jobs --max-products 30 --token-budget 40000 --max-minutes 20
 
       - name: Salvataggio progressi e budget
+        id: publish
         if: ${{ always() && steps.enrich.outcome != 'skipped' }}
         run: |
+          echo "catalog_changed=false" >> "$GITHUB_OUTPUT"
           if [ -n "$(git status --porcelain data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json)" ]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git add data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json
-            git commit -m "chore(catalog): progressi arricchimento notturno [skip ci]"
+            catalog_changed=true
+            suffix="[skip ci]"
+            if git diff --cached --quiet -- data/catalog.json data/out_of_stock.json; then
+              catalog_changed=false
+              suffix="$suffix [skip render]"
+            fi
+            git commit -m "chore(catalog): progressi arricchimento notturno $suffix"
             git push origin feature/new-site
+            echo "catalog_changed=$catalog_changed" >> "$GITHUB_OUTPUT"
           else
             echo "Nessuna modifica da pubblicare."
           fi
+
+      - name: Avvio esplicito suite per il catalogo pubblicato
+        if: always() && steps.publish.outcome == 'success' && steps.publish.outputs.catalog_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run tests.yml --ref feature/new-site --repo "$GITHUB_REPOSITORY"
 
       - name: Prepare enrichment report
         if: always() && steps.enrich.outcome != 'skipped'

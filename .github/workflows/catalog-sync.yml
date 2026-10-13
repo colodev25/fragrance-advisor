@@ -10,6 +10,7 @@ on:
 # Permessi necessari affinché il workflow possa fare git push sul repository
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: catalog-maintenance-feature-new-site
@@ -55,17 +56,32 @@ jobs:
           python src/ingest.py
 
       - name: Commit su GitHub se ci sono variazioni
+        id: publish
         if: steps.calendar.outputs.run == 'true'
         run: |
+          echo "catalog_changed=false" >> "$GITHUB_OUTPUT"
           if [ -n "$(git status --porcelain data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json)" ]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git add data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json
-            git commit -m "chore(catalog): sincronizzazione automatica catalogo [skip ci]"
+            catalog_changed=true
+            suffix="[skip ci]"
+            if git diff --cached --quiet -- data/catalog.json data/out_of_stock.json; then
+              catalog_changed=false
+              suffix="$suffix [skip render]"
+            fi
+            git commit -m "chore(catalog): sincronizzazione automatica catalogo $suffix"
             git push origin feature/new-site
+            echo "catalog_changed=$catalog_changed" >> "$GITHUB_OUTPUT"
           else
             echo "[*] Nessuna variazione nel catalogo. Nessun commit necessario."
           fi
+
+      - name: Avvio esplicito suite per il catalogo pubblicato
+        if: always() && steps.publish.outcome == 'success' && steps.publish.outputs.catalog_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run tests.yml --ref feature/new-site --repo "$GITHUB_REPOSITORY"
 
       - name: Preserve synchronization report
         if: always() && steps.calendar.outputs.run == 'true'
