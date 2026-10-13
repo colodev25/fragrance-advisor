@@ -34,8 +34,7 @@
       "Muschio",
       "Estratto di Giaggiolo",
       "Tabacco",
-      "Labdano",
-      "Legni"
+      "Labdano"
     ],
     "family": "Speziata",
     "family_inference": null,
@@ -51,7 +50,7 @@
           "name": "Muschio",
           "position": null,
           "source": "description",
-          "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+          "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
           "method": "local",
           "kind": "explicit"
         },
@@ -59,7 +58,7 @@
           "name": "Estratto di Giaggiolo",
           "position": null,
           "source": "description",
-          "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+          "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
           "method": "local",
           "kind": "explicit"
         },
@@ -67,7 +66,7 @@
           "name": "Tabacco",
           "position": null,
           "source": "description",
-          "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+          "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
           "method": "local",
           "kind": "explicit"
         },
@@ -75,15 +74,7 @@
           "name": "Labdano",
           "position": null,
           "source": "description",
-          "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
-          "method": "local",
-          "kind": "explicit"
-        },
-        {
-          "name": "Legni",
-          "position": null,
-          "source": "description",
-          "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+          "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
           "method": "local",
           "kind": "explicit"
         }
@@ -119,7 +110,7 @@
             "name": "Muschio",
             "position": null,
             "source": "description",
-            "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+            "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
             "method": "local",
             "kind": "explicit"
           },
@@ -127,7 +118,7 @@
             "name": "Estratto di Giaggiolo",
             "position": null,
             "source": "description",
-            "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+            "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
             "method": "local",
             "kind": "explicit"
           },
@@ -135,7 +126,7 @@
             "name": "Tabacco",
             "position": null,
             "source": "description",
-            "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+            "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
             "method": "local",
             "kind": "explicit"
           },
@@ -143,15 +134,7 @@
             "name": "Labdano",
             "position": null,
             "source": "description",
-            "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
-            "method": "local",
-            "kind": "explicit"
-          },
-          {
-            "name": "Legni",
-            "position": null,
-            "source": "description",
-            "evidence": "Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni",
+            "evidence": "Formato : 9 ml, 50 ml Piramide olfattiva Note Olfattive : Muschio, Spezie Secche, Estratto di Giaggiolo, Lavanda CO2, Tabacco, Labdano, Legni Ajedrez EDP: famiglia olfattiva Speziata Ajedrez EDP: tipologia di profumo Eau de Parfum, unisex Ajedrez EDP: per chi è adatto e quando indossarlo Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore",
             "method": "local",
             "kind": "explicit"
           }
@@ -162,8 +145,7 @@
         "Muschio",
         "Estratto di Giaggiolo",
         "Tabacco",
-        "Labdano",
-        "Legni"
+        "Labdano"
       ]
     },
     "ptype": "Eau de Parfum, unisex",
@@ -174,7 +156,7 @@
       "add_to_cart": "https://etualy.com/cart/54120093253966:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/aedes-de-venustas-sueno-latino-edp-100-ml_12_5151af9d-c3bf-4889-846b-c7b0197f1d34.png?v=1752759687"
     },
-    "semantic_text": "Profumo Ajedrez EDP di Frassaï. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Speziata. Tag: 50 ml, 9 ml, da 101€ a 200€, Eau de Parfum, fino a 50€, Fragranze, Per lei, Per lui, Speziata. Note citate senza posizione dichiarata: Muschio, Estratto di Giaggiolo, Tabacco, Labdano, Legni. Carattere, contesto d'uso e occasioni: Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore. Ajedrez è ideale per chi veste bene senza ostentare, per chi ascolta più di quanto parli. Una fragranza pensata per le stagioni fredde, quando il calore deve partire dalla pelle e non dall’esterno. Indossalo dura"
+    "semantic_text": "Profumo Ajedrez EDP di Frassaï. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Speziata. Tag: 50 ml, 9 ml, da 101€ a 200€, Eau de Parfum, fino a 50€, Fragranze, Per lei, Per lui, Speziata. Note citate senza posizione dichiarata: Muschio, Estratto di Giaggiolo, Tabacco, Labdano. Carattere, contesto d'uso e occasioni: Perfetto per chi apprezza l’intelligenza più del rumore e il dettaglio più del clamore. Ajedrez è ideale per chi veste bene senza ostentare, per chi ascolta più di quanto parli. Una fragranza pensata per le stagioni fredde, quando il calore deve partire dalla pelle e non dall’esterno. Indossalo dura"
   },
   {
     "id": "sh_10652764176718",
@@ -1482,8 +1464,7 @@
     },
     "unpositioned_notes": [
       "Bergamotto Italiano",
-      "Mela Verde",
-      "Ambroxan"
+      "Mela Verde"
     ],
     "family": "Ambrata",
     "family_inference": null,
@@ -1499,7 +1480,7 @@
           "name": "Bergamotto Italiano",
           "position": null,
           "source": "description",
-          "evidence": "Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan",
+          "evidence": "Formato : 50 ml, 100 ml Piramide olfattiva Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan Wake Up World | ∞ EDP: famiglia olfattiva Ambrata Wake Up World | ∞ EDP: tipologia di profumo Eau de Parfum, Unisex Wake Up World | ∞ EDP: per chi è adatto e quando indossarlo Wake Up World | ∞ EDP è ideale per chi cerca un profumo raffinato, dinamico e sofisticato, perfetto per personalità che amano sperimentare con eleganza",
           "method": "local",
           "kind": "explicit"
         },
@@ -1507,15 +1488,7 @@
           "name": "Mela Verde",
           "position": null,
           "source": "description",
-          "evidence": "Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan",
-          "method": "local",
-          "kind": "explicit"
-        },
-        {
-          "name": "Ambroxan",
-          "position": null,
-          "source": "description",
-          "evidence": "Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan",
+          "evidence": "Formato : 50 ml, 100 ml Piramide olfattiva Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan Wake Up World | ∞ EDP: famiglia olfattiva Ambrata Wake Up World | ∞ EDP: tipologia di profumo Eau de Parfum, Unisex Wake Up World | ∞ EDP: per chi è adatto e quando indossarlo Wake Up World | ∞ EDP è ideale per chi cerca un profumo raffinato, dinamico e sofisticato, perfetto per personalità che amano sperimentare con eleganza",
           "method": "local",
           "kind": "explicit"
         }
@@ -1551,7 +1524,7 @@
             "name": "Bergamotto Italiano",
             "position": null,
             "source": "description",
-            "evidence": "Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan",
+            "evidence": "Formato : 50 ml, 100 ml Piramide olfattiva Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan Wake Up World | ∞ EDP: famiglia olfattiva Ambrata Wake Up World | ∞ EDP: tipologia di profumo Eau de Parfum, Unisex Wake Up World | ∞ EDP: per chi è adatto e quando indossarlo Wake Up World | ∞ EDP è ideale per chi cerca un profumo raffinato, dinamico e sofisticato, perfetto per personalità che amano sperimentare con eleganza",
             "method": "local",
             "kind": "explicit"
           },
@@ -1559,15 +1532,7 @@
             "name": "Mela Verde",
             "position": null,
             "source": "description",
-            "evidence": "Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan",
-            "method": "local",
-            "kind": "explicit"
-          },
-          {
-            "name": "Ambroxan",
-            "position": null,
-            "source": "description",
-            "evidence": "Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan",
+            "evidence": "Formato : 50 ml, 100 ml Piramide olfattiva Note Olfattive : Bergamotto Italiano, Mela Verde, Olio Essenziale di Rosa Turca, Vaniglia Bourbon, Fava Tonka Venezuelana, Ambroxan Wake Up World | ∞ EDP: famiglia olfattiva Ambrata Wake Up World | ∞ EDP: tipologia di profumo Eau de Parfum, Unisex Wake Up World | ∞ EDP: per chi è adatto e quando indossarlo Wake Up World | ∞ EDP è ideale per chi cerca un profumo raffinato, dinamico e sofisticato, perfetto per personalità che amano sperimentare con eleganza",
             "method": "local",
             "kind": "explicit"
           }
@@ -1576,8 +1541,7 @@
       "signature": "1fca43646d5ec563994c893cd44109b1b7084bf2a94048e1cbbe48d015b9266d",
       "unpositioned_notes": [
         "Bergamotto Italiano",
-        "Mela Verde",
-        "Ambroxan"
+        "Mela Verde"
       ]
     },
     "ptype": "Eau de Parfum, Unisex",
@@ -1588,7 +1552,7 @@
       "add_to_cart": "https://etualy.com/cart/49807134261582:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/parle-moi-de-parfum-wake-up-world-50-ml-edp_f0eedb33-18dc-40d6-9f12-d23f7b8db88d.png?v=1732200671"
     },
-    "semantic_text": "Profumo Wake Up World | ∞ EDP di Parle Moi De Parfum. Tipologia: Eau de Parfum, Unisex. Famiglia olfattiva: Ambrata. Tag: 100 ml, 50 ml, Ambrata, da 101€ a 200€, Eau de Parfum, Fragranze, Per lei, Per lui. Note citate senza posizione dichiarata: Bergamotto Italiano, Mela Verde, Ambroxan. Carattere, contesto d'uso e occasioni: Wake Up World | ∞ EDP è ideale per chi cerca un profumo raffinato, dinamico e sofisticato, perfetto per personalità che amano sperimentare con eleganza. Adatto a chi predilige fragranze che si evolvono nel tempo, offrendo nuove sfumature senza mai perdere la loro armonia. È perfetto per le stagioni "
+    "semantic_text": "Profumo Wake Up World | ∞ EDP di Parle Moi De Parfum. Tipologia: Eau de Parfum, Unisex. Famiglia olfattiva: Ambrata. Tag: 100 ml, 50 ml, Ambrata, da 101€ a 200€, Eau de Parfum, Fragranze, Per lei, Per lui. Note citate senza posizione dichiarata: Bergamotto Italiano, Mela Verde. Carattere, contesto d'uso e occasioni: Wake Up World | ∞ EDP è ideale per chi cerca un profumo raffinato, dinamico e sofisticato, perfetto per personalità che amano sperimentare con eleganza. Adatto a chi predilige fragranze che si evolvono nel tempo, offrendo nuove sfumature senza mai perdere la loro armonia. È perfetto per le stagioni "
   },
   {
     "id": "sh_9854065934670",
@@ -5849,7 +5813,7 @@
           "name": "Bergamotto Calabrese",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java",
+          "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         },
@@ -5857,7 +5821,7 @@
           "name": "Limone Italiano",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java",
+          "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -5898,7 +5862,7 @@
             "name": "Bergamotto Calabrese",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java",
+            "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           },
@@ -5906,7 +5870,7 @@
             "name": "Limone Italiano",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java",
+            "evidence": "Note olfattive : Bergamotto Calabrese, Limone Italiano, Arancia Brasiliana, Zenzero della Nigeria, Carota Cruda, Vetiver Java Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -5978,7 +5942,7 @@
           "name": "Cedro Calabrese",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo",
+          "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         },
@@ -5986,7 +5950,7 @@
           "name": "Menta",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo",
+          "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         },
@@ -5994,7 +5958,7 @@
           "name": "Cardamomo",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo",
+          "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -6034,7 +5998,7 @@
             "name": "Cedro Calabrese",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo",
+            "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           },
@@ -6042,7 +6006,7 @@
             "name": "Menta",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo",
+            "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           },
@@ -6050,7 +6014,7 @@
             "name": "Cardamomo",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo",
+            "evidence": "Note olfattive : Cedro Calabrese, Combava Indonesiano ( Kaffir Lime ), Menta, Lime Messicano, Legni Freddi, Cardamomo Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -6209,7 +6173,7 @@
           "name": "Cedro della Virginia",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         },
@@ -6217,7 +6181,7 @@
           "name": "Cedro del Texas",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         },
@@ -6225,7 +6189,7 @@
           "name": "Mirra",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         },
@@ -6233,7 +6197,7 @@
           "name": "Benzoino",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         },
@@ -6241,7 +6205,7 @@
           "name": "Incenso",
           "position": null,
           "source": "description",
-          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+          "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -6280,7 +6244,7 @@
             "name": "Cedro della Virginia",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           },
@@ -6288,7 +6252,7 @@
             "name": "Cedro del Texas",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           },
@@ -6296,7 +6260,7 @@
             "name": "Mirra",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           },
@@ -6304,7 +6268,7 @@
             "name": "Benzoino",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           },
@@ -6312,7 +6276,7 @@
             "name": "Incenso",
             "position": null,
             "source": "description",
-            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino",
+            "evidence": "Note olfattive : Cedro della Virginia, Cedro del Texas, Cedro dell'Atlante, Mirra, Benzoino, Legno di Guaiaci, Incenso, Iris Fiorentino Formato : 100 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -6805,7 +6769,7 @@
           "name": "Zucchero",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Vaniglia e Zucchero",
+          "evidence": "Famiglia olfattiva: Orientale, Vanigliata Note di Testa: Albicocca, Papaya e Jackfruit Note di Cuore: Albicocca, Papaya e Jackfruit Note di Base: Vaniglia e Zucchero",
           "method": "local",
           "kind": "explicit"
         }
@@ -6862,7 +6826,7 @@
             "name": "Zucchero",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Vaniglia e Zucchero",
+            "evidence": "Famiglia olfattiva: Orientale, Vanigliata Note di Testa: Albicocca, Papaya e Jackfruit Note di Cuore: Albicocca, Papaya e Jackfruit Note di Base: Vaniglia e Zucchero",
             "method": "local",
             "kind": "explicit"
           }
@@ -7986,7 +7950,7 @@
           "name": "Bacche rosa",
           "position": null,
           "source": "description",
-          "evidence": "Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte",
+          "evidence": "Famiglia Olfattiva Gourmand Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte Note di cuore Burro di Cacao, Accordo Tiramisu (Mousse di Vaniglia e Biscotti) Note di fondo Orchidea Vaniglia, Estratto di Vaniglia Madagascar, Benzoino Laos, Cera d’api Laos organic, Ass",
           "method": "local",
           "kind": "explicit"
         },
@@ -7994,7 +7958,7 @@
           "name": "Pepe",
           "position": null,
           "source": "description",
-          "evidence": "Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte",
+          "evidence": "Famiglia Olfattiva Gourmand Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte Note di cuore Burro di Cacao, Accordo Tiramisu (Mousse di Vaniglia e Biscotti) Note di fondo Orchidea Vaniglia, Estratto di Vaniglia Madagascar, Benzoino Laos, Cera d’api Laos organic, Ass",
           "method": "local",
           "kind": "explicit"
         },
@@ -8002,7 +7966,7 @@
           "name": "Crema di latte",
           "position": null,
           "source": "description",
-          "evidence": "Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte",
+          "evidence": "Famiglia Olfattiva Gourmand Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte Note di cuore Burro di Cacao, Accordo Tiramisu (Mousse di Vaniglia e Biscotti) Note di fondo Orchidea Vaniglia, Estratto di Vaniglia Madagascar, Benzoino Laos, Cera d’api Laos organic, Ass",
           "method": "local",
           "kind": "explicit"
         }
@@ -8041,7 +8005,7 @@
             "name": "Bacche rosa",
             "position": null,
             "source": "description",
-            "evidence": "Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte",
+            "evidence": "Famiglia Olfattiva Gourmand Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte Note di cuore Burro di Cacao, Accordo Tiramisu (Mousse di Vaniglia e Biscotti) Note di fondo Orchidea Vaniglia, Estratto di Vaniglia Madagascar, Benzoino Laos, Cera d’api Laos organic, Ass",
             "method": "local",
             "kind": "explicit"
           },
@@ -8049,7 +8013,7 @@
             "name": "Pepe",
             "position": null,
             "source": "description",
-            "evidence": "Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte",
+            "evidence": "Famiglia Olfattiva Gourmand Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte Note di cuore Burro di Cacao, Accordo Tiramisu (Mousse di Vaniglia e Biscotti) Note di fondo Orchidea Vaniglia, Estratto di Vaniglia Madagascar, Benzoino Laos, Cera d’api Laos organic, Ass",
             "method": "local",
             "kind": "explicit"
           },
@@ -8057,7 +8021,7 @@
             "name": "Crema di latte",
             "position": null,
             "source": "description",
-            "evidence": "Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte",
+            "evidence": "Famiglia Olfattiva Gourmand Note di testa Cacao Natsublim, Bacche rosa, Pepe, Crema di latte Note di cuore Burro di Cacao, Accordo Tiramisu (Mousse di Vaniglia e Biscotti) Note di fondo Orchidea Vaniglia, Estratto di Vaniglia Madagascar, Benzoino Laos, Cera d’api Laos organic, Ass",
             "method": "local",
             "kind": "explicit"
           }
@@ -10749,7 +10713,7 @@
           "name": "Sandalo",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
+          "evidence": "Famiglia olfattiva: Orientale, Speziata Note di Testa: Frutti Essiccati e Bergamotto Note di Cuore: Rosa, Zafferano e Geranio Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
           "method": "local",
           "kind": "explicit"
         },
@@ -10757,7 +10721,7 @@
           "name": "Muschio",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
+          "evidence": "Famiglia olfattiva: Orientale, Speziata Note di Testa: Frutti Essiccati e Bergamotto Note di Cuore: Rosa, Zafferano e Geranio Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
           "method": "local",
           "kind": "explicit"
         },
@@ -10765,7 +10729,7 @@
           "name": "Patchouli",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
+          "evidence": "Famiglia olfattiva: Orientale, Speziata Note di Testa: Frutti Essiccati e Bergamotto Note di Cuore: Rosa, Zafferano e Geranio Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
           "method": "local",
           "kind": "explicit"
         }
@@ -10846,7 +10810,7 @@
             "name": "Sandalo",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
+            "evidence": "Famiglia olfattiva: Orientale, Speziata Note di Testa: Frutti Essiccati e Bergamotto Note di Cuore: Rosa, Zafferano e Geranio Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
             "method": "local",
             "kind": "explicit"
           },
@@ -10854,7 +10818,7 @@
             "name": "Muschio",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
+            "evidence": "Famiglia olfattiva: Orientale, Speziata Note di Testa: Frutti Essiccati e Bergamotto Note di Cuore: Rosa, Zafferano e Geranio Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
             "method": "local",
             "kind": "explicit"
           },
@@ -10862,7 +10826,7 @@
             "name": "Patchouli",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
+            "evidence": "Famiglia olfattiva: Orientale, Speziata Note di Testa: Frutti Essiccati e Bergamotto Note di Cuore: Rosa, Zafferano e Geranio Note di Base: Legno di Agar (Oud), Ambra, Sandalo, Vaniglia, Muschio e Patchouli",
             "method": "local",
             "kind": "explicit"
           }
@@ -12441,7 +12405,7 @@
           "name": "Vetiver di Haiti",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
+          "evidence": "Famiglia olfattiva: Orientale, Legnosa Note di Testa: Bergamotto, Limone e Cedro Note di Cuore: Cumino, Geranio e Patchouli Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
           "method": "local",
           "kind": "explicit"
         },
@@ -12449,7 +12413,7 @@
           "name": "Benzoino",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
+          "evidence": "Famiglia olfattiva: Orientale, Legnosa Note di Testa: Bergamotto, Limone e Cedro Note di Cuore: Cumino, Geranio e Patchouli Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
           "method": "local",
           "kind": "explicit"
         },
@@ -12457,7 +12421,7 @@
           "name": "Muschio di Quercia",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
+          "evidence": "Famiglia olfattiva: Orientale, Legnosa Note di Testa: Bergamotto, Limone e Cedro Note di Cuore: Cumino, Geranio e Patchouli Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
           "method": "local",
           "kind": "explicit"
         }
@@ -12515,7 +12479,7 @@
             "name": "Vetiver di Haiti",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
+            "evidence": "Famiglia olfattiva: Orientale, Legnosa Note di Testa: Bergamotto, Limone e Cedro Note di Cuore: Cumino, Geranio e Patchouli Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
             "method": "local",
             "kind": "explicit"
           },
@@ -12523,7 +12487,7 @@
             "name": "Benzoino",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
+            "evidence": "Famiglia olfattiva: Orientale, Legnosa Note di Testa: Bergamotto, Limone e Cedro Note di Cuore: Cumino, Geranio e Patchouli Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
             "method": "local",
             "kind": "explicit"
           },
@@ -12531,7 +12495,7 @@
             "name": "Muschio di Quercia",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
+            "evidence": "Famiglia olfattiva: Orientale, Legnosa Note di Testa: Bergamotto, Limone e Cedro Note di Cuore: Cumino, Geranio e Patchouli Note di Base: Cedro, Vetiver di Haiti, Benzoino e Muschio di Quercia",
             "method": "local",
             "kind": "explicit"
           }
@@ -15360,7 +15324,7 @@
           "name": "Ginestra",
           "position": null,
           "source": "description",
-          "evidence": "Note di testa: Bergamotto, Ginestra, Ibisco",
+          "evidence": "Famiglia Olfattiva: Floreale Note di testa: Bergamotto, Ginestra, Ibisco Note di cuore: Gelsomino Sambac, Neroli, Frangipane Note di fondo: Sabbia bianca, Vaniglia, Muschio Naso: Karine Dubreuil – Sereni Formato: 30 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -15425,7 +15389,7 @@
             "name": "Ginestra",
             "position": null,
             "source": "description",
-            "evidence": "Note di testa: Bergamotto, Ginestra, Ibisco",
+            "evidence": "Famiglia Olfattiva: Floreale Note di testa: Bergamotto, Ginestra, Ibisco Note di cuore: Gelsomino Sambac, Neroli, Frangipane Note di fondo: Sabbia bianca, Vaniglia, Muschio Naso: Karine Dubreuil – Sereni Formato: 30 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -24142,7 +24106,7 @@
           "name": "Benzoino",
           "position": null,
           "source": "description",
-          "evidence": "Note di Base: Musk, Benzoino, Patchouli di Singapore e Bacche di Vaniglia del Madagascar",
+          "evidence": "Note di Testa: Mirto di Sicilia, Alga del Mediterraneo, Pompelmo e Neroli di Sicilia Note di Cuore: Sale di Sicilia, Cedro di Atlas, Timo Rosso e Geranio Bulgaro Note di Base: Musk, Benzoino, Patchouli di Singapore e Bacche di Vaniglia del Madagascar Formato: 100 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -24199,7 +24163,7 @@
             "name": "Benzoino",
             "position": null,
             "source": "description",
-            "evidence": "Note di Base: Musk, Benzoino, Patchouli di Singapore e Bacche di Vaniglia del Madagascar",
+            "evidence": "Note di Testa: Mirto di Sicilia, Alga del Mediterraneo, Pompelmo e Neroli di Sicilia Note di Cuore: Sale di Sicilia, Cedro di Atlas, Timo Rosso e Geranio Bulgaro Note di Base: Musk, Benzoino, Patchouli di Singapore e Bacche di Vaniglia del Madagascar Formato: 100 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -28389,7 +28353,7 @@
           "name": "Ylang-ylang",
           "position": null,
           "source": "description",
-          "evidence": "Note di testa: rosa, ylang-ylang, fiori d'arancio, gelsomino",
+          "evidence": "Famiglia olfattiva: floreale aldeidata Note di testa: rosa, ylang-ylang, fiori d'arancio, gelsomino Note di cuore: boccioli di ribes nero, aldeide, liquirizia Note di fondo: incenso, legno di sandalo, patchouli Formato: 100 ml e 50 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -28454,7 +28418,7 @@
             "name": "Ylang-ylang",
             "position": null,
             "source": "description",
-            "evidence": "Note di testa: rosa, ylang-ylang, fiori d'arancio, gelsomino",
+            "evidence": "Famiglia olfattiva: floreale aldeidata Note di testa: rosa, ylang-ylang, fiori d'arancio, gelsomino Note di cuore: boccioli di ribes nero, aldeide, liquirizia Note di fondo: incenso, legno di sandalo, patchouli Formato: 100 ml e 50 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -30251,7 +30215,7 @@
           "name": "Ylang-ylang",
           "position": null,
           "source": "description",
-          "evidence": "Note di cuore : Rizoma di Iris, Zenzero, Chiodi di Garofano, Ylang-ylang",
+          "evidence": "Famiglia Olfattiva : Agrumata, Legnosa Note di testa : Mandarino Giallo, Limone, Pepe nero, Coriandolo Note di cuore : Rizoma di Iris, Zenzero, Chiodi di Garofano, Ylang-ylang Note di fondo : Muschio, Vetiver, Legno di Cedro, Salvia Formato : 50 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -30317,7 +30281,7 @@
             "name": "Ylang-ylang",
             "position": null,
             "source": "description",
-            "evidence": "Note di cuore : Rizoma di Iris, Zenzero, Chiodi di Garofano, Ylang-ylang",
+            "evidence": "Famiglia Olfattiva : Agrumata, Legnosa Note di testa : Mandarino Giallo, Limone, Pepe nero, Coriandolo Note di cuore : Rizoma di Iris, Zenzero, Chiodi di Garofano, Ylang-ylang Note di fondo : Muschio, Vetiver, Legno di Cedro, Salvia Formato : 50 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -33136,7 +33100,7 @@
           "name": "Ylang-ylang",
           "position": null,
           "source": "description",
-          "evidence": "Note di cuore : Tiaré, Gardenia, Ylang-ylang",
+          "evidence": "Famiglia Olfattiva : Orientale, Floreale Note di testa : Bergamotto, Cocco Note di cuore : Tiaré, Gardenia, Ylang-ylang Note di fondo : Vaniglia, Muschio Formato : 50 ml",
           "method": "local",
           "kind": "explicit"
         }
@@ -33197,7 +33161,7 @@
             "name": "Ylang-ylang",
             "position": null,
             "source": "description",
-            "evidence": "Note di cuore : Tiaré, Gardenia, Ylang-ylang",
+            "evidence": "Famiglia Olfattiva : Orientale, Floreale Note di testa : Bergamotto, Cocco Note di cuore : Tiaré, Gardenia, Ylang-ylang Note di fondo : Vaniglia, Muschio Formato : 50 ml",
             "method": "local",
             "kind": "explicit"
           }
@@ -33995,7 +33959,9 @@
         "Vaniglia"
       ]
     },
-    "unpositioned_notes": [],
+    "unpositioned_notes": [
+      "Ylang-Ylang"
+    ],
     "family": "Floreale",
     "family_inference": null,
     "data_provenance": {
@@ -34018,7 +33984,16 @@
         "kind": "explicit"
       },
       "llm_notes": [],
-      "local_notes": []
+      "local_notes": [
+        {
+          "name": "Ylang-Ylang",
+          "position": null,
+          "source": "description",
+          "evidence": "Formato : 100 ml Piramide olfattiva Testa : Arancia, Galbano, Accordo di Violetta, Pesca, Albicocca, Banana Cuore : Fiore di Arancio, Ylang-Ylang, Tuberosa Fondo : Iris, Musk, Vaniglia Acqua Originale Iris Tubereuse EDP: famiglia olfattiva Floreale Acqua Originale Iris Tubereuse EDP:: tipologia di profumo Eau de Parfum, unisex Acqua Originale Iris Tubereuse EDP:: per chi è adatto e quando indossarlo Perfetto per chi ama la bellezza discreta ma inconfondibile",
+          "method": "local",
+          "kind": "explicit"
+        }
+      ]
     },
     "enrichment_cache": null,
     "enrichment_input": {
@@ -34075,10 +34050,21 @@
           "kind": "explicit"
         },
         "llm_notes": [],
-        "local_notes": []
+        "local_notes": [
+          {
+            "name": "Ylang-Ylang",
+            "position": null,
+            "source": "description",
+            "evidence": "Formato : 100 ml Piramide olfattiva Testa : Arancia, Galbano, Accordo di Violetta, Pesca, Albicocca, Banana Cuore : Fiore di Arancio, Ylang-Ylang, Tuberosa Fondo : Iris, Musk, Vaniglia Acqua Originale Iris Tubereuse EDP: famiglia olfattiva Floreale Acqua Originale Iris Tubereuse EDP:: tipologia di profumo Eau de Parfum, unisex Acqua Originale Iris Tubereuse EDP:: per chi è adatto e quando indossarlo Perfetto per chi ama la bellezza discreta ma inconfondibile",
+            "method": "local",
+            "kind": "explicit"
+          }
+        ]
       },
       "signature": "57f9abec3ee9b36f8df2bbfb83c9552fc8a56179353fd3fb859a038be0713d12",
-      "unpositioned_notes": []
+      "unpositioned_notes": [
+        "Ylang-Ylang"
+      ]
     },
     "ptype": "Eau de Parfum, unisex",
     "usage_profile": "Perfetto per chi ama la bellezza discreta ma inconfondibile. Iris Tubereuse veste con charme chi apprezza le sfumature, le mezze luci, i gesti sottili. È ideale per chi si muove con eleganza naturale, senza mai eccedere, ma lasciando sempre un’impressione profonda. Da indossare durante il giorno per incontri di lavoro raffinati, brunch in terrazza o pomeriggi di lettura lenta. E, con nonchalance, anche la sera: perché la sensualità, quando è così ben educata, non ha orari.",
@@ -34088,7 +34074,7 @@
       "add_to_cart": "https://etualy.com/cart/36583180271776:1",
       "image_url": "https://cdn.shopify.com/s/files/1/0458/0078/4032/files/aedes-de-venustas-sueno-latino-edp-100-ml_1_4c79d82b-adfa-4d43-99bd-529fc3543fee.png?v=1751895600"
     },
-    "semantic_text": "Profumo Acqua Originale Iris Tubereuse EDP 100 ml di Creed. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Floreale. Tag: 100 ml, 200€ e oltre, Creed, Eau de Parfum, Floreale, Fragranze, Per lei, Per lui, SS 2022. Note di testa: Arancia, Galbano, Violetta, Pesca, Albicocca, Banana. Note di cuore: Fiore di Arancio, Ylang Ylang, Tuberosa. Note di fondo: Iris, Musk, Vaniglia. Carattere, contesto d'uso e occasioni: Perfetto per chi ama la bellezza discreta ma inconfondibile. Iris Tubereuse veste con charme chi apprezza le sfumature, le mezze luci, i gesti sottili. È ideale per chi si muove con eleganza naturale, senza mai eccedere, ma lasciando sempre un’impressione profonda. Da indossare durante il giorno per"
+    "semantic_text": "Profumo Acqua Originale Iris Tubereuse EDP 100 ml di Creed. Tipologia: Eau de Parfum, unisex. Famiglia olfattiva: Floreale. Tag: 100 ml, 200€ e oltre, Creed, Eau de Parfum, Floreale, Fragranze, Per lei, Per lui, SS 2022. Note di testa: Arancia, Galbano, Violetta, Pesca, Albicocca, Banana. Note di cuore: Fiore di Arancio, Ylang Ylang, Tuberosa. Note di fondo: Iris, Musk, Vaniglia. Note citate senza posizione dichiarata: Ylang-Ylang. Carattere, contesto d'uso e occasioni: Perfetto per chi ama la bellezza discreta ma inconfondibile. Iris Tubereuse veste con charme chi apprezza le sfumature, le mezze luci, i gesti sottili. È ideale per chi si muove con eleganza naturale, senza mai eccedere, ma lasciando sempre un’impressione profonda. Da indossare durante il giorno per"
   },
   {
     "id": "sh_5727676334240",
@@ -35044,7 +35030,7 @@
           "name": "Essenza di Rosa Turca",
           "position": null,
           "source": "description",
-          "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+          "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
           "method": "local",
           "kind": "explicit"
         },
@@ -35052,7 +35038,7 @@
           "name": "Vetiver di Haiti",
           "position": null,
           "source": "description",
-          "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+          "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
           "method": "local",
           "kind": "explicit"
         },
@@ -35060,7 +35046,7 @@
           "name": "Incenso",
           "position": null,
           "source": "description",
-          "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+          "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
           "method": "local",
           "kind": "explicit"
         },
@@ -35068,7 +35054,7 @@
           "name": "Legno di Cedro",
           "position": null,
           "source": "description",
-          "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+          "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
           "method": "local",
           "kind": "explicit"
         }
@@ -35108,7 +35094,7 @@
             "name": "Essenza di Rosa Turca",
             "position": null,
             "source": "description",
-            "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+            "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
             "method": "local",
             "kind": "explicit"
           },
@@ -35116,7 +35102,7 @@
             "name": "Vetiver di Haiti",
             "position": null,
             "source": "description",
-            "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+            "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
             "method": "local",
             "kind": "explicit"
           },
@@ -35124,7 +35110,7 @@
             "name": "Incenso",
             "position": null,
             "source": "description",
-            "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+            "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
             "method": "local",
             "kind": "explicit"
           },
@@ -35132,7 +35118,7 @@
             "name": "Legno di Cedro",
             "position": null,
             "source": "description",
-            "evidence": "Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
+            "evidence": "Famiglia Olfattiva: Floreale Legnosa Poudré Note di testa: Bergamotto, Noce Moscata, Rabarbaro, Litchi Note di cuore Petali ed Essenza di Rosa Turca, Vetiver di Haiti, Incenso, Legno di Cedro",
             "method": "local",
             "kind": "explicit"
           }
@@ -35453,7 +35439,7 @@
           "name": "Gelsomino",
           "position": null,
           "source": "description",
-          "evidence": "Note di cuore Rosa, Gelsomino",
+          "evidence": "Famiglia Olfattiva: Floreale Cipriata Note di testa: Bergamotto, Arancia Note di cuore Rosa, Gelsomino Note di fondo Patchouli, Praline, Muschio Bianco",
           "method": "local",
           "kind": "explicit"
         }
@@ -35498,7 +35484,7 @@
             "name": "Gelsomino",
             "position": null,
             "source": "description",
-            "evidence": "Note di cuore Rosa, Gelsomino",
+            "evidence": "Famiglia Olfattiva: Floreale Cipriata Note di testa: Bergamotto, Arancia Note di cuore Rosa, Gelsomino Note di fondo Patchouli, Praline, Muschio Bianco",
             "method": "local",
             "kind": "explicit"
           }
