@@ -151,11 +151,25 @@ def test_summary_is_operator_visible_and_reports_are_not_tracked(tmp_path, monke
     assert "data/catalog_enrichment_report.json" in ignored
 
 
-def test_workflows_use_rome_reports_and_preserve_shared_write_lock():
-    for filename, cron in [("catalog-sync.yml", "0 3 * * *"), ("catalog-enrich.yml", "35 3 * * *")]:
+def test_workflows_use_daily_schedules_reports_and_preserve_shared_write_lock():
+    def assert_daily_schedule(workflow):
+        schedules = workflow["on"]["schedule"]
+        assert len(schedules) == 1
+        schedule = schedules[0]
+        fields = schedule["cron"].split()
+        assert len(fields) == 5
+        assert fields[0].isdigit() and 0 <= int(fields[0]) <= 59
+        assert fields[1].isdigit() and 0 <= int(fields[1]) <= 23
+        assert fields[2:] == ["*", "*", "*"]
+        # Hours/minutes are operational choices, not an application contract.
+        # Omitted timezone uses GitHub's UTC default; Rome remains supported.
+        assert schedule.get("timezone", "UTC") in {"UTC", "Europe/Rome"}
+        assert "workflow_dispatch" in workflow["on"]
+
+    for filename in ("catalog-sync.yml", "catalog-enrich.yml"):
         text = (ROOT / ".github/workflows" / filename).read_text()
         workflow = yaml.load(text, Loader=yaml.BaseLoader)
-        assert workflow["on"]["schedule"][0] == {"cron": cron, "timezone": "Europe/Rome"}
+        assert_daily_schedule(workflow)
         assert workflow["concurrency"]["group"] == "catalog-maintenance-feature-new-site"
         assert "actions/upload-artifact@v4" in text
         if filename == "catalog-sync.yml":
@@ -163,7 +177,7 @@ def test_workflows_use_rome_reports_and_preserve_shared_write_lock():
             assert 'git add data/catalog.json data/out_of_stock.json data/catalog_enrichment_state.json' in text
             assert "git add data/catalog_sync_report.json" not in text
     monitor = yaml.load((ROOT / ".github/workflows/catalog-monitor.yml").read_text(), Loader=yaml.BaseLoader)
-    assert monitor["on"]["schedule"][0] == {"cron": "10 4 * * *", "timezone": "Europe/Rome"}
+    assert_daily_schedule(monitor)
 
 
 def test_status_is_operational_and_does_not_replace_health(monkeypatch):

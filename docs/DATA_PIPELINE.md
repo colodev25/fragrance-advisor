@@ -115,13 +115,13 @@ The reindexer validates `data/catalog.json`, builds a new collection and activat
 
 ## Automated synchronization
 
-| Workflow | Schedule (Europe/Rome) | Secret |
+| Workflow | Schedule and timezone | Secret |
 | --- | --- | --- |
-| `catalog-sync.yml` | Daily calendar check at 03:00; imports every other local date, anchored to 13 October 2026 | `SHOPIFY_STORE_URL` |
-| `catalog-enrich.yml` | Daily at 03:35 | `GROQ_API_KEY` |
-| `catalog-monitor.yml` | Daily freshness check at 04:10 | Built-in read-only GitHub token |
+| `catalog-sync.yml` | Daily calendar check at 02:04 UTC; imports every other Rome date, anchored to 13 October 2026 | `SHOPIFY_STORE_URL` |
+| `catalog-enrich.yml` | Daily at 02:39 UTC | `GROQ_API_KEY` |
+| `catalog-monitor.yml` | Daily freshness check at 03:17 UTC | Built-in read-only GitHub token |
 
-All support manual dispatch. Sync/enrichment share a concurrency group to prevent overlapping writes and publish catalog/queue changes to `feature/new-site`. The calendar gate alternates actual Rome dates without resetting at month boundaries; manual sync bypasses it. Native `timezone: Europe/Rome` follows summer/winter offsets. The final 03:00/03:35/04:10 times avoid the missing/repeated 02:00 DST hour. Scheduled workflows must also exist on the repository's default branch; checking out another branch inside a job does not activate its schedule. GitHub scheduling can be delayed, so these are target start times, not exact execution guarantees. See [GitHub schedules](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
+All support manual dispatch. Sync/enrichment share a concurrency group to prevent overlapping writes and publish catalog/queue changes to `feature/new-site`. The calendar gate alternates actual Rome dates without resetting at month boundaries; manual sync bypasses it. As configured on 13 October 2026, all three workflows omit `timezone` and use GitHub's UTC default. Rome times are 04:04/04:39/05:17 in summer and 03:04/03:39/04:17 in winter. The intended sequence is sync, enrichment 35 minutes later, then monitor after another 38 minutes. The monitor checks the latest successful import report, without waiting for or certifying completion of the current jobs. Workflow tests validate daily scheduling, supported timezones and operational protections without pinning editable hours/minutes. Scheduled workflows must also exist on the repository's default branch; checking out another branch inside a job does not activate its schedule. GitHub scheduling can be delayed, so these are target start times, not exact execution guarantees. See [GitHub schedules](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
 
 ### Operator reports and freshness
 
