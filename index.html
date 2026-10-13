@@ -1529,6 +1529,12 @@
       .oa-intro-start:hover { background:#333; }
       .oa-privacy-copy { text-align:left; }
       .oa-privacy-copy a { color:#111; text-decoration:underline; }
+      .oa-feedback-stars { display:flex; justify-content:center; gap:4px; margin:18px 0 8px; }
+      .oa-feedback-star { width:44px; height:44px; display:grid; place-items:center; border:0; background:transparent; color:#111; cursor:pointer; }
+      .oa-feedback-star svg { width:30px; height:30px; fill:transparent; stroke:currentColor; stroke-width:1.6; transition:fill .16s ease; }
+      .oa-feedback-star.is-filled svg { fill:#111; }
+      .oa-feedback-star:focus-visible { outline:2px solid #111; outline-offset:1px; border-radius:4px; }
+      .oa-feedback-note { min-height:36px; }
       .oa-screen-enter { animation:oaScreenEnter .24s ease-out; }
       @keyframes oaScreenEnter { from { opacity:0; } to { opacity:1; } }
 
@@ -1664,6 +1670,15 @@
           <button type="button" class="oa-intro-start" id="oaPrivacyBack">Torna indietro</button>
         </div>
       </section>
+      <section id="oaFeedback" class="oa-onboarding" aria-labelledby="oaFeedbackTitle" hidden inert aria-hidden="true">
+        <div class="oa-intro-copy">
+          <h3 id="oaFeedbackTitle" tabindex="-1">Com'è stata la consulenza?</h3>
+          <p>Dai una valutazione da una a cinque stelle.</p>
+          <div id="oaFeedbackStars" class="oa-feedback-stars" role="group" aria-label="Valuta la consulenza da una a cinque stelle"></div>
+          <p id="oaFeedbackNote" class="oa-feedback-note" role="status">Anteprima: la valutazione non viene ancora salvata.</p>
+          <button type="button" class="oa-intro-start" id="oaFeedbackSkip">Non ora</button>
+        </div>
+      </section>
       <div id="oaChatContent" class="oa-chat-content" hidden inert aria-hidden="true">
 
       <p id="oaStorageNote" class="oa-storage-note" role="status" hidden>La conversazione potrebbe non essere conservata cambiando pagina.</p>
@@ -1738,7 +1753,7 @@
         let native = null;
         let memoryOnly = false;
         const keys = ["etualy_chat_state_v1", "etualy_advisor_session_id", "etualy_advisor_session_key",
-          "etualy_advisor_notice_version", "etualy_teaser_closed", "etualy_chat_messages",
+          "etualy_advisor_notice_version", "etualy_advisor_feedback_prompted", "etualy_teaser_closed", "etualy_chat_messages",
           "etualy_chat_chips", "etualy_chat_step", "etualy_last_user_message"];
         function fallback() {
           memoryOnly = true;
@@ -2004,6 +2019,7 @@
         product.card_type =
           source.card_type === "slideover" ? "slideover" : "standard";
         product.is_open = source.is_open === true;
+        product.id = typeof source.id === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(source.id) ? source.id : "";
         // A historical purchase action is not the current Shopify cart state.
         product.cart_added = false;
         const linkedVariant = product.add_to_cart_url.match(/\/cart\/([1-9][0-9]*):1(?:\?|$)/)?.[1] || "";
@@ -2176,9 +2192,10 @@
           cart.href = purchase ? purchase.cart : (prod.product_page_url || prod.add_to_cart_url);
           cart.target = "_blank";
           cart.rel = "noopener noreferrer";
-          cart.addEventListener("click", (event) =>
-            handleAddToCart(event, cart),
-          );
+          cart.addEventListener("click", (event) => {
+            if (cart.dataset.feedbackEligible === "true") showFeedback();
+            else handleAddToCart(event, cart);
+          });
         } else {
           cart.type = "button";
           cart.disabled = true;
@@ -2435,6 +2452,11 @@
 
       function resetLocalChat(rotateSession = false) {
         cancelActiveRequest();
+        feedbackPrompted = false;
+        feedbackRating = 0;
+        feedbackPreview = null;
+        confirmedCartVariants.clear();
+        localState.removeItem(FEEDBACK_PROMPT_KEY);
         sessionContext = null;
         input.value = "";
         if (rotateSession) {
@@ -2550,15 +2572,26 @@
       const introTitle = document.getElementById("oaIntroTitle");
       const chatContent = document.getElementById("oaChatContent");
       const privacyScreen = document.getElementById("oaPrivacy");
+      const feedbackScreen = document.getElementById("oaFeedback");
+      const feedbackTitle = document.getElementById("oaFeedbackTitle");
+      const feedbackStars = document.getElementById("oaFeedbackStars");
+      const feedbackNote = document.getElementById("oaFeedbackNote");
+      const feedbackSkip = document.getElementById("oaFeedbackSkip");
+      const FEEDBACK_PROMPT_KEY = "etualy_advisor_feedback_prompted";
+      let feedbackPrompted = localState.getItem(FEEDBACK_PROMPT_KEY) === sessionId;
+      let feedbackRating = 0;
+      let feedbackPreview = null;
+      const confirmedCartVariants = new Set();
       const privacyTitle = document.getElementById("oaPrivacyTitle");
       const privacyButton = document.getElementById("oaPrivacyOpen");
       const introStart = document.getElementById("oaIntroStart");
       let noticeViewed = false;
       try { noticeViewed = localState.getItem(NOTICE_KEY) === NOTICE_VERSION; } catch (_) {}
       let privacyReturnFocus = null;
+      let privacyReturnView = null;
 
       function setWidgetScreen(view) {
-        for (const [element, name] of [[introScreen,"intro"], [privacyScreen,"privacy"], [chatContent,"chat"]]) {
+        for (const [element, name] of [[introScreen,"intro"], [privacyScreen,"privacy"], [feedbackScreen,"feedback"], [chatContent,"chat"]]) {
           const inactive = view !== name;
           element.hidden = inactive;
           element.inert = inactive;
@@ -2570,15 +2603,58 @@
         privacyButton.setAttribute("aria-expanded", String(view === "privacy"));
       }
 
+      function paintFeedbackStars(value) {
+        feedbackStars.querySelectorAll("button").forEach((star) => {
+          star.classList.toggle("is-filled", Number(star.dataset.rating) <= value);
+          star.setAttribute("aria-pressed", String(Number(star.dataset.rating) === feedbackRating));
+        });
+      }
+      for (let rating = 1; rating <= 5; rating++) {
+        const star = dom("button", "oa-feedback-star");
+        star.type = "button";
+        star.dataset.rating = String(rating);
+        star.setAttribute("aria-label", rating + (rating === 1 ? " stella" : " stelle"));
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("aria-hidden", "true");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", "m12 2 3.1 6.4 7.1 1-5.1 5 .9 7.1-6-3.4-6 3.4.9-7.1-5.1-5 7.1-1z");
+        svg.appendChild(path);
+        star.appendChild(svg);
+        star.addEventListener("mouseenter", () => { if (matchMedia("(hover:hover)").matches) paintFeedbackStars(rating); });
+        star.addEventListener("click", () => {
+          feedbackRating = rating;
+          paintFeedbackStars(rating);
+          const recommended = new Set(chatMessages.filter((entry) => entry.kind === "bot")
+            .flatMap((entry) => entry.products || []).map((product) => product.id).filter(Boolean));
+          feedbackPreview = Object.freeze({ rating, recommended_product_ids:[...recommended],
+            added_variant_ids:[...confirmedCartVariants] });
+          feedbackNote.textContent = "Valutazione selezionata. In questa anteprima non viene inviata né salvata.";
+          feedbackSkip.textContent = "Chiudi";
+        });
+        feedbackStars.appendChild(star);
+      }
+      feedbackStars.addEventListener("mouseleave", () => paintFeedbackStars(feedbackRating));
+      feedbackSkip.addEventListener("click", () => closeWidget());
+      function showFeedback() {
+        if (!noticeViewed || feedbackPrompted || !chatMessages.some((entry) => entry.kind === "bot" && entry.products?.length)) return false;
+        feedbackPrompted = true;
+        localState.setItem(FEEDBACK_PROMPT_KEY, sessionId);
+        setWidgetScreen("feedback");
+        feedbackTitle.focus({ preventScroll:true });
+        return true;
+      }
+
       function showPrivacy(event) {
         privacyReturnFocus = event.currentTarget;
+        privacyReturnView = feedbackScreen.hidden ? (noticeViewed ? "chat" : "intro") : "feedback";
         setWidgetScreen("privacy");
         privacyTitle.focus({ preventScroll:true });
       }
       privacyButton.addEventListener("click", showPrivacy);
       document.getElementById("oaIntroPrivacy").addEventListener("click", showPrivacy);
       document.getElementById("oaPrivacyBack").addEventListener("click", () => {
-        setWidgetScreen(noticeViewed ? "chat" : "intro");
+        setWidgetScreen(privacyReturnView || (noticeViewed ? "chat" : "intro"));
         scheduleDetailLayout(true);
         const target = privacyReturnFocus?.isConnected && !privacyReturnFocus.closest("[inert]")
           ? privacyReturnFocus : (noticeViewed ? privacyButton : introTitle);
@@ -2873,7 +2949,7 @@
       });
 
       closeBtn.addEventListener("click", () => {
-        closeWidget();
+        if (!showFeedback()) closeWidget();
       });
 
       // Reset Sincronizzato con Backend e Storage Locale
@@ -3384,6 +3460,8 @@
           if (!added || !Number.isInteger(added.quantity) || added.quantity < 1) throw new Error("Unconfirmed cart result");
           refreshStoreCart();
           goToCart();
+          btn.dataset.feedbackEligible = "true";
+          confirmedCartVariants.add(purchase.id);
           btn.querySelector(".oa-btn-cart-icon").style.display = "none";
           btn.querySelector(".oa-btn-check-icon").style.display = "inline-block";
           status.textContent = "";

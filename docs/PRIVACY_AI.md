@@ -8,6 +8,8 @@ The header retains “Assistente AI” and a privacy button. The privacy screen 
 
 ## Decisions required with Etualy before public launch
 
+The optional five-star feedback screen is currently a preview. It holds the chosen rating and a minimal product/variant summary only in page memory; nothing is sent to the backend or saved for developer retrieval. Its visible text explicitly says so. Before enabling collection, Etualy must approve the analytics purpose and notice, the lawful basis/consent handling, a retention period, access controls and durable storage. A random consultation ID linked to product choices is pseudonymous, not automatically anonymous. Render Free's local filesystem cannot reliably store feedback across restarts or deploys. Purchase attribution requires a separate Shopify integration and must never infer a sale merely from opening the cart.
+
 **Groq configuration — 11 October 2026:** the project owner confirmed enabling **Global Zero Data Retention**. This records the owner's confirmation; the account dashboard was not independently inspected. Confirm that the deployed API key belongs to this organization when preparing release evidence. Browser/backend retention remains separate, and R06 is still open for the remaining work.
 
 - Identify controller, roles of the developer and service providers, privacy contact and applicable legal basis. Do not assume that advancing past the notice is consent.

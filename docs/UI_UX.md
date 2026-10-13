@@ -19,6 +19,12 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Chat continuity:** the session identifier, private credential and version, structured messages, product data, quick replies, guided step and unsent draft are saved in sessionStorage. Restoring recreates elements and actions across pages in the same browser tab. Expanded card panels are also retained; cart confirmations are not restored as current cart contents; closing the tab ends this local continuity.
 - **Natural chat feedback:** message bubbles, smooth scrolling and an animated typing indicator keep the conversation readable. Longer waits show progressive status messages for requests that may be delayed by a backend cold start.
 
+## Feedback preview
+
+After a recommendation, the first click on the widget's close button opens an optional five-star screen styled like the AI introduction. Customers can skip it, close immediately with the button or Escape, and will not be asked again in the same consultation. After Shopify confirms a cart addition, clicking **Vai al carrello** opens the cart immediately in a new tab and leaves the optional feedback screen in the original tab. Uncertain or failed additions do not trigger it. Stars fill on desktop hover and on touch/click selection; keyboard access and reduced-motion settings remain supported.
+
+This is an interface preview: the selected rating, recommended product IDs and confirmed added variant IDs exist only in page memory. No feedback request, server log or persistent record is created. The screen tells customers that their rating is not saved. Before production collection, agree on consent, notice, retention and durable restricted storage with Etualy; see [privacy preparation](PRIVACY_AI.md).
+
 ## Product exploration
 
 - **Product cards:** recommendations can show the brand, fragrance name, family or type, price, story, olfactory notes and links to the product page and cart.

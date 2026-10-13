@@ -618,6 +618,58 @@ for (const file of files) {
     return buttons.nth((await buttons.count()) - 1);
   }
 
+  test(`${file}: feedback appears once after recommendations and stars work without a backend request`, async (t) => {
+    const { page, requests } = await fixture(t, file);
+    await page.evaluate(() => window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Iris',
+      products: [{ id: 'sh_iris', name: 'Iris' }] }));
+    await page.locator('#oaCloseBtn').click();
+    assert.equal(await page.locator('#oaFeedback').isVisible(), true);
+    assert.equal(await page.locator('#oaChatContent').evaluate(el => el.inert), true);
+    assert.equal(await page.locator('.oa-feedback-star').count(), 5);
+    await page.locator('.oa-feedback-star').nth(2).hover();
+    assert.equal(await page.locator('.oa-feedback-star.is-filled').count(), 3);
+    await page.locator('.oa-feedback-star').nth(3).click();
+    assert.equal(await page.locator('.oa-feedback-star.is-filled').count(), 4);
+    assert.match(await page.locator('#oaFeedbackNote').textContent(), /non viene inviata/);
+    assert.deepEqual(requests, []);
+    await page.locator('#oaPrivacyOpen').click();
+    await page.locator('#oaPrivacyBack').click();
+    assert.equal(await page.locator('#oaFeedback').isVisible(), true);
+    await page.locator('#oaCloseBtn').click();
+    assert.equal(await page.locator('#oaWidget').evaluate(el => el.inert), true);
+    await page.locator('#oaLauncher').click();
+    assert.equal(await page.locator('#oaFeedback').isVisible(), false);
+  });
+
+  test(`${file}: confirmed cart action offers feedback without repeating cart addition`, async (t) => {
+    const { page, cartRequests } = await fixture(t, file, {}, true);
+    await page.evaluate(() => { window.Shopify = { routes: { root: '/it/' } }; });
+    const button = await cartCard(page, { id: 'sh_iris' });
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').dataset.feedbackEligible === 'true');
+    assert.equal(await button.getAttribute('href'), 'https://etualy.com/it/cart');
+    await button.click();
+    assert.equal(await page.locator('#oaFeedback').isVisible(), true);
+    assert.equal(cartRequests.length, 1);
+    await page.locator('#oaFeedbackSkip').click();
+    assert.equal(await page.locator('#oaWidget').evaluate(el => el.inert), true);
+  });
+
+  test(`${file}: narrow-screen feedback keeps every star tappable`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.evaluate(() => window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Iris',
+      products: [{ id: 'sh_iris', name: 'Iris' }] }));
+    await page.locator('#oaCloseBtn').click();
+    for (const star of await page.locator('.oa-feedback-star').all()) {
+      const box = await star.boundingBox();
+      assert.ok(box && box.x >= 0 && box.x + box.width <= 360);
+    }
+    await page.locator('.oa-feedback-star').nth(1).click();
+    assert.equal(await page.locator('.oa-feedback-star.is-filled').count(), 2);
+    assert.equal(await page.locator('.oa-feedback-star').nth(1).getAttribute('aria-pressed'), 'true');
+  });
+
   test(`${file}: Shopify addition is confirmed and subsequent action only opens the cart`, async (t) => {
     const { page, cartRequests } = await fixture(t, file, {}, true);
     await page.evaluate(() => { window.Shopify = { routes: { root: '/it/' } }; });
