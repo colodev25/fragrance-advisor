@@ -840,8 +840,12 @@ for (const file of files) {
     cartResponses.push({ status: 200, gate, body: { items: [{ id: 1, quantity: 1 }] } });
     const first = await cartCard(page);
     const second = await cartCard(page);
+    const firstCard = page.locator('.oa-product-card').first();
+    const initialHeight = (await firstCard.boundingBox()).height;
     await first.click();
     await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').getAttribute('aria-busy') === 'true');
+    assert.equal(await page.locator('.oa-cart-status').first().isVisible(), false);
+    assert.ok(Math.abs((await firstCard.boundingBox()).height - initialHeight) <= 1);
     await second.click();
     assert.match(await page.locator('.oa-cart-status').last().textContent(), /già in corso/);
     assert.equal(await first.textContent(), 'Aggiunta…');

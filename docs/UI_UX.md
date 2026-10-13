@@ -36,6 +36,7 @@ This is an interface preview: the selected rating, recommended product IDs and c
 - **Keyboard navigation:** the detail button exposes its expanded state. The inactive side is excluded from interaction, and closing the panel returns focus to the information button. Both note sections and the expanded state survive page navigation.
 - **Image loading and recovery:** product images load lazily with a shimmer placeholder and fade-in. Failed or unavailable images show a fragrance-themed fallback icon.
 - **Verified cart:** on etualy.com, the same button checks the selected Shopify variant and adds one unit only after its current price and options have been presented. Success appears only after Shopify confirms the addition. “Vai al carrello” then opens the existing cart in a new tab, without adding again. Pending operations prevent duplicate clicks; unavailable variants and uncertain results receive clear messages. Outside the store, the button opens the product page without claiming an addition.
+- **Stable card while adding:** an empty cart-status area takes no space during “Aggiunta…”. Explanations for errors or required customer choices still appear below the button when present.
 
 ## Resilience and mobile interaction
 
