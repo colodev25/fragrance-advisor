@@ -14,6 +14,17 @@ Stato: procedura predisposta il 15 ottobre 2026; prove da registrare in [ACCEPTA
 
 Non pubblicare per errore l'intera copia del tema se nel frattempo l'azienda ha modificato il tema live: confrontare le differenze e coordinare la finestra di pubblicazione con chi lo gestisce.
 
+## Dove impostare la configurazione
+
+| Destinazione | Valori | Regola operativa |
+| --- | --- | --- |
+| `.env` locale ignorato da Git | Variabili di `.env.example`, solo quando servono alle prove | Crearlo senza sovrascrivere configurazioni esistenti; non copiarlo nel materiale pubblico |
+| Render Environment | `GROQ_API_KEY`, modelli chat, `ALLOWED_ORIGINS`, limiti API/Groq e, quando disponibile un disco, `SESSIONS_DB_PATH` | Impostare prima dell'avvio dell'applicazione e registrare privatamente owner e data della modifica |
+| GitHub Actions Secrets | `GROQ_API_KEY` per enrichment e `SHOPIFY_STORE_URL` per i workflow che la leggono | Usare segreti del repository/ambiente aziendale; non inserirli nei file YAML |
+| Sorgente del widget | Endpoint pubblico, `EARLY_WAKE_ENABLED`, `FEEDBACK_PREVIEW_ENABLED` e identificatore `data-widget-version` | Mantenere allineati HTML, Liquid e snippet; questi controlli non sono gestiti da `.env` |
+
+L'elenco completo, i default e le variabili deprecate sono in [CONFIGURATION.md](CONFIGURATION.md). Una modifica ai modelli o a `ALLOWED_ORIGINS` richiede riavvio/deploy perché questi valori vengono letti durante l'importazione dell'applicazione.
+
 ## Catalogo
 
 | Operazione | Esecuzione dalla root | Effetto |

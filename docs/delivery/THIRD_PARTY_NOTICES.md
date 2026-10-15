@@ -8,7 +8,7 @@ Questo file è un inventario da completare, non un'attribuzione legale definitiv
 | Strumenti sviluppo/catalogo/audit | `requirements/` | Licenze, distinzione fra strumenti e componenti distribuiti |
 | Playwright e dipendenze npm | `tools/widget-tests/package-lock.json` | Licenze pacchetti/browser e avvisi richiesti |
 | Modello embedding e asset Chroma | Configurazione indice e cache effettivamente generata | Identificare modello/revisione, origine e relativa licenza |
-| Font | Google Fonts oggi; eventuali font del tema/locali dopo scelta | Diritti d'uso, redistribuzione e file di licenza se inclusi |
+| Font | Font del tema Shopify per Liquid/snippet; font di sistema nella pagina standalone | Verificare la licenza del tema; il widget candidato non incorpora file font né contatta Google Fonts |
 | Descrizioni/foto/catalogo | Contenuti Shopify dell'azienda e relativi titolari | Autorizzazione all'uso nella consulenza e nell'arricchimento |
 | Tema Shopify | Licenza del tema posseduta dall'azienda | Non redistribuire il tema intero nel repository dell'advisor |
 | API/modelli Groq | Termini dell'account e modelli selezionati | Condizioni d'uso del servizio e dei modelli effettivi |

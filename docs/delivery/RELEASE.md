@@ -7,14 +7,15 @@
 | Progetto | Fragrance Advisor / Etualy Olfactive Advisor |
 | Data della scheda | 15 ottobre 2026 |
 | Branch locale esaminato | `feature/new-site` |
-| Commit di base esaminato | `922b9f156bf404f79f3273bd74495e4aa0eeb591` |
-| Tag/versione definitiva | DA ASSEGNARE dopo collaudo |
+| Commit di base esaminato | `8c3e5149ac7093873d349e6416db59475b6c2f9a` |
+| Identificatore widget candidato | `2026.10-rc2` |
+| Tag/versione definitiva | DA ASSEGNARE dopo collaudo; non confondere con l'identificatore candidato |
 | Commit definitivo consegnato | DA REGISTRARE; quello sopra precede questi documenti |
 | Backend configurato nel widget | `https://fragrance-advisor-api.onrender.com` |
 | Negozio previsto | `https://etualy.com` |
 | Tema destinazione / ID / versione | DA CONFERMARE nel pannello Shopify |
 | Runtime dichiarati dai file | Python 3.11, Node 24.19.0 per gli strumenti browser |
-| Hosting comunicato | Render Free, senza disco; stato dashboard DA VERIFICARE |
+| Hosting comunicato | Render Free, senza disco; stato dashboard DA VERIFICARE. Opzioni produttive in [HOSTING_OPTIONS.md](HOSTING_OPTIONS.md) |
 | Modalità attuale d'uso sul negozio comunicata | Prova con DevTools; installazione definitiva a cura dell'azienda |
 
 ## Funzioni incluse
@@ -25,11 +26,12 @@
 - Stato della conversazione nella stessa scheda del browser, credenziale di sessione e recupero controllato dopo errori/perdita dei dati server.
 - Avviso AI, pannello tecnico privacy, supporto tastiera/mobile e gestione errori.
 - Sincronizzazione, arricchimento progressivo, monitor di freschezza e test automatizzati.
-- Richiesta preventiva `/health` dopo caricamento pagina e all'apertura se trascorso l'intervallo; massimo una ogni dieci minuti per scheda quando lo storage è disponibile, altrimenti per pagina. Non è un timer di mantenimento continuo.
+- Richiesta preventiva `/health` dopo caricamento pagina e all'apertura se trascorso l'intervallo; massimo una ogni dieci minuti per scheda quando lo storage è disponibile, altrimenti per pagina. È attiva nella candidata con `EARLY_WAKE_ENABLED = true`, non è un timer di mantenimento continuo e potrà essere disabilitata prima del rilascio secondo la classificazione aziendale.
+- Il widget integrato e lo snippet di prova usano i font del tema Shopify (Jost nella verifica del 15/10/2026) e non inviano richieste a Google Fonts; la pagina standalone usa font locali di sistema.
 
 ## Funzioni escluse dalla prima release
 
-- Raccolta e salvataggio dei feedback, dashboard e attribuzione degli acquisti. La schermata stelle esistente è soltanto un'anteprima in memoria e verrà disabilitata nella versione pubblica prima del collaudo finale.
+- Raccolta e salvataggio dei feedback, dashboard e attribuzione degli acquisti. Il codice dell'anteprima a stelle è conservato, ma la schermata è disabilitata nella candidata con `FEEDBACK_PREVIEW_ENABLED = false`.
 - Nuovi filtri di ricerca, funzioni personalizzate e ulteriori dati di catalogo non necessari ai percorsi approvati.
 - Migrazione dell'hosting, secondo provider AI o cambio di modello motivati soltanto come evoluzione: verranno valutati se misure di qualità, quota, costo o prestazioni ne dimostreranno la necessità.
 - Garanzie di accuratezza sanitaria o SLA di disponibilità non ancora concordati.

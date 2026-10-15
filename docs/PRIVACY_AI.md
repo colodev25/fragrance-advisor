@@ -14,17 +14,19 @@ The optional five-star feedback prototype is disabled for the first public relea
 
 **Groq configuration — 11 October 2026:** the project owner confirmed enabling **Global Zero Data Retention**. This records the owner's confirmation; the account dashboard was not independently inspected. Confirm that the deployed API key belongs to this organization when preparing release evidence. Browser/backend retention remains separate, and R06 is still open for the remaining work.
 
+Groq's documentation reviewed on 15 October 2026 states that ZDR prevents retention of customer inputs and outputs for system reliability and abuse monitoring, while usage metadata is still retained. It also states that retained customer data is hosted in the United States and refers customers to contractual safeguards where applicable. The company must therefore review the account-specific DPA, subprocessors, transfers and configuration even with Global ZDR enabled.
+
 - Identify controller, roles of the developer and service providers, privacy contact and applicable legal basis. Do not assume that advancing past the notice is consent.
 - Approve a complete notice covering purposes, categories of data, recipients, retention and rights. Provide its public URL and replace/extend the technical privacy screen with the approved material.
 - Verify agreements with hosting and model providers, international transfers and safeguards. ZDR does not replace this work.
 - Preserve release evidence of the owner-confirmed **Global ZDR** setting and its association with the deployed API key. Recheck this when switching organizations or credentials; do not equate ZDR with complete privacy compliance.
 - Assess storage and retention separately for browser, SQLite sessions, replay receipts, hosting/provider logs and any backups. Expiry/reset delete application rows; they do not establish erasure of every physical copy, SQLite WAL or provider log.
 - Review operational logging and deletion procedures, including error cases and access permissions. Avoid recording customer messages, credentials or prompt bodies without a justified need.
-- Decide whether to use theme fonts or company-hosted fonts. The widget currently still loads Google Fonts; this has not been changed by the introductory-screen implementation.
+- Confirm the use of the Shopify theme fonts. Candidate `2026.10-rc2` no longer loads Google Fonts: Liquid and the DevTools preview inherit the theme typography, while the standalone page uses local system fallbacks.
 
 ## Scope and pending validation
 
-This change implements the introduction and persistent access to technical privacy details. It does not change backend retention, provider settings, contracts, fonts or the existing reset API. R06 stays open until the remaining technical reviews and company decisions are completed. Browser regression fixtures advance past the introduction before ordinary chat checks; dedicated introduction/privacy checks still need authorization and execution.
+The introduction and persistent privacy details are implemented. Candidate `2026.10-rc2` also removes external font requests and exposes `EARLY_WAKE_ENABLED` as a source-level release control; it remains `true` pending company classification so current cold-start mitigation is preserved. Backend retention, provider settings, contracts and the reset API are unchanged. R06 stays open until the remaining technical reviews and company decisions are completed.
 
 Manually validate first entry, return navigation, keyboard/screen-reader reading, large text and mobile layout in the installed theme. Check the introductory preference across page navigation and after a notice version update, without interpreting it as proof of reading or consent.
 

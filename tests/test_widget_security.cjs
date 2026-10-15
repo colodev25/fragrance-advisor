@@ -227,6 +227,24 @@ test('Available widget variants contain the same request coordination', () => {
   files.slice(1).forEach((file) => assert.equal(block(files[0]), block(file)));
 });
 
+test('Available widget variants expose the same candidate version', () => {
+  const expected = '2026.10-rc2';
+  files.forEach((file) => {
+    const match = source(file).match(/id="oaWidget"\s+data-widget-version="([^"]+)"/);
+    assert.ok(match, `${file}: widget version must be exposed on #oaWidget`);
+    assert.equal(match[1], expected, `${file}: unexpected widget version`);
+  });
+});
+
+test('Available widget variants avoid external font requests and expose privacy feature flags', () => {
+  files.forEach((file) => {
+    const html = source(file);
+    assert.equal(/fonts\.(?:googleapis|gstatic)\.com/i.test(html), false, `${file}: external font request found`);
+    assert.match(html, /const EARLY_WAKE_ENABLED = true;/, `${file}: early wake flag missing`);
+    assert.match(html, /const FEEDBACK_PREVIEW_ENABLED = false;/, `${file}: feedback flag must default off`);
+  });
+});
+
 for (const file of files) {
   test(`${file}: reliability rejects unrelated product URLs and keeps model links as text`, async (t) => {
     const { page } = await fixture(t, file);

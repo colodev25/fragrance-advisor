@@ -45,6 +45,7 @@ La scadenza sessione di 24 ore e il budget cooperativo chat di 25 secondi sono a
 - Auto-Deploy: `After CI Checks Pass`, da controllare sul servizio/branch effettivo.
 - Se approvato un disco: montarlo su un percorso dedicato alle sessioni; non sovrapporlo a `chroma_db` o al catalogo di build.
 - Registrare privatamente regione, piano, costi, owner, retention dei log e proxy verificati.
+- Prima di cambiare piano o aggiungere un disco consultare [HOSTING_OPTIONS.md](HOSTING_OPTIONS.md); la configurazione corrente resta Free finché non esiste approvazione aziendale.
 
 ## GitHub e separazione account
 
@@ -60,4 +61,4 @@ I workflow catalogo puntano a `feature/new-site`; le definizioni pianificate dev
 
 Le quote enrichment sono massimali del job, non consumo garantito. I token automatici GitHub sono forniti dai workflow; non creare un PAT personale senza necessità. Per gli orari prendere i file YAML come riferimento: altri documenti storici possono riportare pianificazioni precedenti.
 
-Non sono ancora disponibili flag runtime generici per disattivare feedback o risveglio: sono lavori proposti dalla guida. Evitare di inserirli nel modello di ambiente come se funzionassero già.
+La candidata espone l'identificatore `2026.10-rc2` nell'attributo `data-widget-version` dell'elemento `#oaWidget`, identico in `index.html`, nel Liquid e nello snippet locale. Il feedback dimostrativo è disattivato nel sorgente con `FEEDBACK_PREVIEW_ENABLED = false`. Il risveglio preventivo è controllato nel sorgente da `EARLY_WAKE_ENABLED = true`; impostandolo a `false` non vengono creati il relativo timestamp né la richiesta `/health` prima della chat. Entrambi sono flag di build, non variabili d'ambiente: una modifica richiede aggiornamento coordinato delle tre varianti e nuovo collaudo.
