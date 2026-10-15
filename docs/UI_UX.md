@@ -50,7 +50,7 @@ When enabled, the prototype behaves as previously designed: its selected rating,
 - **Safe restart:** restart cancels the local wait, creates a new session and ignores late responses from the previous conversation. The remote reset is coordinated with processing already underway; a model call that has started can still finish.
 - **Session recovery:** a session expires after 24 hours without a new completed message. If it has expired, disappeared from the server or advanced in another tab, the widget explains the restart, creates a fresh local session and keeps the message ready in the input. It never resends automatically or resets another tab's server state. Version checks travel with normal chat requests; page navigation adds no API call.
 - **Responsive layout:** the desktop widget opens as a floating panel; on small screens it becomes a full-screen view with safe-area spacing.
-- **Mobile keyboard and touch handling:** focusing the input brings it into view; interacting with or scrolling the conversation dismisses the keyboard. Opening the mobile widget locks background-page scrolling.
+- **Mobile keyboard, zoom and touch handling:** focusing the input brings it into view; interacting with or scrolling the conversation dismisses the keyboard. The open mobile panel follows the browser's visible viewport during pinch zoom, panning and keyboard changes, keeping its controls inside the visible area. On very narrow views, secondary header text is hidden and quick replies scroll independently. Background-page scrolling remains locked while browser zoom gestures stay available.
 - **Reduced-motion support:** system preferences for reduced motion are respected by limiting transitions, animations and smooth scrolling.
 
 ## Content safety
@@ -76,11 +76,11 @@ The interface uses the storefront's black, white and neutral-gray palette. The i
 
 - Closed chat and invitation controls are inert and hidden from assistive technology. The invitation is a native button when shown.
 - Opening focuses the chat title without automatically opening the mobile keyboard. Escape minimizes the chat and returns focus to the launcher; keyboard focus has a visible outline.
-- Desktop remains non-modal. At widths up to 600 px the full-screen chat is modal: focus stays inside, background elements become inert, and scrolling is locked. Closing or switching to desktop restores the previous background inert and scroll-lock states. Newly inserted background elements are covered while the chat is open.
+- Desktop remains non-modal. At widths up to 600 px the full-screen chat is modal: focus stays inside, background elements become inert, and background scrolling is locked without disabling pinch gestures. The panel tracks the visible viewport when the page is zoomed; closing or switching to desktop restores the previous background inert and scroll-lock states. Newly inserted background elements are covered while the chat is open.
 - The dialog, message input and conversation history have explicit names. A dedicated polite status region announces new responses, recommended product names and errors without rereading restored history. Existing purchase status announcements remain separate.
-- Small mobile header/invitation controls have a minimum 44 px touch area. The standalone page permits zoom; input scrolling respects reduced-motion preferences.
+- Small mobile header/invitation controls have a minimum 44 px touch area. All widget variants permit browser zoom; input scrolling respects reduced-motion preferences.
 
-Browser regression checks cover keyboard behavior, mobile isolation, state restoration, announcements and enlarged text at a 320 px viewport. Actual screen-reader behavior, browser zoom and interaction with the installed Shopify theme require manual validation before release; these checks are not a conformance certification.
+Browser regression checks cover keyboard behavior, mobile isolation, state restoration, announcements, enlarged text at a 320 px viewport and simulated 200% pinch zoom in all three widget variants. After the correction, the project owner also reported a successful zoom retest on a physical Android device with the updated DevTools snippet. Screen-reader behavior and interaction with the installed Shopify theme still require manual validation before release. These checks are not a conformance certification.
 
 ### Purchase integration
 

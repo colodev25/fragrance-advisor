@@ -76,7 +76,6 @@
   /* Blocco scroll sullo sfondo dello store quando la chat mobile è attiva */
   body.oa-no-scroll {
     overflow: hidden !important;
-    touch-action: none !important;
     height: 100% !important;
   }
 
@@ -1366,8 +1365,8 @@
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
+      right: auto;
+      bottom: auto;
       width: 100vw;
       height: 100vh;
       height: 100dvh;
@@ -1387,6 +1386,29 @@
     .oa-widget-container.is-active {
       transform: translateY(0);
       pointer-events: all;
+    }
+
+    .oa-widget-container.oa-narrow-viewport .oa-header {
+      padding: 8px;
+      gap: 4px;
+      max-height: 45%;
+      overflow-y: auto;
+    }
+
+    .oa-widget-container.oa-narrow-viewport .oa-header-store,
+    .oa-widget-container.oa-narrow-viewport .oa-header-status {
+      display: none;
+    }
+
+    .oa-widget-container.oa-narrow-viewport .oa-header-actions {
+      gap: 0;
+    }
+
+    .oa-widget-container.oa-narrow-viewport .oa-chips-container {
+      max-height: 25%;
+      min-height: 0;
+      overflow-y: auto;
+      flex-shrink: 1;
     }
 
     .oa-header {
@@ -2508,9 +2530,27 @@
         }
       }
 
+      function syncMobileViewport() {
+        const modal = widget.classList.contains("is-active") && window.innerWidth <= 600;
+        const viewport = window.visualViewport;
+        if (!modal || !viewport) {
+          for (const property of ["top", "left", "width", "height"]) widget.style.removeProperty(property);
+          widget.classList.remove("oa-narrow-viewport");
+          return;
+        }
+        const values = [viewport.offsetTop, viewport.offsetLeft, viewport.width, viewport.height];
+        if (!values.every(Number.isFinite) || viewport.width <= 0 || viewport.height <= 0) return;
+        widget.style.top = `${viewport.offsetTop}px`;
+        widget.style.left = `${viewport.offsetLeft}px`;
+        widget.style.width = `${viewport.width}px`;
+        widget.style.height = `${viewport.height}px`;
+        widget.classList.toggle("oa-narrow-viewport", viewport.width < 320 || viewport.height < 420);
+      }
+
       function syncWidgetMode() {
         const modal = widget.classList.contains("is-active") && window.innerWidth <= 600;
         widget.setAttribute("aria-modal", String(modal));
+        syncMobileViewport();
         if (modal) {
           isolateBackground();
           if (!backgroundObserver) {
@@ -2682,6 +2722,8 @@
           widgetTitle.focus({ preventScroll:true });
       });
       window.addEventListener("resize", syncWidgetMode);
+      window.visualViewport?.addEventListener("resize", syncMobileViewport, { passive:true });
+      window.visualViewport?.addEventListener("scroll", syncMobileViewport, { passive:true });
 
     const dismissKeyboard = () => {
       if (document.activeElement === input) {

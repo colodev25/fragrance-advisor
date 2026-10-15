@@ -536,6 +536,44 @@ for (const file of files) {
     assert.ok(close.x >= 0 && close.x + close.width <= 321);
   });
 
+  test(`${file}: pinch zoom keeps mobile controls inside the visible viewport`, async (t) => {
+    const { page } = await fixture(t, file);
+    await page.locator('#oaCloseBtn').click();
+    await page.setViewportSize({ width:360, height:740 });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor:2 });
+    await page.waitForFunction(() => window.visualViewport?.scale >= 1.9);
+    await page.evaluate(() => document.getElementById('oaLauncher').click());
+    await page.waitForFunction(() => document.getElementById('oaWidget').classList.contains('oa-narrow-viewport'));
+    await page.waitForFunction(() => Math.abs(document.getElementById('oaWidget').getBoundingClientRect().top
+      - window.visualViewport.offsetTop) < 1);
+    const result = await page.evaluate(() => {
+      const viewport = window.visualViewport;
+      const widget = document.getElementById('oaWidget');
+      const bounds = (selector) => document.querySelector(selector).getBoundingClientRect();
+      const panel = widget.getBoundingClientRect();
+      const close = bounds('#oaCloseBtn');
+      const input = bounds('#oaInput');
+      const send = bounds('.oa-send-btn');
+      return { viewport:{ left:viewport.offsetLeft, top:viewport.offsetTop,
+        right:viewport.offsetLeft + viewport.width, bottom:viewport.offsetTop + viewport.height },
+        panel:{ left:panel.left, top:panel.top, right:panel.right, bottom:panel.bottom },
+        close:{ left:close.left, right:close.right, bottom:close.bottom },
+        input:{ left:input.left, right:input.right, bottom:input.bottom },
+        send:{ left:send.left, right:send.right, bottom:send.bottom },
+        touchAction:getComputedStyle(document.body).touchAction };
+    });
+    const { viewport, panel, close, input, send } = result;
+    assert.ok(panel.left >= viewport.left - 1 && panel.right <= viewport.right + 1, JSON.stringify(result));
+    assert.ok(panel.top >= viewport.top - 1 && panel.bottom <= viewport.bottom + 1, JSON.stringify(result));
+    for (const control of [close, input, send]) {
+      assert.ok(control.left >= viewport.left - 1 && control.right <= viewport.right + 1, JSON.stringify(result));
+      assert.ok(control.bottom <= viewport.bottom + 1, JSON.stringify(result));
+    }
+    assert.notEqual(result.touchAction, 'none');
+    await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor:1 });
+  });
+
   async function variantFixture(t, file, extra = {}, variants = null) {
     const setup = await fixture(t, file, {}, true);
     await setup.page.evaluate(() => { window.Shopify = { theme: { schema_name: 'Impulse' }, currency: { active: 'EUR' } }; });
