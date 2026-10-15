@@ -33,7 +33,7 @@ Riferimento: 15 ottobre 2026. I valori indicati come default descrivono il codic
 | `GROQ_CATALOG_MAX_TOKENS` | `2048` | Budget risposta enrichment; non quota mensile |
 | `GROQ_CATALOG_INTERVAL_SECONDS` | `2` | Intervallo enrichment |
 
-`FORWARDED_ALLOW_IPS` è una configurazione Uvicorn: il valore va stabilito dopo la verifica dei proxy Render. `RATE_LIMIT_TRUST_PROXY_HEADERS` è ignorata e non va usata. I limiti chat e catalogo non sostituiscono le quote aggregate dell'organizzazione Groq.
+`FORWARDED_ALLOW_IPS` è una configurazione Uvicorn; Render documenta `*` come default Python, ma valore e comportamento effettivi vanno verificati sul servizio prima di approvare i limiti per IP. La procedura è in [NETWORK_ACCESS.md](NETWORK_ACCESS.md). `RATE_LIMIT_TRUST_PROXY_HEADERS` è ignorata e non va usata. I limiti chat e catalogo non sostituiscono le quote aggregate dell'organizzazione Groq.
 
 La scadenza sessione di 24 ore e il budget cooperativo chat di 25 secondi sono attualmente costanti nel codice, non variabili disponibili in `.env`. Il widget attende al massimo 60 secondi per la risposta completa. Non creare impostazioni fittizie per cambiarli.
 

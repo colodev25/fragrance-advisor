@@ -8,7 +8,7 @@ Stato: procedura predisposta il 15 ottobre 2026; prove da registrare in [ACCEPTA
 2. Verificare catalogo disponibile e build indice. Non eseguire ingest per una modifica esclusivamente grafica.
 3. Distribuire il backend nel servizio di staging o nella finestra concordata. Verificare commit servito, `/health` e `/catalog/status`. Un health verde non verifica Groq né l'intero percorso di acquisto.
 4. In Shopify duplicare il tema effettivo, assegnando un nome che identifichi la candidata. Inserire `snippets/etualy-advisor.liquid` e una sola chiamata `{% render 'etualy-advisor' %}` nel layout appropriato, normalmente prima di `</body>`.
-5. Verificare CORS/CSP, percorso chat, varianti, drawer e contenuti già presenti nel carrello. L'anteprima Shopify può modificare il carrello del browser: usare una sessione di prova senza concludere pagamenti.
+5. Verificare CORS, proxy e CSP seguendo [NETWORK_ACCESS.md](NETWORK_ACCESS.md), poi percorso chat, varianti, drawer e contenuti già presenti nel carrello. L'anteprima Shopify può modificare il carrello del browser: usare una sessione di prova senza concludere pagamenti.
 6. Dopo accettazione pubblicare il tema/configurazione approvati. Aggiornamento backend e widget devono restare compatibili, soprattutto per il contratto delle sessioni.
 7. Verificare subito dopo pubblicazione un percorso reale autorizzato; registrare versione, risultato e eventuale ripristino. Sostituire anche lo snippet DevTools locale per le prove successive.
 
