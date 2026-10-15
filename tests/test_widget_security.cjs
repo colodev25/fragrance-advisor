@@ -217,13 +217,13 @@ async function assertSafe(page) {
 
 test('Available widget variants contain the same safe renderer', () => {
   const block = (file) => script(file).split('// BEGIN WIDGET SAFE RENDERING')[1]
-    .split('// END WIDGET SAFE RENDERING')[0].trim();
+    .split('// END WIDGET SAFE RENDERING')[0].trim().replace(/\r\n?/g, '\n');
   files.slice(1).forEach((file) => assert.equal(block(files[0]), block(file)));
 });
 
 test('Available widget variants contain the same request coordination', () => {
   const block = (file) => script(file).split('// BEGIN WIDGET REQUEST FLOW')[1]
-    .split('// END WIDGET REQUEST FLOW')[0].trim();
+    .split('// END WIDGET REQUEST FLOW')[0].trim().replace(/\r\n?/g, '\n');
   files.slice(1).forEach((file) => assert.equal(block(files[0]), block(file)));
 });
 

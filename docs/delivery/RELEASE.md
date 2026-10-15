@@ -46,7 +46,7 @@
 | RLS-02 | Allergie/dati sanitari R02 | Implementazione rinviata dal proprietario; limite noto da sottoporre esplicitamente all'azienda prima dell'uso pubblico. Il widget non può certificare sicurezza o assenza di allergeni |
 | RLS-03 | Piano hosting, capacità, persistenza e costi | DA APPROVARE e misurare |
 | RLS-04 | CORS, proxy, CSP e privilegi account | DA VERIFICARE nell'ambiente effettivo |
-| RLS-05 | Compatibilità del tema, dispositivi e accessibilità | Eseguire matrice di accettazione |
+| RLS-05 | Compatibilità del tema, dispositivi e accessibilità | Eseguire matrice di accettazione; in DevTools segnalata lieve sovrapposizione della bolla con un pop-up WhatsApp, posizione finale da concordare con l'azienda |
 | RLS-06 | Licenze/diritti e regole commerciali | DA VALIDARE con azienda |
 | RLS-07 | Suite, audit e nuova richiesta preventiva | Eseguire sulla candidata definitiva; non usare vecchi risultati come prova corrente |
 | RLS-08 | Eccezioni Chroma | Rivalutare `tools/security/exceptions.json`; scadenza registrata 12 novembre 2026 |
