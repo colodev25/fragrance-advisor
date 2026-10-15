@@ -6,6 +6,7 @@ __pycache__/
 *.pyc
 .env
 .env.*
+!.env.example
 .DS_Store
 chroma_db/
 data/scartati.json
@@ -18,3 +19,7 @@ data/*.db-shm
 snippet.txt
 to-do.txt
 DECISIONI_AZIENDA.md
+/GUIDA_CONSEGNA.md
+
+# Dossier aziendale riservato: accordi, accessi, approvazioni e prove non pubbliche.
+/delivery-private/
