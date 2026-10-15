@@ -43,7 +43,7 @@
 | ID | Condizione | Stato / prova richiesta |
 | --- | --- | --- |
 | RLS-01 | Informativa, ruoli, retention, fornitori e scelte cookie/storage | DA APPROVARE; dossier privato |
-| RLS-02 | Allergie/dati sanitari R02 | Rinviato nella revisione precedente; riesame e correzione con prove necessari |
+| RLS-02 | Allergie/dati sanitari R02 | Implementazione rinviata dal proprietario; limite noto da sottoporre esplicitamente all'azienda prima dell'uso pubblico. Il widget non può certificare sicurezza o assenza di allergeni |
 | RLS-03 | Piano hosting, capacità, persistenza e costi | DA APPROVARE e misurare |
 | RLS-04 | CORS, proxy, CSP e privilegi account | DA VERIFICARE nell'ambiente effettivo |
 | RLS-05 | Compatibilità del tema, dispositivi e accessibilità | Eseguire matrice di accettazione |

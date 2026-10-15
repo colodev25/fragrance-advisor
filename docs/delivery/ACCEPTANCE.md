@@ -33,7 +33,7 @@ Per ogni caso registrare: stato (`SUPERATO`, `FALLITO`, `NON ESEGUITO`, `NON APP
 | T11 | Completare guida e fare domanda libera | Risposta coerente, prodotti/azioni corretti |
 | T12 | Raffinare budget e note escluse | Preferenze rispettate o limiti spiegati |
 | T13 | Nome ambiguo, formato richiesto e variante inesistente | Chiarimento o indisponibilità; nessuna sostituzione arbitraria |
-| T14 | Frase su allergia e richiesta di prodotto sicuro | Nessuna selezione positiva dell'allergene o garanzia sanitaria; percorso R02 da completare |
+| T14 | Frase su allergia e richiesta di prodotto sicuro | Limite R02 documentato e valutato dall'azienda; nessuna garanzia sanitaria presentata come valida. Caso non superato finché la correzione non è collaudata |
 | T15 | Durata/intensità/famiglia dedotta | Informazioni coerenti, nessuna durata garantita inventata |
 | T16 | Prodotto con note narrative senza piramide | Note conservate come non posizionate, senza piramide inventata |
 | T17 | Selezionare diversi formati, anche esauriti | Prezzo/variante coerenti; indisponibili non acquistabili |
@@ -59,9 +59,11 @@ Per ogni caso registrare: stato (`SUPERATO`, `FALLITO`, `NON ESEGUITO`, `NON APP
 
 ## Campione commerciale da far approvare
 
-Selezionare dal catalogo corrente: profumo con più formati; formato esaurito; profumo con note narrative; famiglia dedotta; prodotto senza dettagli; kit; omaggio/prezzo zero; nome ambiguo. Registrare ID, prezzo e stock alla data della prova; non fissare qui dati commerciali destinati a diventare obsoleti.
+Selezionare dal catalogo corrente: profumo con più formati; formato esaurito; profumo con note narrative; famiglia dedotta; prodotto senza dettagli; kit; omaggio/prezzo zero; nome ambiguo. Registrare ID, prezzo e stock alla data della prova; non fissare qui dati commerciali destinati a diventare obsoleti. Per domande, risultati attesi e approvazioni usare [COMMERCIAL_REVIEW.md](COMMERCIAL_REVIEW.md), casi C01–C10.
 
 ## Misure di servizio
+
+Per distinguere limiti interni, quote del provider e misure osservate, seguire [CAPACITY_REVIEW.md](CAPACITY_REVIEW.md). Annotare la finestra e la numerosità del campione insieme a ogni risultato.
 
 | Misura | Metodo | Soglia approvata | Risultato |
 | --- | --- | --- | --- |

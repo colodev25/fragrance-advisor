@@ -10,6 +10,8 @@ Preparato il **15 ottobre 2026**. Questi documenti sono versionabili e contengon
 | [OPERATIONS.md](OPERATIONS.md) | Installazione, catalogo, incidenti, recupero e manutenzione |
 | [HOSTING_OPTIONS.md](HOSTING_OPTIONS.md) | Confronto demo/produzione, costi Render, persistenza e prove richieste |
 | [NETWORK_ACCESS.md](NETWORK_ACCESS.md) | Origini, proxy, policy del tema e passaggio sicuro degli accessi |
+| [COMMERCIAL_REVIEW.md](COMMERCIAL_REVIEW.md) | Regole di raccomandazione e campione da approvare con l'azienda |
+| [CAPACITY_REVIEW.md](CAPACITY_REVIEW.md) | Modelli, limiti interni, misure e soglie di capacità da concordare |
 | [ACCEPTANCE.md](ACCEPTANCE.md) | Piano di collaudo compilabile con criteri di superamento |
 | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | Inventario preliminare e verifica dei diritti/licenze |
 
