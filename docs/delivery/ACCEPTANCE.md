@@ -50,7 +50,7 @@ Per ogni caso registrare: stato (`SUPERATO`, `FALLITO`, `NON ESEGUITO`, `NON APP
 | T28 | Zoom/testo 200%, mobile e tastiera aperta | Input e azioni raggiungibili, nessuna perdita di contenuti |
 | T29 | Schede lunghe, prima/ultima, movimento ridotto | Scorrimento segue la scheda; dettagli sopra l'input |
 | T30 | Banner, WhatsApp, menu e sticky header | Controlli del sito accessibili; nessun conflitto critico |
-| T31 | Feedback chiuso/saltato e acquisto | Comportamento pubblico approvato; nessuna vendita dedotta dal click |
+| T31 | Chiudere dopo una raccomandazione e aprire il carrello dopo l'aggiunta | La schermata feedback disabilitata non compare; la chiusura e l'apertura del carrello funzionano normalmente |
 | T32 | Sync/enrichment/monitor e confronto hash | Report recente e versione effettivamente servita coerenti |
 | T33 | CI fallita su staging | Nessun deploy automatico della candidata fallita |
 | T34 | Ricezione allarme, disattivazione e rollback | Destinatari raggiunti e servizio recuperabile secondo manuale |

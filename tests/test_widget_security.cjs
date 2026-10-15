@@ -26,8 +26,12 @@ function script(file) {
   return match[1];
 }
 
-function instrumentedScript(file) {
-  const original = script(file);
+function instrumentedScript(file, setup = {}) {
+  let original = script(file);
+  if (setup.enableFeedback) original = original.replace(
+    'const FEEDBACK_PREVIEW_ENABLED = false;',
+    'const FEEDBACK_PREVIEW_ENABLED = true;'
+  );
   const hooks = `window.__widgetTest = {
     safeHttpUrl, normalizeProduct, normalizeMessage, renderMarkdownText,
     createProductCard, appendChatRecord, renderOptions, saveChatState,
@@ -44,9 +48,9 @@ function instrumentedScript(file) {
   return instrumented;
 }
 
-function instrumentedHtml(file) {
+function instrumentedHtml(file, setup = {}) {
   const original = script(file);
-  const instrumented = instrumentedScript(file);
+  const instrumented = instrumentedScript(file, setup);
   if (file.endsWith('.txt')) {
     return '<!doctype html><html><head></head><body><script>' + instrumented + '</script></body></html>';
   }
@@ -106,7 +110,7 @@ async function fixture(t, file, seed = {}, store = false, setup = {}) {
     const request = route.request();
     const url = new URL(request.url());
     if (url.origin === (store ? 'https://etualy.com' : 'https://widget.test') && url.pathname === '/widget') {
-      return route.fulfill({ contentType: 'text/html; charset=utf-8', body: instrumentedHtml(file) });
+      return route.fulfill({ contentType: 'text/html; charset=utf-8', body: instrumentedHtml(file, setup) });
     }
     if (store && url.origin === 'https://etualy.com' && url.pathname.endsWith('/products/iris.js')) {
       const response = productResponses.shift() || { status: 200, body: {
@@ -622,8 +626,31 @@ for (const file of files) {
     return buttons.nth((await buttons.count()) - 1);
   }
 
-  test(`${file}: feedback appears once after recommendations and stars work without a backend request`, async (t) => {
+  test(`${file}: disabled feedback never interrupts closing after recommendations`, async (t) => {
     const { page, requests } = await fixture(t, file);
+    await page.evaluate(() => window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Iris',
+      products: [{ id: 'sh_iris', name: 'Iris' }] }));
+    await page.locator('#oaCloseBtn').click();
+    assert.equal(await page.locator('#oaFeedback').isVisible(), false);
+    assert.equal(await page.locator('#oaWidget').evaluate(el => el.inert), true);
+    assert.equal(await page.locator('.oa-feedback-star').count(), 5);
+    assert.deepEqual(requests, []);
+  });
+
+  test(`${file}: confirmed cart action opens cart without showing disabled feedback`, async (t) => {
+    const { page, cartRequests } = await fixture(t, file, {}, true);
+    await page.evaluate(() => { window.Shopify = { routes: { root: '/it/' } }; });
+    const button = await cartCard(page, { id: 'sh_iris' });
+    await button.click();
+    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').dataset.feedbackEligible === 'true');
+    assert.equal(await button.getAttribute('href'), 'https://etualy.com/it/cart');
+    await button.click();
+    assert.equal(await page.locator('#oaFeedback').isVisible(), false);
+    assert.equal(cartRequests.length, 1);
+  });
+
+  test(`${file}: feedback prototype can be enabled for a company demonstration`, async (t) => {
+    const { page, requests } = await fixture(t, file, {}, false, { enableFeedback: true });
     await page.evaluate(() => window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Iris',
       products: [{ id: 'sh_iris', name: 'Iris' }] }));
     await page.locator('#oaCloseBtn').click();
@@ -636,31 +663,12 @@ for (const file of files) {
     assert.equal(await page.locator('.oa-feedback-star.is-filled').count(), 4);
     assert.match(await page.locator('#oaFeedbackNote').textContent(), /non viene inviata/);
     assert.deepEqual(requests, []);
-    await page.locator('#oaPrivacyOpen').click();
-    await page.locator('#oaPrivacyBack').click();
-    assert.equal(await page.locator('#oaFeedback').isVisible(), true);
-    await page.locator('#oaCloseBtn').click();
-    assert.equal(await page.locator('#oaWidget').evaluate(el => el.inert), true);
-    await page.locator('#oaLauncher').click();
-    assert.equal(await page.locator('#oaFeedback').isVisible(), false);
-  });
-
-  test(`${file}: confirmed cart action offers feedback without repeating cart addition`, async (t) => {
-    const { page, cartRequests } = await fixture(t, file, {}, true);
-    await page.evaluate(() => { window.Shopify = { routes: { root: '/it/' } }; });
-    const button = await cartCard(page, { id: 'sh_iris' });
-    await button.click();
-    await page.waitForFunction(() => document.querySelector('.oa-card-cart-btn').dataset.feedbackEligible === 'true');
-    assert.equal(await button.getAttribute('href'), 'https://etualy.com/it/cart');
-    await button.click();
-    assert.equal(await page.locator('#oaFeedback').isVisible(), true);
-    assert.equal(cartRequests.length, 1);
     await page.locator('#oaFeedbackSkip').click();
     assert.equal(await page.locator('#oaWidget').evaluate(el => el.inert), true);
   });
 
-  test(`${file}: narrow-screen feedback keeps every star tappable`, async (t) => {
-    const { page } = await fixture(t, file);
+  test(`${file}: enabled feedback prototype remains usable on a narrow screen`, async (t) => {
+    const { page } = await fixture(t, file, {}, false, { enableFeedback: true });
     await page.setViewportSize({ width: 360, height: 640 });
     await page.evaluate(() => window.__widgetTest.appendChatRecord({ kind: 'bot', reply: 'Iris',
       products: [{ id: 'sh_iris', name: 'Iris' }] }));

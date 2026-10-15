@@ -49,7 +49,7 @@
 | RLS-07 | Suite, audit e nuova richiesta preventiva | Eseguire sulla candidata definitiva; non usare vecchi risultati come prova corrente |
 | RLS-08 | Eccezioni Chroma | Rivalutare `tools/security/exceptions.json`; scadenza registrata 12 novembre 2026 |
 | RLS-09 | Allarmi, recupero e referente assistenza | Provare ricezione e procedura |
-| RLS-10 | Comportamento pubblico dei feedback | Decisione del proprietario 15/10/2026: disabilitare la schermata nella prima release; modifica e test ancora da eseguire |
+| RLS-10 | Comportamento pubblico dei feedback | Disabilitato con flag nelle tre versioni il 15/10/2026; test mirati da eseguire |
 
 Global ZDR Groq e deploy Render dopo CI sono **dichiarati attivati dal proprietario**; non sono stati verificati in dashboard durante la stesura.
 

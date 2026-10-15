@@ -69,7 +69,7 @@ Catalog workflows explicitly dispatch this suite after a successful push that ch
 
 ## Widget browser checks
 
-The feedback preview has nine focused browser checks across the standalone page, Shopify snippet and local DevTools snippet: recommendation gating, once-per-consultation close behavior, hover/selection, no feedback network call, confirmed cart action, skip and narrow-screen star access. Nine existing close/focus/cart regressions also passed on these three variants. External calls were intercepted; this does not verify production persistence, consent or Shopify checkout attribution.
+The feedback preview is disabled by default for the first release. Browser coverage checks that recommendations close normally and a confirmed cart action does not show the feedback screen. Test-only instrumentation can enable the retained prototype to cover stars, no feedback network call, skip and narrow-screen access without changing production sources. The latest local attempt after introducing the release flag did not start because Playwright was not installed in that checkout; JavaScript syntax and the three `false` flags were verified, while behavioral results remain pending CI or a local Playwright installation. External calls are intercepted when the suite runs; this does not verify production persistence, consent or Shopify checkout attribution.
 
 The pending-cart browser check now compares the product card's height before and during “Aggiunta…” and verifies the empty status area is invisible. It passed for all three widget versions with Shopify simulated; nonempty error and choice messages retain their normal layout.
 

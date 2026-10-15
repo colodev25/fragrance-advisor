@@ -20,11 +20,11 @@ The Etualy fragrance advisor is a self-contained chat widget, designed to bring 
 - **Natural chat feedback:** message bubbles, smooth scrolling and an animated typing indicator keep the conversation readable. Longer waits show progressive status messages for requests that may be delayed by a backend cold start.
 - **Early backend wake-up:** after the storefront page finishes loading, the widget asynchronously requests the lightweight Render `/health` endpoint. The request is limited to once every ten minutes per browser tab when sessionStorage is available (per page when it is blocked) and is repeated when opening the widget after a longer stay. It neither blocks storefront rendering nor calls Groq. This can overlap a Free-tier cold start with product browsing, but does not guarantee an immediate reply if the shopper starts chatting at once. The DevTools preview begins only when its script is pasted; the installed Shopify snippet begins on normal page load.
 
-## Feedback preview
+## Feedback preview (disabled for the first release)
 
-After a recommendation, the first click on the widget's close button opens an optional five-star screen styled like the AI introduction. Customers can skip it, close immediately with the button or Escape, and will not be asked again in the same consultation. After Shopify confirms a cart addition, clicking **Vai al carrello** opens the cart immediately in a new tab and leaves the optional feedback screen in the original tab. Uncertain or failed additions do not trigger it. Stars fill on desktop hover and on touch/click selection; keyboard access and reduced-motion settings remain supported.
+The five-star interface remains in the widget source as a demonstrable prototype, but `FEEDBACK_PREVIEW_ENABLED` is `false` in the standalone page, Shopify Liquid and local DevTools snippet. Closing the widget therefore closes it immediately, and **Vai al carrello** opens the cart without presenting a rating screen. To demonstrate the prototype to Etualy, set that constant to `true` in the version being shown; do not publish an enabled copy by mistake.
 
-This is an interface preview: the selected rating, recommended product IDs and confirmed added variant IDs exist only in page memory. No feedback request, server log or persistent record is created. The screen tells customers that their rating is not saved. Before production collection, agree on consent, notice, retention and durable restricted storage with Etualy; see [privacy preparation](PRIVACY_AI.md).
+When enabled, the prototype behaves as previously designed: its selected rating, recommended product IDs and confirmed added variant IDs exist only in page memory. No feedback request, server log or persistent record is created. Before production collection, agree on purpose, notice, legal basis/consent handling, retention and durable restricted storage with Etualy; see [privacy preparation](PRIVACY_AI.md).
 
 ## Product exploration
 

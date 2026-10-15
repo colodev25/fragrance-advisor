@@ -2602,6 +2602,8 @@
       const feedbackStars = document.getElementById("oaFeedbackStars");
       const feedbackNote = document.getElementById("oaFeedbackNote");
       const feedbackSkip = document.getElementById("oaFeedbackSkip");
+      // Demo pronta ma esclusa dalla prima release pubblica: impostare true solo per mostrarla all'azienda.
+      const FEEDBACK_PREVIEW_ENABLED = false;
       const FEEDBACK_PROMPT_KEY = "etualy_advisor_feedback_prompted";
       let feedbackPrompted = localState.getItem(FEEDBACK_PROMPT_KEY) === sessionId;
       let feedbackRating = 0;
@@ -2662,7 +2664,8 @@
       feedbackStars.addEventListener("mouseleave", () => paintFeedbackStars(feedbackRating));
       feedbackSkip.addEventListener("click", () => closeWidget());
       function showFeedback() {
-        if (!noticeViewed || feedbackPrompted || !chatMessages.some((entry) => entry.kind === "bot" && entry.products?.length)) return false;
+        if (!FEEDBACK_PREVIEW_ENABLED || !noticeViewed || feedbackPrompted ||
+            !chatMessages.some((entry) => entry.kind === "bot" && entry.products?.length)) return false;
         feedbackPrompted = true;
         localState.setItem(FEEDBACK_PROMPT_KEY, sessionId);
         setWidgetScreen("feedback");
