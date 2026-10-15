@@ -1333,8 +1333,9 @@
     },
     "sh_5741354254496": {
       "signature": "5fd8018362bae6375e421ab5885faa38d02c52207e600e846dc82153e4120bf2",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:49:28.110365+00:00"
     },
     "sh_8502282191182": {
       "signature": "ad2da031ced723c39fa2a03137f37e46837e6bbdb901a04a9fc44e5ad1c8a0e6",
@@ -1373,8 +1374,9 @@
     },
     "sh_5741551550624": {
       "signature": "8a0490c341eb70c193f4711765d6ce369a1526673a82548090aadb70a9fbd190",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:51:30.838378+00:00"
     },
     "sh_7119516762272": {
       "signature": "53c4c7959fc9b5ebcb9cfa56e4caf25b194dac2359b376c263d25a8e50311c4b",
@@ -1403,8 +1405,9 @@
     },
     "sh_5741086769312": {
       "signature": "551db40ce8c3dde7c527235ff7369672160c66cf9242fe321648a0dd47ed35d5",
-      "status": "pending",
-      "attempts": 0
+      "status": "no_information",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:45:10.645032+00:00"
     },
     "sh_8502282322254": {
       "signature": "12088f0fd6b7d2b93450e2b27aec45e6e85e19c6e3e55bbdef303b0eaa1cc6d4",
@@ -1544,13 +1547,17 @@
     },
     "sh_5741086310560": {
       "signature": "a7cfd55e716ff7b98fed438dec16727eec4a3e21c1961df27bef56a11857767a",
-      "status": "pending",
-      "attempts": 0
+      "status": "needs_review",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:43:29.068235+00:00",
+      "last_error": "request_too_large",
+      "next_attempt_at": "2026-10-16T07:43:29.068259+00:00"
     },
     "sh_5741086015648": {
       "signature": "80194af5b5ebb1ec93eba3ba7c02fa19ebd9a9761f9a4f80ac74c83b9fb3679b",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:43:27.067520+00:00"
     },
     "sh_5741083033760": {
       "signature": "50fa894035855d3ab93e3b8bbcd3d7ae89033ac2903faadf31ddad358fd3cd2b",
@@ -1585,13 +1592,15 @@
     },
     "sh_5741550993568": {
       "signature": "375882ab4f6993dfbf19ddd3d0757000f036ec1ff464dc73f1d64b784ac14094",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:50:29.585211+00:00"
     },
     "sh_5741348421792": {
       "signature": "733f3d253df29ddd4607f1848c202f5f9f3bfccf9ae2ca7d2fb3581d42adcff8",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:48:26.187340+00:00"
     },
     "sh_8502282223950": {
       "signature": "a60e95a889c586d9b6b267296cfa0465ab16cea52e89a5fa3c1628b100a580dc",
@@ -1680,8 +1689,9 @@
     },
     "sh_5741087260832": {
       "signature": "25126293772ff4243bfc000441f0e8b2018a082d183c3951740094ac0c9d5056",
-      "status": "pending",
-      "attempts": 0
+      "status": "no_information",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:46:18.585825+00:00"
     },
     "sh_8502281830734": {
       "signature": "d08f3c7f09d6dc15e3d73f1e3da2b8c8e0db87b3c2470663ef9bb635287c0b2b",
@@ -1780,8 +1790,9 @@
     },
     "sh_5741344293024": {
       "signature": "f096f112cbba16bfc1bde45f447111298f0955f5c70732a2c3eab7037b4f6d32",
-      "status": "pending",
-      "attempts": 0
+      "status": "completed",
+      "attempts": 1,
+      "last_attempt_at": "2026-10-15T07:47:23.468425+00:00"
     },
     "sh_6585348522144": {
       "signature": "50853ed4c386905bd453cab5f84b4331339e26eb2b100c3549b982611a1dd90a",
@@ -4431,5 +4442,46 @@
       "attempts": 0
     }
   },
-  "reservations": []
+  "reservations": [
+    {
+      "at": "2026-10-15T07:43:26.100830+00:00",
+      "tokens": 6927,
+      "actual_tokens": 1552
+    },
+    {
+      "at": "2026-10-15T07:45:10.006598+00:00",
+      "tokens": 4542,
+      "actual_tokens": 742
+    },
+    {
+      "at": "2026-10-15T07:46:18.137196+00:00",
+      "tokens": 4308,
+      "actual_tokens": 831
+    },
+    {
+      "at": "2026-10-15T07:47:22.757846+00:00",
+      "tokens": 4171,
+      "actual_tokens": 932
+    },
+    {
+      "at": "2026-10-15T07:48:25.323313+00:00",
+      "tokens": 4156,
+      "actual_tokens": 1071
+    },
+    {
+      "at": "2026-10-15T07:49:27.663882+00:00",
+      "tokens": 4088,
+      "actual_tokens": 841
+    },
+    {
+      "at": "2026-10-15T07:50:28.984399+00:00",
+      "tokens": 4088,
+      "actual_tokens": 872
+    },
+    {
+      "at": "2026-10-15T07:51:30.304875+00:00",
+      "tokens": 4403,
+      "actual_tokens": 1040
+    }
+  ]
 }
