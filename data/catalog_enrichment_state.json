@@ -1915,16 +1915,6 @@
       "status": "not_needed",
       "attempts": 0
     },
-    "sh_7067844444320": {
-      "signature": "a047752704647fb7f81a366ad0a3be620f28f0437d4b6db9a25a524e27a4a7c6",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843494048": {
-      "signature": "e07584ab06742161ab02f93efcab6eb3b95044ffc58f0874724f1b175b2f8a50",
-      "status": "not_needed",
-      "attempts": 0
-    },
     "sh_5998896218272": {
       "signature": "6a26635c7bc999ba00fe8558215bdac8c97d520c643ca4bf16f03e457bc32b49",
       "status": "not_needed",
@@ -2058,21 +2048,6 @@
     },
     "sh_8642972057934": {
       "signature": "5ec479c886344285dd6ec3afc43d7d0a6ef4e86c54ea916ec109dd6414889f99",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642976219470": {
-      "signature": "28ec5f369873d4092e39b3ede904506d8a21e6bb5426cce6a18aa974de3debe5",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642975662414": {
-      "signature": "1fa8c40e8679b789310f88799c0d1a83da90e2c0962d880d1b5a63b5643d2f6f",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642975203662": {
-      "signature": "af3fe9afa1d5c578c60c02cac2b49bf52b1ee86b2386d9294d1b9c2289fd6757",
       "status": "not_needed",
       "attempts": 0
     },
@@ -3760,91 +3735,6 @@
       "status": "not_needed",
       "attempts": 0
     },
-    "sh_7067844575392": {
-      "signature": "e8f696173564eeac65e0c55de8703bd364c5e8d5635bd3d3c0e5a3fdfc944b7a",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067844542624": {
-      "signature": "60439f7c3c2057b01a78b96df7e145f3fbbf46e3ac79ed6fc30427df50c988f3",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067844346016": {
-      "signature": "154f25225c9308c1e06d5c81a5113f40a5428fa4162804a7d065e6044b8bdc7e",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067844247712": {
-      "signature": "7ecf09287b38ae699bfbd3cc56d4aa77fee8310a164508139ca71719d4d8f150",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067844182176": {
-      "signature": "eaed9e0327995190d319caf0f4e8ad1fce9df3db274428a66dddcb3a0f152675",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067844116640": {
-      "signature": "11ff7eace3adebabf331cda4ea13f6838bfa8a385ef0a54b8aecf5a8455731cd",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067844018336": {
-      "signature": "5ba506ba99f1fa2d570d8472166d79baed6e593d277fb65f01c0b2673ad404ec",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843985568": {
-      "signature": "c83a0bd1e08bbed80437fd8991f938a868655570dd7112dcabfd9e03068292cc",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843920032": {
-      "signature": "aad71675235fb734d011ab5a4934b6beb736fd3a80c1a2e408d8a8e84811fc6c",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843821728": {
-      "signature": "7c6a1927587dccf0bfed65224a6e8bff3df9b3de27dcac824840f0b27e6cfe1f",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843788960": {
-      "signature": "b65b0f79413665841a69f504f5c102df06ac0310e511debb3c4cd1910b188a98",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843723424": {
-      "signature": "0fe6fd6af85da823824922c0fadc4d666a1b409188983fed4c544abb5cd9f5ac",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843625120": {
-      "signature": "cd60beeb9b9f163371da03b3c8018d247d065011a022365d49711d10922ba110",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843559584": {
-      "signature": "203c049d3522c2cdaf0a3fb9326e8479e49218efba91a57a935ef461c1891a7b",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843395744": {
-      "signature": "b2c64ed997d97c90e9ba133e562372e65a0cd830a85b4f2f0bc569f2f525cc71",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843330208": {
-      "signature": "5cd6e7c1d7254840fe8f9182bb7eeccb4085f97dc8240e31a3eb8e0eabea91da",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_7067843264672": {
-      "signature": "0d12867ab741dd5226cad54a545b04cb88f7aae4a5b05ce76afdeaf11995cfb7",
-      "status": "not_needed",
-      "attempts": 0
-    },
     "sh_6776630247584": {
       "signature": "d7fde9b54a52a4476efb4e6f7d9de6b26a254dce5baafcdc03101517f527ff60",
       "status": "not_needed",
@@ -3955,41 +3845,6 @@
       "status": "not_needed",
       "attempts": 0
     },
-    "sh_8642973827406": {
-      "signature": "58de59ba60d3d2e99b5fc4d030f37ca25af65ffa08190c281b5c5a3cda28d932",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642973761870": {
-      "signature": "932485397606367eaee7d5d317a19634112f005df70c3118f9430c42ec20873f",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642973663566": {
-      "signature": "cafa002e81f4312b285df9fc050392ab0af58e9a73141c53ba55675e2c30a2a6",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642973270350": {
-      "signature": "ee7b4856a4999d8f3ba4cdc70e94147b7317127dcbc8aee9f247d984507eea25",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642973139278": {
-      "signature": "e2254610cf52bbbaf09e51e187e39d0af90474a4cc24efa196ef97e704567c0f",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642972942670": {
-      "signature": "4c2fc56a644e4876900b83475c45b0271a7e3820ebc2758fde378da4f1e7e2bf",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642972844366": {
-      "signature": "45fb46c458180d1ad0de7c3403305f58d9d16635961beaad046b39ffa96d618a",
-      "status": "not_needed",
-      "attempts": 0
-    },
     "sh_8642972680526": {
       "signature": "e65ae6b78e751a1b9c0b1b00870b6e938d74c82fef27d31a3fc7cd879ca4d0db",
       "status": "not_needed",
@@ -4007,71 +3862,6 @@
     },
     "sh_8642971894094": {
       "signature": "ad3d37fbca6782e5e16aa1ce2ba9e27ec9b959edad878431cc5ebd0334ece6fa",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642980577614": {
-      "signature": "5e5f9305caeae2ea97d79ef07064055a79ecd8720e19a9aca98dd731210ca981",
-      "status": "out_of_stock",
-      "attempts": 0
-    },
-    "sh_8642976383310": {
-      "signature": "faafba372cdb7523c8017507e64cbdf96a016cada887f15ecc038e8db42914f8",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642976088398": {
-      "signature": "46d123f5a3952675996cf464bef4a5578eeb1fdb0f45e424ee0aff1cbbed986f",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642975891790": {
-      "signature": "7752a2d879113b9ee9d9ba55586142ceb1d90953f9e0b4e2e532b1c5070ed79e",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642975760718": {
-      "signature": "ee16514689ac7840d47c17e9c44cfacf83bd31c2fc7d7955230abba92450fc34",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642975039822": {
-      "signature": "2603e62d9b2fac440eb3e3dd118b70069af9996b7ea99157a1ccb74bd4507413",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642974810446": {
-      "signature": "b4f6275af32d6d7902809a45bce43c0b07d3212ae6655d8e63ec6621cfbdd200",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642974712142": {
-      "signature": "aceaffb4ee66b875540658be3d4fffff4466533cf56584ac90794b91ca77c4d3",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642974548302": {
-      "signature": "fe18e2213138067880da799f00a69a5cfff2cd47972db5f7bfb896fc198a6cad",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642974286158": {
-      "signature": "9891f30ec15383bbb1ef92c24aa2279db5a2fb7266b6edb0e7023de3e43980fa",
-      "status": "out_of_stock",
-      "attempts": 0
-    },
-    "sh_8642974187854": {
-      "signature": "d54d22ab5e547aefa1179a7a35c312c41338230c3652f42767d9d1363120d691",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642974024014": {
-      "signature": "7ea0b24759eb5d6c869cfbda8c45beaca9fa232bfc7d431219808d790936e7fa",
-      "status": "not_needed",
-      "attempts": 0
-    },
-    "sh_8642973598030": {
-      "signature": "e83a94f1179b633b8851f319bc085dd17cf9a3dd20c0d628a62b53199a7694c3",
       "status": "not_needed",
       "attempts": 0
     },
@@ -4641,41 +4431,5 @@
       "attempts": 0
     }
   },
-  "reservations": [
-    {
-      "at": "2026-10-13T08:22:26.488159+00:00",
-      "tokens": 5616,
-      "actual_tokens": 1308
-    },
-    {
-      "at": "2026-10-13T08:23:50.728802+00:00",
-      "tokens": 6005,
-      "actual_tokens": 1411
-    },
-    {
-      "at": "2026-10-13T08:25:20.804475+00:00",
-      "tokens": 6916,
-      "actual_tokens": 1510
-    },
-    {
-      "at": "2026-10-13T08:27:04.545291+00:00",
-      "tokens": 4480,
-      "actual_tokens": 899
-    },
-    {
-      "at": "2026-10-13T08:28:11.745838+00:00",
-      "tokens": 4529,
-      "actual_tokens": 874
-    },
-    {
-      "at": "2026-10-13T08:29:19.681395+00:00",
-      "tokens": 4885,
-      "actual_tokens": 906
-    },
-    {
-      "at": "2026-10-13T08:30:32.956950+00:00",
-      "tokens": 4773,
-      "actual_tokens": 855
-    }
-  ]
+  "reservations": []
 }
