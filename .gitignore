@@ -23,3 +23,7 @@ DECISIONI_AZIENDA.md
 
 # Dossier aziendale riservato: accordi, accessi, approvazioni e prove non pubbliche.
 /delivery-private/
+
+#Xtra
+.codex-build/
+output/
